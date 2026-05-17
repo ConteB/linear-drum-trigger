@@ -1,30 +1,23 @@
-# SESSION HANDOVER: 002_LIN_DrumTrigger
+# SESSION HANDOVER: 2026-05-17
+**Progetto:** 002_LIN_DrumTrigger
+**ID Sessione:** SESSION-LINEAR-001
+**Status:** 🟠 SPRINT M2 READY (Task Lock Required)
 
-**Data:** 2026-05-17
-**Persona Uscente:** Gianpiero Scappelloni (Strategic Orchestrator)
-**Stato Task:** Milestone M1 COMPLETATA
+## 1. SINTESI OPERATIVA
+In questa sessione è stato completato l'hard audit delle specifiche e la blindatura del layer di intelligence. Il progetto è passato da una fase di brainstorming a una struttura di engineering professionale e corazzata.
 
----
+## 2. OBIETTIVI RAGGIUNTI
+- [x] **Hard Audit (VULN 001-003)**: Risolti i conflitti di latenza (PDC), definita la logica dell'Inference Arbiter e il Velocity Mapping.
+- [x] **Scheduling Hardening**: Creata WBS granulare (11 task) per la Milestone M2 con Gate SOP-014.
+- [x] **Protocollo Training (PTW-001)**: Definita strategia a due stadi (Sintetico/Reale), limite 50GB e segregazione GVM-003.
+- [x] **GitHub Initialization**: Repository pushato su `ConteB/linear-drum-trigger` con .gitignore e README professionali.
 
-## 🎯 SUMMARY DEL PIVOT
-Il progetto è stato trasformato da un trigger tradizionale a latenza zero in un **AI-Native Stem Trigger**. L'obiettivo è la separazione e il triggering di eventi percussivi complessi (es. Snare vs Clap) da stem estratti via AI, utilizzando compensazione di latenza (PDC).
+## 3. STATO DELLA PIPELINE (ERM-007)
+- **Milestone Corrente**: M2 (Data Engineering & ML Training).
+- **Prossimo Task**: `TSK-M2-00` (Setup Ambiente Docker/Conda).
+- **Blocchi**: Nessuno. Richiesto Task Lock formale del CEO per l'avvio dell'esecuzione.
 
-## 🧠 CORE ARCHITECTURE (L-AEC)
-- **Modello**: 1D-CNN leggero (Header-only inference in C++).
-- **Features**: MFCC (13), Spectral Centroid, Flux, Flatness.
-- **DSP**: FFT 1024 samples, Windowing Hanning.
-- **Stack**: JUCE 7+, C++20, KissFFT.
-- **Compliance**: Zero-Allocation nel thread audio (Mandato DIV-LIN-001).
-
-## 🚀 PROSSIMI PASSI (M2: DATA ENGINEERING)
-1. **Wild-Sourcing Scraper**: Script Python per estrazione campioni da Freesound/AudioSet.
-2. **Adversarial Mixer**: Simulatore di artefatti AI per rendere il modello robusto.
-3. **Training Pipeline**: Addestramento del modello L-AEC.
-
-## ⚠️ NOTE PER IL SUCCESSORE
-- Mantenere il rigore **Linear** (Aesthetic UI 60FPS).
-- Seguire il protocollo **DCM-002** per la validazione Bit-Exactness tra Python e C++.
-- Non utilizzare framework ML pesanti nel plugin; l'inferenza deve essere manuale o tramite micro-librerie header-only.
-
----
-*Fine Handover - Firmato: Gianpiero Scappelloni*
+## 4. NOTE PER IL SUCCESSORE
+- **Mandato Linear**: Assicurarsi che ogni esportazione pesi rispetti `DIV-LIN-001` (Zero-Allocation).
+- **Storage**: Monitorare rigorosamente il limite dei 50GB durante il sourcing (TSK-M2-01).
+- **Bit-Exactness**: Il Gate del Task 04.2 è vitale per l'integrità del prodotto.

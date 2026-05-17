@@ -17,6 +17,8 @@
 | 2026-05-17 | DCM-001 | Redazione Specifica AI-AEC e Master Index | COMPLETATO |
 | 2026-05-17 | AUDIT-001 | Hard Audit Specifiche (VULN 001-003) | CERTIFICATO |
 | 2026-05-17 | INT-001 | Redazione Specifica di Integrazione e Velocity Mapping | COMPLETATO |
+| 2026-05-17 | GOV-001 | Setup Repo GitHub e Allineamento Master Index | COMPLETATO |
+| 2026-05-17 | SPRINT-M2 | Hard Audit e Scheduling Sprint M2 (Hardened) | CERTIFICATO |
 | 2026-05-17 | DCM-002 | Progettazione Wild-Sourcing Scraper | IN CORSO |
 
 ---

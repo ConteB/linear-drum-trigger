@@ -8,14 +8,16 @@
 Definire il sourcing e la sintesi dei dati per l'addestramento del modello L-AEC, garantendo robustezza su stem "sporchi" e precisione su pattern reali.
 
 ## 2. FONTI E ACQUISIZIONE (IL "DOVE" E IL "COME")
-- **Fonti**: AudioSet (Google), Freesound.org, IDMT-SMT-Drums.
-- **Surgical Streaming**: Estrazione via `yt-dlp | ffmpeg` per salvare solo i segmenti necessari (max 1s). Vietato il salvataggio di file raw lunghi.
+- **Fonti Primarie (Pattern)**: ENST-Drums (Reale), StemGMD (Sintetico procedurale).
+- **Fonti Secondarie (Rumore/Bleed)**: AudioSet via `yt-dlp` (solo estrazioni mirate di rumori spuri e bleed di chitarra/basso).
+- **Surgical Streaming**: Estrazione via `yt-dlp | ffmpeg` per frammenti di background. Le fonti primarie vengono elaborate in loop continui (5-10s) per preservare l'ecologia ritmica.
 
 ## 3. STRATEGIA DI TRAINING A DUE STADI
 
-### Stage 1: Robustezza (Pseudo-Random Stem Synthesis)
-- Mixaggio real-time di colpi isolati con jitter temporale e artefatti di fase.
-- Scopo: Insegnare all'AI a "vedere" attraverso il rumore e le sovrapposizioni.
+### Stage 1: Robustezza (Pattern-Aware Synthesis & Domain Alignment)
+- **Macro-Mix:** Sovrapposizione in RAM del rumore (AudioSet) sui loop continui di batteria (ENST/StemGMD), preservando l'interferenza di fase tra i colpi e i riverberi ambientali.
+- **Micro-Inference (Simulazione VST):** Il DataLoader estrae feature muovendo una finestra mobile fissa corrispondente al buffer del plugin (es. 1024-2048 campioni) lungo il Macro-Mix. La rete viene addestrata "vedendo" esattamente ciò che vedrà il codice C++.
+- Scopo: Insegnare all'AI a riconoscere transienti nei micro-buffer simulati, senza perdere la consapevolezza delle code sonore dei pattern completi.
 
 ### Stage 2: Precisione (Real-World Fine-Tuning)
 - Addestramento su stem di batteria reali (MedleyDB/MixingSecrets).

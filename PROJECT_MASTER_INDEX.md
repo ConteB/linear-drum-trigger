@@ -18,6 +18,7 @@
 3. [Specifica AI-AEC](04_INTELLIGENCE/SPECIFICA_AI_AEC_001.md) - Dettaglio architettura ML e Feature Extraction.
 4. [Specifica di Integrazione INT-001](04_INTELLIGENCE/SPECIFICA_INTEGRAZIONE_INT_001.md) - Arbiter e Velocity Mapping.
 5. [Protocollo Training](04_INTELLIGENCE/PROTOCOLLO_TRAINING_WILD.md) - Strategia di sourcing e sintesi dataset.
+6. [Report Intelligence Sourcing](04_INTELLIGENCE/REPORT_DATASET_SOURCING.md) - Mappatura e analisi dei dataset (Acustici, Sintetici, Rhythm Games).
 
 ## 🛡️ GOVERNANCE & AUDIT
 - [Master Schedule Tattico](04_INTELLIGENCE/PROJECT_MASTER_SCHEDULE.md) - Cronoprogramma dei 5 Sprint.

@@ -1,0 +1,24 @@
+name: linear-drum-trigger
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch=2.2.0
+  - torchvision
+  - torchaudio
+  - pytorch-cuda=12.1
+  - numpy
+  - scipy
+  - pandas
+  - librosa
+  - matplotlib
+  - scikit-learn
+  - jupyterlab
+  - pip
+  - pip:
+      - yt-dlp
+      - requests
+      - soundfile

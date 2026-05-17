@@ -19,12 +19,14 @@ Il modello analizza frame di 1024 campioni (~23ms) estratti con finestra di Hann
 4. **Dense Layer (Bottleneck)**: 32 neuroni.
 5. **Output Layer (Softmax)**: Probabilità su 8 classi (Kick, Snare, Clap, Rim, HH, Tom, Perc, Ghost).
 
-## 2. PIPELINE DI TRAINING (AUTOMATED WILD-SOURCING)
-- **Dataset Source**: Freesound.org, AudioSet (Google), Kaggle.
+## 2. PIPELINE DI TRAINING E DOMAIN ALIGNMENT
+- **Dataset Source**: ENST-Drums, StemGMD (Pattern Reali/Sintetici), AudioSet (Rumore/Bleed).
+- **Risoluzione Domain Mismatch (Macro vs Micro)**: 
+  - **Fase Macro (Mix)**: L'audio viene miscelato in RAM su loop interi di 5-10 secondi per permettere lo sviluppo naturale di riverberi, sustain e interferenze di fase (Pattern-Aware Synthesis).
+  - **Fase Micro (Inference-Aligned)**: Sull'audio mixato scorre una finestra mobile di 1024-2048 campioni (l'esatto buffer/look-ahead del VST C++). La rete estrae le feature *solo* da questo frammento e viene addestrata a riconoscere l'attacco all'interno di questi stretti margini temporali.
 - **Data Augmentation (Adversarial)**:
-  - Iniezione di artefatti di separazione (Pre-echo, low-pass brickwall).
-  - Pitch-shifting e Time-stretching casuale (+/- 10%).
-  - Iniezione di rumore rosa e ambientale a bassi livelli.
+  - Sovrapposizione di rumore procedurale e bleed (chitarre/bassi da YouTube) sui loop completi.
+  - Pitch-shifting e Time-stretching casuale per variare i BPM dei pattern.
 - **Loss Function**: Cross-Entropy pesata (per gestire dataset sbilanciati).
 
 ## 3. VINCOLI IMPLEMENTATIVI

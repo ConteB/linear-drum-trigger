@@ -1,7 +1,7 @@
 # 002_LIN_DrumTrigger
 
 [![OpenPhase](https://img.shields.io/badge/Division-Linear-blue)](https://openphase.it)
-[![Standard](https://img.shields.io/badge/Standard-AOC--2026-green)](04_INTELLIGENCE/PROJECT_MASTER_INDEX.md)
+[![Standard](https://img.shields.io/badge/Standard-AOC--2026-green)](PROJECT_MASTER_INDEX.md)
 
 **Linear AI Drum Trigger** è un plugin VST3/AU di nuova generazione per il triggering sample-accurate di batterie, basato su un classificatore neurale 1D-CNN progettato per operare su stem complessi separati via AI.
 

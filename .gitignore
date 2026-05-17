@@ -1,0 +1,45 @@
+# Python & ML
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+.ipynb_checkpoints
+data/
+*.h5
+*.pth
+*.onnx
+
+# C++ / JUCE / IDEs
+Builds/
+JuceLibraryCode/
+.vscode/
+.idea/
+*.user
+*.suo
+*.sln
+*.vcxproj
+*.filters
+*.build
+bin/
+obj/
+out/
+CMakeCache.txt
+CMakeFiles/
+CMakeSettings.json
+cmake-build-*/
+
+# OS & Logs
+.DS_Store
+Thumbs.db
+*.log
+04_INTELLIGENCE/environment_freeze.log
+
+# Dataset (Mandato 50GB)
+*.wav
+*.mp3
+*.aif
+*.zip
+*.tar.gz

@@ -1,0 +1,26 @@
+# [LINEAR DIVISION] Drum-Trigger Git Shield
+# Prevent corruption by excluding heavy binaries and local envs
+
+# Environments
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# Data & Assets (Heavy)
+data/
+lib/soundfonts/
+*.wav
+*.sf2
+*.midi
+*.zip
+*.tar.bz2
+
+# IDE & OS
+.DS_Store
+.vscode/
+.idea/
+
+# Logs & Temp
+*.log
+data/temp/

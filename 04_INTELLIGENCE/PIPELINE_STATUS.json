@@ -1,0 +1,8 @@
+{
+  "project_id": "drum-trigger-fresh",
+  "pipeline_status": "INITIALIZED",
+  "last_audit": "2026-05-18",
+  "erm_score": 0.0,
+  "active_gates": ["L1"],
+  "compliance_check": "PENDING"
+}

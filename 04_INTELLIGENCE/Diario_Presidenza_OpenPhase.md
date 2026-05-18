@@ -54,3 +54,17 @@
 - Repository Fresh: Sincronizzato.
 - Dossier Tecnico: Versione LIN-DT-DOC-002 (Aggiornato con Modularità e Multi-Scale).
 - Prossimo Goal: Generazione Dataset Sintetico Sporco (Augmentation v2).
+
+## SESSIONE: 2026-05-18 - VISUAL IDENTITY & CLOUD STRATEGY
+**Partecipanti:** CEO, Gianpiero Scappelloni (AI)
+
+### DECISIONI UI/UX
+- **ESTETICA:** "Industrial Rack" (Grigio Antracite, Alluminio Zigrinato).
+- **DISPLAY:** "Laboratory Precision" (Vector-style). Linee ultra-sottili tipo oscilloscopio, tipografia Sans-Serif tecnica (DIN/Helvetica). 
+- **EVOLUZIONE:** Scartato esplicitamente il look "90s Digital" per evitare percezioni di obsolescenza. Il plugin deve sembrare uno strumento di misura scientifico senza tempo.
+- **METERING:** LED Ladders verticali per una risposta tecnica e reattiva.
+
+### INFRASTRUTTURA
+- **CLOUD:** Scelta dello Scenario BETA (Hybrid). Azure Blob Storage + DVC per il versionamento industriale dei dati.
+- **BUDGET:** Allocazione strategica dei €500 con focus su mantenimento Cloud e Marketing.
+

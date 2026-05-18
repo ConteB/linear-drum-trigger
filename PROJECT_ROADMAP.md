@@ -7,10 +7,13 @@
 - **M-B1: Lean Market Validation** - Definizione Brand OP-NeuroTrigger e Strategia €500. [COMPLETATO]
 - **M-B2: Build-in-Public Launch** - Prima demo pubblica del motore di trascrizione piatti.
 - **M-B3: Release V1.0** - Lancio "Davide vs Golia" sul mercato Pro-Audio.
-
 ## ⚙️ MILESTONE TECNICHE (SINGLE-DEVELOPER FOCUS)
-### FASE 1: DATA DOCTRINE (Current)
-- **M-T1.1: Augmentation Engine v2 (Lean)** - Sviluppo moduli:
+### FASE 0: INFRASTRUCTURE ZERO (Current)
+- **M-T0.1: Azure Cloud Setup** - Configurazione Blob Storage e permessi IAM.
+- **M-T0.2: DVC Integration** - Inizializzazione del Data Version Control con puntamento a Azure.
+
+### FASE 1: DATA DOCTRINE
+...
     - **Physical Bleeding:** Crosstalk & Phase correlation.
     - **AI-Artifact Simulator:** Spectral masking & Chirping (Target 98%).
     - **Negative Sampling:** Iniezione di "Disturbatori" (Chitarre, Voci, Synth) per robustezza.

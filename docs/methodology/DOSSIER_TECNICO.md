@@ -50,17 +50,23 @@ Il dataset di addestramento deve simulare l'entropia del segnale reale su tre li
 6.  **CH 6:** Ride (Bell, Bow, Edge)
 7.  **CH 7:** Crash A
 8.  **CH 8:** Crash B / Cymbals (China, Splash, etc.)
-
 ## 5. UI/UX Mandates (The CEO Doctrine)
 
-### 5.1 The "Time-Domain Isolation" Rule
-È severamente vietato implementare strumenti di editing temporale grafico (Piano Roll, Timeline, Griglia) all'interno del plugin. Drum-Trigger è un trasduttore, non un sequencer. Qualsiasi correzione temporale di precisione deve avvenire nella DAW dell'utente tramite MIDI Export.
+### 5.1 Visual Identity: "The Industrial Rack"
+L'estetica deve comunicare "Peso" e "Autorità", posizionando OP-NeuroTrigger come uno strumento hardware di fascia alta (Studio-Grade).
+- **Chassis:** Texture procedurale in alluminio anodizzato "Industrial Slate" (Grigio Antracite).
+- **Control Paradigms:** Manopole in metallo zigrinato per parametri temporali. Zero interazione grafica sulla timeline (Mandato 5.2).
+- **Metering:** Barre a LED verticali (LED Ladders) per monitoraggio livelli e confidenza del trigger.
 
-### 5.2 Control Paradigms
-- **Frequency Domain (Modern/Graphical):** È permessa l'interazione grafica per parametri legati allo spettro (es. Intelligent Spectral Filters, Attention Masks). L'utente può visualizzare l'energia e "disegnare" filtri per guidare l'attenzione dell'IA.
-- **Time Domain (Analog/Parametric):** Tutti i parametri legati al tempo devono essere controllati esclusivamente tramite manopole, switch o slider. Niente interazione diretta sull'asse temporale.
+### 5.2 The Laboratory Precision Display
+Il cuore informativo è un display ad alta risoluzione incassato in vetro fumé:
+- **Grafica Vettoriale:** Visualizzazione dei transienti tramite linee sottili e ultra-definite, emulando la precisione di un oscilloscopio da laboratorio (Vector-style).
+- **Tipografia Technical-Sans:** Utilizzo di font puliti e senza tempo (Stile DIN/Helvetica) per una leggibilità matematica. Zero decorazioni, zero pixel-art.
+- **Cromia:** Bianco Ghiaccio o Verde Fosforo su fondo Nero Assoluto.
+- **Focus:** Lo schermo non deve "decorare", ma fornire un readout tecnico di precisione sulla Neural Attention e sul timing dei colpi.
 
 ### 5.3 Audio-Inspired Naming (Human Interface)
+...
 L'interfaccia deve parlare il linguaggio dell'audio engineer:
 - **Sensitivity:** Soglia di probabilità per l'attivazione (AI Threshold).
 - **Bleed Rejection:** Filtraggio basato sulla confidenza per eliminare i rientri.
@@ -90,8 +96,17 @@ L'interfaccia deve parlare il linguaggio dell'audio engineer:
 ...
 
 ## 8. Guerrilla Rendering Pipeline (Zero-Cost Infrastructure)
-Per massimizzare la varietà senza costi di licenza VST, la pipeline di generazione dati utilizza:
-- **Engine:** `Sfizz` (headless) per il rendering di formati SFZ ad alta fedeltà.
-- **Kits:** SM Drums (Ludwig/Vintage) e DrumGizmo (Multi-mic/Bleeding) per simulare l'acustica di studio reale.
-- **Automation:** Scripting Python per il rendering asincrono dei batch, con iniezione di artefatti e strumenti negativi (Slakh2100) in tempo reale.
-- **Augmentation:** Pitch-shifting algoritmico e EQ randomizzato applicati post-rendering per espandere il dataset base di un fattore 10x.
+...
+
+## 9. Data Infrastructure & Cloud Governance
+Per garantire la scalabilità e la tracciabilità "Industrial Grade", il progetto adotta:
+
+### 9.1 Hybrid Cloud Data Lake
+- **Azure Blob Storage:** Utilizzato come storage persistente per i dataset massivi (Bronze/Silver/Gold).
+- **DVC (Data Version Control):** Gestisce il puntamento ai dati dal repository Git, garantendo che ogni commit del codice sia legato a una specifica versione del dataset.
+
+### 9.2 Medallion Flow
+Il processamento del dato è strutturato a livelli incrementali di qualità:
+- **Raw Layer:** Immutabile.
+- **Transformation Layer:** Gestito dal `augmentation_engine.py`.
+- **Inference Layer:** Tensori pronti per la TCN, ottimizzati per il training su M5 o GPU Cloud.

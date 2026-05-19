@@ -42,10 +42,13 @@ Per la gestione professionale su Azure Blob Storage, i dati seguiranno questo fl
 - **Database Metadata:** `SQLite` (locale, versionato nel repo).
 
 ## 5. ALLOCAZIONE BUDGET STRATEGICO (€500)
-- **Cloud Infrastructure (Azure):** €50 (Stima 12 mesi).
+- **Cloud Infrastructure (Azure):** €0 (Coperto da $200 di credito iniziale per i primi 10-12 mesi).
 - **GPU Cloud (Emergency/Final):** €100.
 - **Sviluppo & IP Protection:** €50 (Domini, certificati).
-- **Marketing & Launch:** €300.
+- **Marketing & Launch:** €350.
+
+### 5.1 Nota sulla Sostenibilità
+L'utilizzo dei crediti Azure permette di estendere la fase di R&D a costo monetario zero, preservando il capitale liquido per la fase di Go-To-Market.
 
 ---
 *Approvato: CEO & Strategic Advisor*

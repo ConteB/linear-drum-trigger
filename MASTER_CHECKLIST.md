@@ -1,3 +1,17 @@
+---
+id: LIN-DT-CHKLST-001
+title: Master Checklist — OP-NEUROTRIGGER Launchpad
+type: checklist
+status: ACTIVE
+phase: cross-cutting
+domain: Product / Design Lock
+version: 1.0.0
+updated: 2026-05-20
+tags: [checklist, design-lock, governance, gates]
+related: [LIN-DT-MSCHED-001, LIN-DT-SCHED-001, LIN-DT-DOSSIER-001]
+supersedes: []
+---
+
 # 🎯 MASTER CHECKLIST (OP-NEUROTRIGGER LAUNCHPAD)
 **Data ultima revisione:** 20 Maggio 2026
 **Status:** PRE-PRODUZIONE DOCUMENTALE — DESIGN ALIGNMENT

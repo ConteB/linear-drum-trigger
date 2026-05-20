@@ -1,3 +1,17 @@
+---
+id: LIN-DT-DOSSIER-001
+title: Dossier Tecnico — Drum-Trigger End-to-End Transcription
+type: spec
+status: ACTIVE
+phase: cross-cutting
+domain: Architecture / DSP / Neural
+version: 1.0.0
+updated: 2026-05-20
+tags: [dossier, architecture, dsp, neural, augmentation]
+related: [LIN-DT-CHKLST-001, LIN-DT-SPEC-F0T2a, LIN-DT-SPEC-F0T4a]
+supersedes: []
+---
+
 # DOSSIER TECNICO: DRUM-TRIGGER (END-TO-END TRANSCRIPTION)
 **ID:** LIN-DT-DOC-002
 **Status:** ACTIVE - STRATEGIC PIVOT

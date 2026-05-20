@@ -1,3 +1,17 @@
+---
+id: LIN-DT-GOV-001
+title: Protocollo LINEAR-SHIELD — Governance Sub-Agenti
+type: governance
+status: ACTIVE
+phase: cross-cutting
+domain: Operations / Sub-Agent Governance
+version: 1.1.0
+updated: 2026-05-20
+tags: [sub-agents, governance, linear-shield, testing]
+related: [LIN-DT-TESTDOC-001, LIN-DT-CHKLST-001]
+supersedes: []
+---
+
 # 🛡️ PROTOCOLLO LINEAR-SHIELD: GOVERNANCE SUB-AGENTI
 **Versione:** 1.1 (OP-X Standard) — §6 AI-Adversarial QA aggiunto 2026-05-20
 **Status:** MANDATORIO / ACTIVE LOCK

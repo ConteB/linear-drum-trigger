@@ -361,4 +361,38 @@ soddisfatto (`TASK_BLUEPRINT.md` rigenerato per lo startup F0, ERM-005 = 5.5, ri
 ### STATO
 - Fase F0 — chiusi **F0-T1, F0-T1b, F0-T1c, F0-T2a, F0-T4a, F0-T9a**. Sbloccati **F0-T9b**
   (harness test-first, via sub-agente) e **F0-T4b** (gated anche da F0-T3). F0-T2b/c/d
-  ora gated da F0-T9b. Prossimo checkpoint **CP-1 / 2026-05-30**. Sessione conclusa.
+  ora gated da F0-T9b.
+
+## SESSIONE: 2026-05-20 - DOCUMENTATION LINKING LAYER (STRP-001)
+
+### DECISIONI
+- **Domanda del CEO:** rendere i documenti effettivamente legati tra loro, perché la
+  consultazione dell'agente sia più rapida ed efficiente — esiste uno standard/software?
+- **F0-T10 — Documentation Linking Layer:** Executive Briefing STRP-001 approvato
+  (Decision Lock 6/6). Prodotto `04_INTELLIGENCE/DOC_LINKING_STANDARD.md` — l'OP-NEUROTRIGGER
+  Doc Standard: frontmatter YAML, ancore HTML nominali stabili, cross-ref con link
+  relativi standard, `docs/INDEX.md` generato, validatore `lychee`.
+- **Wikilink `[[ ]]` scartati:** GitHub non li renderizza nei file `.md` e processarli
+  richiederebbe un build step — contro il principio "zero build". Si usano link relativi
+  Markdown standard, cliccabili su GitHub.
+- **Tooling predisposto:** `tools/gen_docs_index.py` (generatore dell'INDEX, zero
+  dipendenze), `lychee.toml` (config del validatore). Frontmatter retrofittato su 9
+  documenti del hot-set; INDEX generato.
+
+### NOTE DEL CEO
+- "Mi piacerebbe rendere più potente il sistema di documentazione, renderli agìti tra
+  loro con qualche tag, per rendere a te la consultazione più rapida." → ha innescato F0-T10.
+
+### KRM (Principio della Cicatrice)
+- "Il consumatore della documentazione di questo progetto è un agente AI, non un umano
+  con un wiki. Una vista a grafo colorata non velocizza l'agente: lo velocizza la
+  *convenzione sotto* — sintassi greppabile, ID stabili, un indice da leggere per primo.
+  Si ottimizza quella, non l'estetica del grafo."
+- "Il riferimento per numero di sezione (§6.1) è un debito latente: funziona finché
+  nessuno rinumera. La cura non è ri-controllare a mano — è l'ancora simbolica stabile
+  più un validatore meccanico."
+
+### STATO
+- Fase F0 — chiusi **F0-T1, F0-T1b, F0-T1c, F0-T2a, F0-T4a, F0-T9a**; **F0-T10 in corso**
+  (standard locked, retrofit incrementale). Sbloccati **F0-T9b** e **F0-T4b**. Prossimo
+  checkpoint **CP-1 / 2026-05-30**. Sessione conclusa.

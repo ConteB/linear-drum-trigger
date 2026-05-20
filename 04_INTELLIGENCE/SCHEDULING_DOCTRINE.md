@@ -1,11 +1,15 @@
 ---
-ID: LIN-DT-SCHED-001
-Status: ACTIVE — DECISION LOCK
-Domain: Operations / Project Governance
-Progetto: drum-trigger-fresh (OP-260518-FRESH)
-Versione: 1.1.0
-Data: 2026-05-20
-Riferimenti: SOP-010, ERM-005, ERM-007, MASTER_SCHEDULING.md, MASTER_CHECKLIST.md §6–§7
+id: LIN-DT-SCHED-001
+title: Scheduling Doctrine — OP-NEUROTRIGGER
+type: doctrine
+status: ACTIVE
+phase: cross-cutting
+domain: Operations / Project Governance
+version: 1.1.0
+updated: 2026-05-20
+tags: [scheduling, doctrine, governance, arbitrage]
+related: [LIN-DT-MSCHED-001, LIN-DT-CHKLST-001]
+supersedes: []
 ---
 
 # SCHEDULING DOCTRINE — OP-NEUROTRIGGER

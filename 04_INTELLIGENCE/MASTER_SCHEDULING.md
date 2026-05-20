@@ -1,11 +1,15 @@
 ---
-ID: LIN-DT-MSCHED-001
-Status: ACTIVE — EXECUTION MASTER
-Domain: Operations / Project Execution
-Progetto: drum-trigger-fresh (OP-260518-FRESH)
-Versione: 1.0.0
-Data: 2026-05-20
-Riferimenti: SCHEDULING_DOCTRINE.md, MASTER_CHECKLIST.md, SESSION_HANDOVER_REVISION.md
+id: LIN-DT-MSCHED-001
+title: Master Scheduling — OP-NEUROTRIGGER
+type: scheduling
+status: ACTIVE
+phase: cross-cutting
+domain: Operations / Project Execution
+version: 1.0.0
+updated: 2026-05-20
+tags: [scheduling, execution, governance, tracking]
+related: [LIN-DT-SCHED-001, LIN-DT-CHKLST-001, LIN-DT-DOCSTD-001]
+supersedes: []
 ---
 
 # MASTER SCHEDULING — OP-NEUROTRIGGER
@@ -298,6 +302,18 @@ stop compute + push HDD · **$10** → chiudi tutto.
   gate mutation configurato. Ocular Proof — log.
 - ⛔ F0-T9a. **Gate di F0-T2b/c/d** (test-first).
 
+**F0-T10 · Documentation Linking Layer (STRP-001) · `[C]`/`[F]` `P2`**
+- *Origine:* osservazione del CEO (2026-05-20) — i riferimenti tra documenti erano in
+  prosa e per numero di sezione, fragili: è la radice delle ~30 incoerenze dell'audit.
+- *Azioni:* STRP-001; definire l'OP-NEUROTRIGGER Doc Standard (frontmatter YAML + ancore
+  HTML stabili + link relativi + INDEX generato + validatore `lychee`); rollout incrementale.
+- *DoD:* standard archiviato; INDEX generato; `lychee` in gate; hot-set conforme.
+- ◐ **IN CORSO (2026-05-20):** Decision Lock CEO. FATTO: `04_INTELLIGENCE/DOC_LINKING_STANDARD.md`,
+  `tools/gen_docs_index.py`, `lychee.toml`, frontmatter su 9 documenti, `docs/INDEX.md`
+  generato. APERTO: ancore stabili + conversione riferimenti prosa→link sul hot-set;
+  retrofit dei 20 documenti restanti (opportunistico); `lychee` warn→blocking.
+- *Non blocca il percorso del credito (L2/L3) — `P2`, parallelizzabile.*
+
 > **Gate d'uscita F0:** L2 superato (~05-28) **e** L3 superato (~06-02).
 
 ### Fase F1 — Provisioning Azure · gate d'ingresso: L2 superato
@@ -372,6 +388,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T8 | Model Artifact — spec export | F0 | ☐ | — | — |
 | F0-T9a | Testing & QA Doctrine (STRP-001) | F0 | ☑ | — | — |
 | F0-T9b | F0 Pipeline Test Harness | F0 | ☐ | F0-T9a | — |
+| F0-T10 | Documentation Linking Layer (STRP-001) | F0 | ◐ | — | — |
 | F1-T1 | Setup Azure | F1 | ⊘ | F0-T3 | — |
 | F1-T2 | dvc remote Azure | F1 | ⊘ | F1-T1 | — |
 | F2-T1 | Render Gold 1.5 TB | F2 | ⊘ | F1-T1 | — |
@@ -383,9 +400,10 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F5 | Release v1.0 EA | F5 | ⏸ | F4 | — |
 
 **Stato globale:** Fase attiva **F0** · ☑ F0-T1 · ☑ F0-T1b · ☑ F0-T1c · ☑ F0-T2a · ☑ F0-T4a
-· ☑ F0-T9a (Decision Lock 2026-05-20) · Sbloccati: **F0-T9b** (harness test-first, via
-sub-agente — ora gate di F0-T2b/c/d) e **F0-T4b** (mini-prototipo TCN, gated anche da
-F0-T3) · Scenario credito: *da fissare a CP-1* · Prossimo checkpoint: **CP-1 / 2026-05-30**.
+· ☑ F0-T9a · ◐ F0-T10 (Doc Linking Layer — standard locked, retrofit in corso)
+(Decision Lock 2026-05-20) · Sbloccati: **F0-T9b** (harness test-first, via sub-agente —
+ora gate di F0-T2b/c/d) e **F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) ·
+Scenario credito: *da fissare a CP-1* · Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---
 *Decision Lock 2026-05-20. Aggiornare il Tracking Board (§7) e lo scenario credito (§4)

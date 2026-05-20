@@ -1,3 +1,17 @@
+---
+id: LIN-DT-TESTDOC-001
+title: Testing & QA Doctrine — OP-NEUROTRIGGER
+type: doctrine
+status: LOCKED
+phase: cross-cutting
+domain: Quality Assurance
+version: 1.0.0
+updated: 2026-05-20
+tags: [testing, qa, doctrine, governance, mutation-testing]
+related: [LIN-DT-GOV-001, LIN-DT-SPEC-F0T2a, LIN-DT-CHKLST-001]
+supersedes: []
+---
+
 # 🧪 TESTING & QA DOCTRINE — OP-NEUROTRIGGER
 **ID:** LIN-DT-TESTDOC-001 · **Status:** LOCKED — Decision Lock 2026-05-20 (Executive Briefing STRP-001)
 **Versione:** 1.0 · **Status operativo:** MANDATORIO / ACTIVE LOCK

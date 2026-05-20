@@ -1,3 +1,17 @@
+---
+id: LIN-DT-SPEC-F0T2a
+title: F0-T2a — Spec Recipe + Contratto Dati
+type: spec
+status: LOCKED
+phase: F0
+domain: Data Engineering
+version: 1.0.0
+updated: 2026-05-20
+tags: [recipe, data-contract, webdataset, F0-T2a]
+related: [LIN-DT-SPEC-F0T4a, LIN-DT-DOSSIER-001, LIN-DT-CHKLST-001]
+supersedes: []
+---
+
 # 📐 F0-T2a — SPEC DI DETTAGLIO: RECIPE + CONTRATTO DATI
 **ID:** LIN-DT-SPEC-F0T2a · **Status:** LOCKED — Decision Lock 2026-05-20 (Executive Briefing F0-T2a)
 **Riferimenti:** `DOSSIER_TECNICO.md` §3.2/§3.5/§4/§9.2 · `MASTER_CHECKLIST.md` §1–§2 ·

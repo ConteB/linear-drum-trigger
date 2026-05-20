@@ -163,7 +163,8 @@ La pipeline di generazione dati automatizza la trasformazione di MIDI e librerie
 Per garantire la scalabilità e la tracciabilità "Industrial Grade", il progetto adotta:
 
 ### 9.1 Hybrid Cloud Data Lake
-- **Azure Blob Storage (LRS):** Utilizzato come storage persistente per i dataset massivi, sfruttando budget cloud iniziale per R&D a costo zero.
+- **Azure Blob Storage (LRS):** Utilizzato come **storage e compute scratch durante il Data Sprint**, coperto dal credito Azure di $200. Azure non è l'archivio permanente: alla fine del credito, i Gold tensor vengono spostati su HDD fisico (2 TB, ~€100–150). Piano di spesa per task: `STRATEGIC_INFRASTRUCTURE_AUDIT.md` §7.1.
+- **HDD Fisico (2 TB):** Archivio permanente post-sprint. Contiene: Gold tensor FP16 (~1.5 TB) + recipes DNA-Trace. Silver e Bronze non vengono archiviati (Silver è rigenerabile; Bronze è re-scaricabile).
 - **DVC (Data Version Control):** Gestisce il puntamento ai dati dal repository Git, garantendo che ogni commit del codice sia legato a una specifica versione del dataset.
 
 ### 9.2 Medallion Flow (Livelli del Dato)

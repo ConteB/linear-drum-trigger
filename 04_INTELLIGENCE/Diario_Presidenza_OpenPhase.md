@@ -114,6 +114,26 @@
 - Prossimo Step: Implementazione dei componenti UI custom in JUCE/C++ seguendo i materiali PBR definiti.
 
 ---
+## SESSIONE: 2026-05-20 - STRATEGIA INFRASTRUTTURA & DATASET
+**Partecipanti:** CEO, Gianpiero Scappelloni (AI)
+
+### DECISIONI STRATEGICHE (DECISION LOCK)
+- **Azure = compute totale:** il credito Azure di $200 copre l'intero ciclo produttivo — rendering Sfizz/DrumGizmo, augmentation Python, Demucs AI-Isolation, training TCN finale su A100 Spot. Nessun servizio GPU aggiuntivo a pagamento (voce RunPod eliminata dal budget).
+- **Dataset Gold = 1.5 TB waveform FP16 44.1 kHz:** chiarito che i Gold tensor contengono waveform grezzo a piena risoluzione (non feature vectors), coerentemente con l'architettura Strided-Context TCN che ingeste audio a 44.1 kHz senza downsampling.
+- **Gestione credito budget-driven:** la pianificazione è basata sul budget disponibile ($200), non su scadenze temporali. Il CEO monitora il saldo e segnala le soglie ($100 → valutazione, $40 → stop compute + push HDD, $10 → chiudi tutto).
+- **HDD fisico 2 TB aggiunto al budget:** archivio permanente post-Azure per Gold tensor + recipes. €120 allocati. Silver rigenerabile, Bronze re-scaricabile.
+
+### BUDGET RIVISTO (€500)
+- Azure: €0 (credito $200 copre tutto il compute)
+- HDD 2 TB: €120
+- Sviluppo/IP: €50
+- Marketing: €330
+
+### STATO DOCUMENTALE
+- Aggiornati `STRATEGIC_INFRASTRUCTURE_AUDIT.md` (§7, §7.1, §7.2), `MASTER_CHECKLIST.md` (§1, §2), `DOSSIER_TECNICO.md` (§9.1).
+- Voce RunPod rimossa da tutti i documenti.
+
+---
 ## SESSIONE: 2026-05-20 - AUDIT DI COERENZA DOCUMENTALE
 **Partecipanti:** CEO, Gianpiero Scappelloni (AI)
 
@@ -138,3 +158,80 @@ Prima dell'avvio dello sviluppo reale, è stato condotto un audit completo della
 - Creato `04_INTELLIGENCE/AUDIT_RESOLUTION_LOG.md` (registro completo delle risoluzioni).
 - Aggiornati 15 documenti. La documentazione è ora a **Gate L1 (Design Lock)**.
 - Prossimo Step: completamento documentale residuo → avvio sviluppo (Gate L2).
+
+---
+## SESSIONE: 2026-05-20 - DOTTRINA DI SCHEDULING
+
+**Partecipanti:** CEO, Gianpiero Scappelloni (AI)
+
+### CONTESTO
+La `MASTER_CHECKLIST.md` registrava solo *decisioni* (Design Lock), senza un asse di
+esecuzione. Il CEO ha richiesto un layer di scheduling fondato su **criteri concorrenti**
+— deliberatamente in conflitto tra loro — per rendere l'ordine delle azioni un arbitraggio
+esplicito anziché una priorità affermata a sensazione.
+
+### DECISIONI STRATEGICHE (DECISION LOCK)
+- **Niente tempo di calendario:** lo scheduling resta coerente col mandato budget-driven
+  (§2). Usa tre primitive — Fase, Priorità, Relazione bloccante — non date.
+- **Sei criteri concorrenti formalizzati:** Critical Path (A), Conservazione del Credito
+  (B), Fail-Fast/Risk Retirement (C), Lead Time Esterno (D), Reversibilità (E),
+  Local-First (F). Arbitraggio tramite regola a tre lenti (Eleggibilità → Costo
+  d'Inazione → Guardiano del Credito).
+- **Modello a 4 fasi gated (F0–F3):** ogni fase si apre su una condizione, non su una
+  data. F0 Fondazione Locale (€0) → F1 Provisioning Azure → F2 Burn Compute → F3
+  Consolidamento.
+- **Correzione dell'handover:** la priorità "Setup Azure = PRIORITÀ 1" è superata. L2 e
+  L3 sono mini-batch locali su Mac M5/MPS: non richiedono Azure. Provisionare il cloud
+  prima della validazione locale di L3 brucerebbe il credito $200 senza aver ritirato il
+  rischio architetturale #1 (la TCN Strided-Context apprende?). Setup Azure spostato a F1.
+
+### STATO DOCUMENTALE
+- Creato `04_INTELLIGENCE/SCHEDULING_DOCTRINE.md` (LIN-DT-SCHED-001).
+- Aggiunta §7 "Execution Scheduling Layer" alla `MASTER_CHECKLIST.md`.
+- Task NON-STANDARD a rischio basso: auto-allineamento e segnalazione in Intelligence
+  (ERM-005 §4).
+- Prossimo Step: avvio Fase F0 — il primo task per criterio D (Lead Time) è F0-T1
+  (richieste di conferma licenza).
+
+---
+## SESSIONE: 2026-05-20 - MASTER SCHEDULING & VINCOLO CREDITO
+
+**Partecipanti:** CEO, Gianpiero Scappelloni (AI)
+
+### CONTESTO
+Il CEO ha introdotto il **primo vincolo temporale duro** del progetto: il credito Azure
+di $200 scade 30 giorni dopo la creazione account, già avvenuta — finestra
+**2026-05-20 → 2026-06-19**. Mandato esplicito: i $200 devono essere consumati
+**perché usati, non perché scaduti**. Modello mentale del CEO: budget = €500 + $200; tra
+30 giorni i $200 spariscono — vanno fatti sparire utilmente.
+
+### DECISIONI STRATEGICHE (DECISION LOCK)
+- **Criterio G — Credit Expiry Mandate:** introdotto nella `SCHEDULING_DOCTRINE.md`
+  (v1.1.0). Il credito non speso è perso → obbligo di consumo utile al 100%.
+- **Lente 3 ridefinita:** lo spend si differenzia per rischio. Il **render** del dataset
+  (asset permanente, valido per qualsiasi architettura) è gated solo da **L2**; il
+  **training** A100 è gated da **L3**. Se L3 slitta, il credito si consuma comunque sul
+  render — mai lasciarlo scadere.
+- **Checkpoint del credito D10/D20/D25** (2026-05-30 / 06-09 / 06-14): bivi decisionali
+  per fissare lo scenario (🟢 GREEN / 🟡 YELLOW / 🔴 RED) e desplegare il credito residuo.
+- **Orizzonte v1.0:** prima versione pubblicabile e vendibile (build Early-Access $99)
+  fissata a **~5 mesi → target ~2026-10-20**, da raffinare dopo il Gate L4.
+
+### NOTE DEL CEO
+- "I $200 devono sparire perché siamo stati noi a usarli, non perché scadono."
+- "L'ideale è creazione dataset massivo + allenamento completo per la prima versione
+  vendibile del modello. Ma potremo avere più scenari."
+
+### STATO DOCUMENTALE
+- `SCHEDULING_DOCTRINE.md` aggiornata a v1.1.0 (criterio G, checkpoint, gate L2/L3).
+- Creato `04_INTELLIGENCE/MASTER_SCHEDULING.md` (LIN-DT-MSCHED-001): documento operativo
+  unico — timeline back-pianificata F0–F5, checkpoint, scala di deployment del credito,
+  task detate, Tracking Board.
+- `MASTER_CHECKLIST.md` §7 reso mappa di fase, con rinvio al Master Scheduling.
+- Prossimo Step: avvio **Fase F0**. Primo checkpoint **CP-1 il 2026-05-30**.
+
+### CHIUSURA SESSIONE (SOP-013)
+- **Infrastruttura di governance:** installato un sistema di scheduling-awareness in Claude Code — `@import` del Master Scheduling in `CLAUDE.md`, hook `SessionStart` con monitor del credito, comando `/scheduling`. Da qui in avanti ogni sessione si apre già consapevole dello stato di scheduling e del countdown al muro del 2026-06-19.
+- **Stato finale:** documentazione a Gate L1; Fase esecutiva F0 attiva, nessun task ancora avviato.
+- **KRM (Principio della Cicatrice):** la lezione tattica della sessione — "L2 e L3 sono validabili in locale a €0; provisionare Azure prima di L3 brucerebbe il credito su un'architettura non provata" — è formalizzata in `MASTER_SCHEDULING.md` §6.1 e nella Lente 3 della doctrine.
+- Mandato per il successore rigenerato in `SESSION_HANDOVER_REVISION.md`. Sessione certificata e conclusa.

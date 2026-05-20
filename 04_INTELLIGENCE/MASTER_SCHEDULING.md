@@ -331,6 +331,23 @@ stop compute + push HDD · **$10** → chiudi tutto.
   `AUDIT_RESOLUTION_LOG`, diario, doc-fossili) lasciati intatti — documentano
   correttamente l'esclusione.
 
+**F0-T12 · Audit OpenPhase — internalizzazione standard ingegneristici · `[C]`/`[D]` `P2`**
+- *Origine:* direttiva del CEO (2026-05-20) — dopo il decoupling da OP-X, l'archivio
+  OpenPhase resta una fonte di conoscenza procedurale utile. Va auditato e le parti
+  necessarie vanno **trasportate** nel progetto, senza ricollegarsi all'archivio.
+- *Azioni:* audit dei documenti di stile + 7 famiglie OP-X (ASM/DCM/ERM/GVM/KRM/PIP/TOP);
+  distinguere ciò che è universale e utile da ciò che è specifico di PySimpa o in
+  conflitto con le scelte di NeuroTrigger (NeuroTrigger vincola); internalizzare le parti
+  utili adattate al dominio; report di selezione.
+- *DoD:* standard internalizzato e archiviato nel repo (zero dipendenze dall'archivio);
+  report di cosa preso/scartato e perché.
+- ☑ **FATTO (2026-05-20):** prodotto `04_INTELLIGENCE/ENGINEERING_STANDARDS.md`
+  (LIN-DT-ENGSTD-001) — 5 aree internalizzate (determinismo & bit-exactness, codifica
+  C++/Python, gestione dipendenze, validazione statistica del modello, robustezza
+  d'esecuzione) + conventional commits. Scartati: harness OP-X, `PIPELINE_STATUS.json`,
+  SHIELD, regole operative obsolete, standard PySimpa-specifici. Registro selezione nel
+  §8 del documento.
+
 > **Gate d'uscita F0:** L2 superato (~05-28) **e** L3 superato (~06-02).
 
 ### Fase F1 — Provisioning Azure · gate d'ingresso: L2 superato
@@ -408,6 +425,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T9b | F0 Pipeline Test Harness | F0 | ☐ | F0-T9a | — |
 | F0-T10 | Documentation Linking Layer (STRP-001) | F0 | ☑ | — | — |
 | F0-T11 | Content-rot audit (roster F0-T1b) | F0 | ☑ | — | — |
+| F0-T12 | Audit OpenPhase — standard ingegneristici | F0 | ☑ | — | — |
 | F1-T1 | Setup Azure | F1 | ⊘ | F0-T3 | — |
 | F1-T2 | dvc remote Azure | F1 | ⊘ | F1-T1 | — |
 | F2-T1 | Render Gold 1.5 TB | F2 | ⊘ | F1-T1 | — |
@@ -421,6 +439,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 **Stato globale:** Fase attiva **F0** · ☑ F0-T1 · ☑ F0-T1b · ☑ F0-T1c · ☑ F0-T2a · ☑ F0-T4a
 · ☑ F0-T9a · ☑ F0-T10 (Doc Linking Layer — standard + INDEX + gate lychee blocking, chiuso)
 · ☑ F0-T11 (content-rot audit — SM Drums riallineato al roster F0-T1b)
+· ☑ F0-T12 (audit OpenPhase — `ENGINEERING_STANDARDS.md` internalizzato)
 (Decision Lock 2026-05-20) · Sbloccati: **F0-T9b** (harness test-first, via sub-agente —
 ora gate di F0-T2b/c/d) e **F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) ·
 Scenario credito: *da fissare a CP-1* · Prossimo checkpoint: **CP-1 / 2026-05-30**.

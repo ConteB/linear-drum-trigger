@@ -17,7 +17,7 @@ L'output non è un timestamp, ma una **Matrice di Trascrizione Differenziabile (
 - **Kick, Snare, Hi-Hat (con stati di apertura CC), Tom H/M, Floor Tom, Ride, Crash A, Crash B/Varie.**
 - Ogni evento include: Probabilità di Onset, Micro-timing (Sample-Accurate) e Velocity (0-127).
 
-Il bus **Hi-Hat** espone, oltre alla matrice di onset, una **testa di regressione continua dedicata** che stima il grado di apertura del piatto frame-by-frame (0.0 = chiuso, 1.0 = aperto). Questo valore continuo è mappato su un MIDI CC (default `CC#4`, Foot Controller) per pilotare l'apertura dell'Hi-Hat nelle drum-VST. La testa di apertura è addestrata con loss di regressione (L1/MSE), distinta dalla Asymmetric Focal Loss usata per gli onset (§6.2).
+Il bus **Hi-Hat** espone, oltre alla matrice di onset, una **testa di regressione continua dedicata** che stima il grado di apertura del piatto frame-by-frame (0.0 = chiuso, 1.0 = aperto). Questo valore continuo è instradato in uscita secondo uno schema **selezionabile dall'utente**: **(a) CC continuo** (default — `CC#4`, Foot Controller; massima espressione, compatibile con Superior Drummer/EZdrummer) oppure **(b) Note discrete** (il valore continuo è quantizzato sulle articolazioni GM closed/pedal/open per la compatibilità universale). Il modello resta invariato in entrambi i casi: il toggle agisce solo sullo stadio MIDI d'uscita. La testa di apertura è addestrata con loss di regressione (L1/MSE), distinta dalla Asymmetric Focal Loss usata per gli onset (§6.2).
 
 ### 2.3 Gestione Integrale dei Piatti (Cymbals Mastery)
 A differenza dei trigger tradizionali, Drum-Trigger tratta i piatti come cittadini di serie A. L'architettura utilizza finestre di **Look-ahead (Non-causale)** per separare l'attacco della bacchetta dal "sustain wash" e identificare i colpi di piatto anche in presenza di saturazione spettrale.
@@ -63,6 +63,8 @@ Per simulare le azioni degli ingegneri del suono, l'audio pulito subisce alteraz
 Ogni tensore Gold finale (in pasto all'IA) possiede una "Carta d'Identità" per debug deterministico:
 - **DNA Barcode (Nome File):** Esempio `GMD042-V0T1-DGZ-R2-C1H0-SLK102.npy` traccia: Fonte MIDI (`GMD042`), Alterazione MIDI (`V0T1`), Motore Audio (`DGZ`), Ambiente Acustico/Riverbero (`R2`), Alterazione Audio (`C1H0`) e Disturbatore (`SLK102`).
 - **Libretto Sanitario (JSON):** Ogni batch o tensore critico è accompagnato da un file JSON con l'esatto quantitativo di time shift applicato, la percentuale di riverbero Wet/Dry o il ratio di mix, consentendo reverse-engineering totale.
+
+> Lo schema formale dei campi (barcode e JSON) è bloccato in F0-T2a; ogni campione WebDataset porta il proprio `{key}.dna.json` (vedi §9.2).
 
 ## 4. Matrice di Output MIDI (Standard OpenPhase)
 1.  **CH 1:** Kick
@@ -134,7 +136,7 @@ Per arginare le incompatibilità di routing interno di alcune DAW, l'architettur
 - **Output:** Matrice differenziabile a 8 Canali (Piano Roll).
 
 **Vantaggi per il Prodotto:** 
-- **Compatibilità Totale:** RTNeural supporta nativamente le operazioni di `stride`, azzerando la necessità di scrivere codice inferenziale custom complesso in C++.
+- **Compatibilità Totale:** RTNeural supporta nativamente le operazioni di `stride`, azzerando la necessità di scrivere codice inferenziale custom complesso in C++. ⚠️ **Asserzione da verificare empiricamente** (Decision Lock STRP-001 D4): l'esportabilità della topologia in RTNeural è certificata dal **Gate L3** (F0-T4b — export JSON + smoke-test C++ + match numerico), *prima* di qualsiasi spesa di compute.
 - **Zero Allocation:** Piena aderenza al mandato Linear. L'assenza di resampling garantisce buffer statici in memoria.
 
 ### 6.2 Neural Training Strategy (Loss & Ground Truth)
@@ -171,7 +173,7 @@ Per garantire la scalabilità e la tracciabilità "Industrial Grade", il progett
 Il processamento del dato è strutturato a livelli incrementali di qualità gestiti via DVC:
 - **BRONZE LAYER (Raw):** Immutabile. Dataset originali (GMD, SM Drums, DrumGizmo, Noise/Stems per Negative Sampling).
 - **SILVER LAYER (Clean & Target):** Generato tramite `midi_renderer.py` e `ugt_generator.py`. Contiene i Clean Stems estratti dai MIDI e i Tensori MIDI Target (Piano Roll a 8 canali).
-- **GOLD LAYER (Augmented Tensors):** Gestito dall' `augmentation_engine.py`. Fonde i Clean Stems con Phase Chirping, Bleed e "Stealth Mix Mode" (Negative Sampling). Tensori quantizzati a 16-bit pronti per l'Inference Layer (TCN).
+- **GOLD LAYER (Augmented Tensors):** Gestito dall' `augmentation_engine.py`. Fonde i Clean Stems con Phase Chirping, Bleed e "Stealth Mix Mode" (Negative Sampling). Tensori quantizzati a 16-bit pronti per l'Inference Layer (TCN). **Impacchettamento:** WebDataset in tar-shard da ~1 GB (terna `audio.f16` / `target.f16` / `dna.json` per campione), tracciati da DVC come shard — non come micro-file (Decision Lock STRP-001 2026-05-20, D1).
 
 ## 10. Validation & Holdout Protocol (The "Iron Gate")
 Per scongiurare l'overfitting e garantire la vendibilità Studio-Grade, il dataset e il testing seguono la Dottrina del Triplo Set:

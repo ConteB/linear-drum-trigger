@@ -80,5 +80,5 @@ numerica sul bleed acustico reale. I claim pubblici a L4 vanno formulati di cons
 - [x] `DOSSIER_TECNICO` §10.3 e `MASTER_CHECKLIST` §1 aggiornati.
 
 ---
-*F0-T1c — OpenPhase SOP-004. Fonti: magenta.withgoogle.com/datasets/e-gmd,
+*F0-T1c — survey Holdout / Validation Protocol. Fonti: magenta.withgoogle.com/datasets/e-gmd,
 musicinformatics.gatech.edu, arxiv.org/abs/2111.11737 (2026-05-20).*

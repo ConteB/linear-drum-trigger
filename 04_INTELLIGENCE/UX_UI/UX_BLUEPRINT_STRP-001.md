@@ -13,8 +13,8 @@ supersedes: []
 ---
 
 # TASK BLUEPRINT: STRP-001 (UX Incertezza AI & UI Layout)
-**Score ERM-005:** BASSO RISCHIO (Nessuna dipendenza esterna, implementazione puramente grafica in JUCE/C++).
-**Checklist TOP-002:** Approvazione architettura visiva (Split-Focus).
+**Rischio:** BASSO (Nessuna dipendenza esterna, implementazione puramente grafica in JUCE/C++).
+**Checklist:** Approvazione architettura visiva (Split-Focus).
 
 ## 1. Analisi Competitor & Pattern (Fase 1-2)
 - **Standard Industry:** Strumenti complessi (FabFilter Pro-MB, iZotope) usano pattern "Master-Detail" (o Split-Focus). Una vista globale per il routing/status e una vista dettagliata (Microscopio) per l'editing del singolo nodo.

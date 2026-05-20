@@ -46,7 +46,7 @@ diverso. La dottrina li arbitra.
 | :-- | :-- | :-- |
 | **A** | **Critical Path to Gate** — priorità a ciò che sblocca L2→L3→L4. | "Avvia subito la pipeline pesante." |
 | **B** | **Qualità del Consumo** — non spendere credito su lavoro non validato. | "Spendi solo su lavoro provato." |
-| **C** | **Fail-Fast / Risk Retirement** (ERM-007) — ritira presto il rischio #1 (la TCN apprende?). | "Prototipa l'architettura il prima possibile, in locale." |
+| **C** | **Fail-Fast / Risk Retirement** — ritira presto il rischio #1 (la TCN apprende?). | "Prototipa l'architettura il prima possibile, in locale." |
 | **D** | **Lead Time Esterno** — le conferme di licenza dipendono da terzi. | "Avvia subito ciò che non controlli." |
 | **E** | **Reversibilità** — impegni irreversibili (acquisto HDD €120). | "Rimanda l'irreversibile all'ultimo momento responsabile." |
 | **F** | **Local-First / Zero-Cost** — massimizza il lavoro fattibile su Mac M5 a €0. | "Esaurisci il locale prima del cloud." |

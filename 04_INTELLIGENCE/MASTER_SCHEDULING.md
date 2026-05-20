@@ -348,6 +348,22 @@ stop compute + push HDD · **$10** → chiudi tutto.
   SHIELD, regole operative obsolete, standard PySimpa-specifici. Registro selezione nel
   §8 del documento.
 
+**F0-T13 · De-referenziazione OP-X — chiusura del decoupling · `[F]` `P2`**
+- *Origine:* l'audit F0-T12 ha rilevato che alcuni documenti vivi contenevano ancora
+  riferimenti *dangling* a sigle OP-X (SOP-010, ERM-005/007, TOP-002, SOP-004/017) —
+  residui non funzionali dopo il decoupling dall'archivio.
+- *Azioni:* sostituire i riferimenti OP-X dangling nei documenti vivi con i puntatori
+  interni equivalenti o rimuoverli; lasciare intatti i record storici (registri, diario,
+  doc-fossili archiviati) che documentano correttamente lo stato passato.
+- *DoD:* zero riferimenti OP-X dangling in documenti vivi; `CLAUDE.md`/`GEMINI.md` non
+  impongono più il bootstrap sull'archivio.
+- ☑ **FATTO (2026-05-20):** 9 file ripuliti — `CLAUDE.md` e `GEMINI.md` (rimosso il
+  bootstrap mandatorio sull'archivio, sostituito con avvio interno: `docs/INDEX.md` +
+  `MASTER_SCHEDULING` + `ENGINEERING_STANDARDS`); `SCHEDULING_DOCTRINE`,
+  `TECHNICAL_COMPETITOR_AUDIT`, `UX_BLUEPRINT_STRP-001`, footer di
+  `F0-T1`/`F0-T1b`/`F0-T1c`/`DATA_PROVENANCE_LOG`. `TASK_BLUEPRINT.md` (ARCHIVED) e i
+  record storici lasciati intatti come fossili. Decoupling chiuso.
+
 > **Gate d'uscita F0:** L2 superato (~05-28) **e** L3 superato (~06-02).
 
 ### Fase F1 — Provisioning Azure · gate d'ingresso: L2 superato
@@ -426,6 +442,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T10 | Documentation Linking Layer (STRP-001) | F0 | ☑ | — | — |
 | F0-T11 | Content-rot audit (roster F0-T1b) | F0 | ☑ | — | — |
 | F0-T12 | Audit OpenPhase — standard ingegneristici | F0 | ☑ | — | — |
+| F0-T13 | De-referenziazione OP-X (chiusura decoupling) | F0 | ☑ | — | — |
 | F1-T1 | Setup Azure | F1 | ⊘ | F0-T3 | — |
 | F1-T2 | dvc remote Azure | F1 | ⊘ | F1-T1 | — |
 | F2-T1 | Render Gold 1.5 TB | F2 | ⊘ | F1-T1 | — |
@@ -440,6 +457,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 · ☑ F0-T9a · ☑ F0-T10 (Doc Linking Layer — standard + INDEX + gate lychee blocking, chiuso)
 · ☑ F0-T11 (content-rot audit — SM Drums riallineato al roster F0-T1b)
 · ☑ F0-T12 (audit OpenPhase — `ENGINEERING_STANDARDS.md` internalizzato)
+· ☑ F0-T13 (de-referenziazione OP-X — decoupling dall'archivio chiuso)
 (Decision Lock 2026-05-20) · Sbloccati: **F0-T9b** (harness test-first, via sub-agente —
 ora gate di F0-T2b/c/d) e **F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) ·
 Scenario credito: *da fissare a CP-1* · Prossimo checkpoint: **CP-1 / 2026-05-30**.

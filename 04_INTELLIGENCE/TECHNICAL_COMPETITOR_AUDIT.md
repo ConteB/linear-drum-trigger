@@ -59,4 +59,4 @@ Il nostro "fossato" (Moat) non è il codice del plugin, ma:
 2. **Inference Latency vs. Accuracy:** Ottimizzare una TCN multi-scala per girare sotto i 100ms in C++ senza allocazioni è una sfida ingegneristica che richiede mesi di R&D (che noi abbiamo già strutturato).
 
 ---
-*Documento validato secondo SOP-017.*
+*Documento di analisi competitiva — STRP-001 Fase 1.*

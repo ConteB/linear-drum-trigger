@@ -85,4 +85,4 @@ Il modello neurale TCN finale è considerato un "Lavoro Derivato Trasformativo".
 - **2026-05-20 (F0-T1b chiuso):** Decision Lock CEO sul roster — 11 voci approvate e inserite in §2.A: AUDIO-02 esploso nei 6 kit DrumGizmo CC-BY-4.0; aggiunti AUDIO-12…15 (Karoryfer, CC0). SM Drums (AUDIO-01) escluso. F0-T1 e F0-T1b chiusi. Aperto **F0-T1c** — ridisegno del Validation Protocol / Holdout reale (conseguenza dell'esclusione di ENST-Drums e MedleyDB).
 
 ---
-*Documento generato sotto protocollo OpenPhase (SOP-004).*
+*Documento di provenienza dati — compliance OP-NEUROTRIGGER.*

@@ -134,4 +134,4 @@ ridotto a Franken-Mix + Ocular Proof) va considerato realistico, non eccezionale
 - [ ] Decisione Piano B (se necessaria) registrata al checkpoint.
 
 ---
-*F0-T1 working artifact — OpenPhase SOP-004.*
+*F0-T1 — artefatto di lavoro, verifica licenze.*

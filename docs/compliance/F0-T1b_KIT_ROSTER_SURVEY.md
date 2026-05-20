@@ -85,5 +85,5 @@ annotate). Questo è un task a sé, da portare al CEO separatamente.
 - [ ] A valle: aggiornare `DATA_PROVENANCE_LOG.md` §2.A con i kit confermati.
 
 ---
-*F0-T1b — OpenPhase SOP-004. Licenze rilevate da: drumgizmo.org/wiki, sfzinstruments.github.io,
+*F0-T1b — survey roster kit. Licenze rilevate da: drumgizmo.org/wiki, sfzinstruments.github.io,
 shop.karoryfer.com, freepats.zenvoid.org (2026-05-20).*

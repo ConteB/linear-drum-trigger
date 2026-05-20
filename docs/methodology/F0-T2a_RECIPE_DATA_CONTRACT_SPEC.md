@@ -39,7 +39,7 @@ di) campione Gold. Formato proposto: **YAML** (autorabile a mano, diff-friendly,
 | `augmentation.reverb_ir` | str\|null | ID Impulse Response (OpenAIR) o `null` = dry. |
 | `augmentation.mutilation` | map | Parametri clipping/phase/comp/EQ/pitch (livello ≥2). |
 | `augmentation.saboteur` | map\|null | Sorgente + ratio di mix Transient Saboteur (livello 3). |
-| `output.target_frame_rate_hz` | float | **PROVVISORIO** — ratificato a F0-T4a (§3.4). |
+| `output.target_frame_rate_hz` | float | **RATIFICATO** `344.53125` Hz (F0-T4a, §3.4). |
 | `dna_trace.barcode` | str | Generato (non scritto a mano) — vedi §4. |
 
 ### 1.2 Esempio completo
@@ -70,7 +70,7 @@ augmentation:
   mutilation: { clipping: 0.3, phase_flip: [snare_bot], comp_ratio: 8, pitch_semitones: -1 }
   saboteur: { source: SLK102, mix_ratio: 0.4 }
 output:
-  target_frame_rate_hz: 344.53125   # PROVVISORIO — vedi §3.4
+  target_frame_rate_hz: 344.53125   # RATIFICATO F0-T4a — vedi §3.4
 ```
 
 ---
@@ -131,12 +131,13 @@ output:
 - Il data-loader fa reshape `cols 0:24 → [n_frame,8,3]`; `col 24 → [n_frame]`.
 - `onset` segue il **Gaussian Target Smearing** ±3 ms (DOSSIER §6.2): nessuno "spillo".
 
-### 3.4 Frame-rate del target — parametro DEFERRED a F0-T4a
-Il numero di frame dipende dal frame-rate d'uscita, che è una **decisione di topologia**
-(stride totale della TCN) — fissata in `F0-T4a` (Decision Lock D2-bis).
+### 3.4 Frame-rate del target — RATIFICATO a F0-T4a
+Il numero di frame dipende dal frame-rate d'uscita, una **decisione di topologia** (stride
+totale della TCN) — **ratificata da `F0-T4a`** (Decision Lock 2026-05-20,
+`docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md` §2).
 - `n_frame = ceil(duration_s × R_target)` · `R_target` = frame-rate target (Hz).
-- **Valore raccomandato (provvisorio):** `R_target = 44100/128 ≈ 344.53 Hz`
-  (periodo ≈ 2.9 ms — coerente con lo smear ±3 ms; usato per il mini-batch F0-T2e).
+- **Valore RATIFICATO:** `R_target = 44100/128 = 344.53125 Hz` (periodo 2.902 ms —
+  coerente con lo smear ±3 ms; stride totale 128 = 2⁷ dello Strided Encoder Stem F0-T4a).
 - La **sample-accuracy è preservata indipendentemente da `R_target`**: il canale
   microtiming codifica l'offset residuo entro `±(half-frame)` campioni, normalizzato a
   `[-1,1]`. Onset (frame) + microtiming (residuo) ⇒ ricostruzione sample-accurate.
@@ -232,7 +233,7 @@ apertura sono prioritarie per dare densità al segnale di regressione. Il toggle
 Le 5 risoluzioni della Tech Matrix sono state **approvate dal CEO** (Executive Briefing F0-T2a):
 1. ✅ Recipe in **YAML**.
 2. ✅ Target tensor **`flat-25`** in file unico `[n_frame,25]`.
-3. ✅ `R_target` **parametrico** — provvisorio `44100/128 ≈ 344.5 Hz`, ratifica a F0-T4a.
+3. ✅ `R_target` **parametrico** — provvisorio `44100/128 ≈ 344.5 Hz`. ✔ **RATIFICATO da F0-T4a (2026-05-20)** a `344.53125 Hz` — vedi §3.4.
 4. ✅ Velocity storata **normalizzata [0,1]** FP16.
 5. ✅ Articolazioni intra-bus **collassate in v1.0**; classificazione per-articolazione rinviata a v2.0 (Dual-Path Network, DOSSIER §6.3).
 

@@ -1,5 +1,5 @@
 # 🛡️ PROTOCOLLO LINEAR-SHIELD: GOVERNANCE SUB-AGENTI
-**Versione:** 1.0 (OP-X Standard)
+**Versione:** 1.1 (OP-X Standard) — §6 AI-Adversarial QA aggiunto 2026-05-20
 **Status:** MANDATORIO / ACTIVE LOCK
 
 ## 1. FILOSOFIA OPERATIVA
@@ -28,6 +28,23 @@ Il lavoro dei sub-agenti segue questo percorso obbligato:
 
 ## 5. ESCALATION PROTOCOL
 Se un sub-agente non riesce a risolvere un task senza violare i mandati, deve fermarsi e richiedere un'analisi strategica a Gianpiero invece di procedere con "hack" temporanei.
+
+## 6. PATTERN DI DELEGA "AI-ADVERSARIAL QA"
+Pattern di delega formale introdotto dalla `TESTING_DOCTRINE.md` (§4, Layer 4). Serve a
+rimuovere il bias dell'implementatore: i test scritti dallo stesso agente che scrive il
+codice testano solo i percorsi che quell'agente *ha pensato*.
+
+- **Cecità strutturale (innesco speciale).** L'agente QA riceve **solo**: la spec/contratto
+  versionato, l'interfaccia pubblica, la `TESTING_DOCTRINE.md`. **Non riceve mai il codice
+  di implementazione.** È l'unica deroga consentita allo STAGE 2 di ingestione contesto:
+  l'agente QA conosce il *cosa* (spec), non il *come* (sorgente).
+- **Separazione di identità.** Agente-implementatore ≠ agente-QA. Il QA scrive i test
+  *prima* di vedere qualunque sorgente — coerente col mandato test-first.
+- **Mandato:** attaccare il contratto (boundary, ambiguità, contraddizioni, input ostili).
+- **Verification Gate (triage).** Ogni test rosso prodotto dal QA è triagiato in
+  `{bug reale · ambiguità di spec · test non valido}` con nota scritta. Una failure non
+  si chiude senza triage. Le ambiguità di spec rientrano come bug di documentazione.
+- **Doppio frutto:** bug nell'implementazione **e** difetti della spec rilevati a monte.
 
 ---
 *Documento approvato dal CEO e blindato nel sistema di Intelligence.*

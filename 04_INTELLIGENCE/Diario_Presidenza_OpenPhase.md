@@ -297,3 +297,68 @@ soddisfatto (`TASK_BLUEPRINT.md` rigenerato per lo startup F0, ERM-005 = 5.5, ri
   licenza CC li concede in anticipo e per iscritto." Formalizzato in
   `DATA_PROVENANCE_LOG.md` §1.1 e `F0-T1c_HOLDOUT_SURVEY.md` §2bis.
 - Mandato per il successore rigenerato in `SESSION_HANDOVER_REVISION.md`. Sessione conclusa.
+
+## SESSIONE: 2026-05-20 - F0-T4a TOPOLOGIA TCN (STRP-001)
+
+### DECISIONI
+- **F0-T4a — topologia TCN concreta:** Executive Briefing STRP-001 approvato dal CEO
+  (Decision Lock 5/5). Tradotto il Design Lock concettuale "Strided-Context TCN" in una
+  spec implementabile: `docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md`.
+- **`R_target` ratificato:** `44100/128 = 344.53125 Hz` — chiude il parametro lasciato
+  provvisorio da F0-T2a §3.4. Sblocca la quantizzazione definitiva dei `target.f16`.
+- **Topologia a 4 stadi:** Input-Agnostic Projection (8 slot canonici) → Strided Encoder
+  Stem (stride totale 128) → Dilated Causal TCN Trunk (8 blocchi residui, dilatazioni
+  1→128, RF ~1.5 s) → 4 teste (onset/velocity/microtiming/hihat-opening) → layout
+  `flat-25`. Look-ahead ~100 ms realizzato come ritardo d'ingresso = PDC (delay-line
+  Chronos Engine).
+- **Soglia Gate L3 bloccata:** onset F-measure ≥ 0.80 @ ±20 ms + controllo negativo
+  (label shuffate) < 0.10; timing-MAE < 5 ms; HH-opening MAE < 0.15.
+
+### NOTE DEL CEO
+- Approvato l'abbandono del meccanismo "Sentinella/Scalpello + NN-Repeat": l'analisi
+  STRP-001 ha mostrato che l'upsampling non è nativo RTNeural e avrebbe lavorato *contro*
+  lo scopo del Comb-Filter Hack. Si conserva il *principio* (RF grande, basso costo CPU,
+  1 solo grafo), si corregge il *meccanismo*.
+
+### KRM (Principio della Cicatrice)
+- "Un Design Lock concettuale può contenere numeri-fantasma scritti prima che i parametri
+  a valle fossero fissati (l'`~11 kHz` della Sentinella, pre-`R_target`). La fase di
+  traduzione in spec implementabile non è notarile: è il punto in cui le incoerenze
+  emergono e vanno sanate con un Decision Lock esplicito, non assorbite in silenzio."
+
+### STATO
+- Fase F0 — chiusi **F0-T1, F0-T1b, F0-T1c, F0-T2a, F0-T4a**. Sbloccato **F0-T4b**
+  (mini-prototipo TCN + round-trip RTNeural → Gate L3), gated anche da F0-T3. Restano
+  aperti **F0-T2b/c/d** (codice pipeline, via sub-agenti).
+
+## SESSIONE: 2026-05-20 - TESTING & QA DOCTRINE (STRP-001)
+
+### DECISIONI
+- **Buco rilevato dal CEO:** il progetto non aveva alcuna strategia di test seria oltre
+  `audit_dsp_rigor.py` (gate statico) e l'Ocular Proof. Omissione grave per un prodotto
+  che vende precisione, e per un modello di sviluppo dove il codice è delegato a sub-agenti.
+- **F0-T9a — Testing & QA Doctrine:** Executive Briefing STRP-001 approvato (Decision Lock
+  5/5). Prodotto `04_INTELLIGENCE/TESTING_DOCTRINE.md` — tassonomia a 4 layer (unit,
+  property-based, fuzz, AI-Adversarial QA) + Layer-S statico.
+- **Mutation testing come gate anti-pigrizia:** il numero di test e la line-coverage sono
+  rifiutati come metrica (vanity, gameable). Il gate di DoD è il **mutation kill-rate**
+  (critici ≥ 90 %, core ≥ 85 %): un test pigro sopravvive ai mutanti → fallisce, meccanicamente.
+- **Protocollo AI-Adversarial QA:** un sub-agente indipendente, **cieco sull'implementazione**
+  (riceve solo la spec), attacca il contratto. Formalizzato in `SUB_AGENT_GOVERNANCE.md` §6.
+- **Nuovi task F0-T9a/b:** l'harness F0-T9b è **gate test-first di F0-T2b/c/d** — i test
+  si scrivono sulla spec come oracolo, prima del codice.
+
+### NOTE DEL CEO
+- "Testing serio: oltre gli unit test non-lazy, anche random, fuzzy e AI-testing — un
+  sub-agente senza bias che prova tipi di test diversi." → ha innescato l'intera dottrina.
+
+### KRM (Principio della Cicatrice)
+- "Una pipeline di documenti può essere internamente coerente e completa sul *prodotto*
+  e avere comunque un buco sul *processo*. Il testing non era 'da trattare': era
+  semplicemente assente da ogni checklist. Le omissioni di processo non si trovano
+  rileggendo i documenti — si trovano solo chiedendosi *cosa non è scritto da nessuna parte*."
+
+### STATO
+- Fase F0 — chiusi **F0-T1, F0-T1b, F0-T1c, F0-T2a, F0-T4a, F0-T9a**. Sbloccati **F0-T9b**
+  (harness test-first, via sub-agente) e **F0-T4b** (gated anche da F0-T3). F0-T2b/c/d
+  ora gated da F0-T9b. Prossimo checkpoint **CP-1 / 2026-05-30**. Sessione conclusa.

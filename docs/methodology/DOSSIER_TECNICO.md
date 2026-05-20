@@ -27,6 +27,11 @@ Per garantire l'integrazione con DAW professionali e altri VST pesanti (es. Supe
 - **Buffer Target:** Ottimizzato per 512 / 1024 sample.
 - **PDC (Plugin Delay Compensation):** Target ~100ms (Latenza algoritmica necessaria per l'analisi non-causale).
 - **Inference Engine (plugin):** Processamento a blocchi (Block-processing) **CPU-only** tramite RTNeural, deterministico e Zero-Allocation. Nessuna dipendenza da GPU/Metal/DirectML a runtime: l'inferenza in tempo reale su acceleratori grafici introdurrebbe jitter e latenza non deterministici, incompatibili col thread audio. L'accelerazione hardware (MPS/CUDA) è impiegata **esclusivamente in fase di training** (§6.2).
+- **Presidio di test del core DSP:** i vincoli sopra (Zero-Allocation, determinismo,
+  sicurezza numerica, PDC) non sono dichiarativi — sono verificati. Layer statico
+  (`audit_dsp_rigor.py`) + test dinamici (override `new`/`malloc` su `processBlock`,
+  null-test di determinismo, fuzz NaN/denormali, `pluginval` ≥ 8). Dottrina completa:
+  `04_INTELLIGENCE/TESTING_DOCTRINE.md` §5 (coarse, dettaglio a F4).
 
 ## 3. Dottrina di Generazione Dati (Augmentation v2 & Lineage)
 Il dataset di addestramento deve simulare l'entropia del segnale reale, tracciando rigorosamente la provenienza di ogni trasformazione. **Il volume target è 1.5 Terabyte (450 ore di audio).**
@@ -128,10 +133,26 @@ Per arginare le incompatibilità di routing interno di alcune DAW, l'architettur
 **Motivazione:** Architettura "Industrial Grade" monolitica che garantisce la precisione della Multi-Risoluzione senza rompere la compatibilità con il framework di inferenza `RTNeural` in C++.
 
 **Topologia & Matematica (Il Trucco Linear):**
-- **Single Stream (44.1 kHz):** Nessun downsampling o resampling reale, per evitare filtri anti-aliasing pesanti e latenza. Il tensore in ingresso rimane a piena risoluzione.
-- **Blocco "Sentinella" (Macro-Context):** I primi strati della rete utilizzano convoluzioni con parametro `stride=4`. La rete "salta" 3 campioni su 4, simulando un'analisi a ~11 kHz. Questo garantisce un Receptive Field enorme abbattendo il carico CPU del 75%.
-- **Blocco "Scalpello" (Micro-Timing):** I layer finali tornano a `stride=1` (massima risoluzione) e ricevono l'output della Sentinella tramite un'operazione di `Nearest Neighbor Repeat` (ripetizione bruta del tensore, computazionalmente nulla in C++).
-- **Latenza:** Look-Ahead asimmetrico (~100ms) Non-Causale per la reiezione al bleed perfetta.
+> 📐 **Spec implementabile bloccata:** la topologia concreta (numero di layer, kernel,
+> dilatazioni, receptive field, teste d'uscita) è definita in
+> `docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md` — Decision Lock F0-T4a (STRP-001),
+> 2026-05-20. I bullet seguenti ne descrivono il *principio*; per i numeri vale la spec.
+- **Single Stream (44.1 kHz):** Nessun resampling reale a runtime, per evitare filtri
+  anti-aliasing pesanti. L'audio raw entra a piena risoluzione.
+- **Strided Encoder Stem (waveform → frame-grid):** una cascata di convoluzioni *strided*
+  porta l'audio da 44.1 kHz alla griglia del target `R_target = 44100/128 ≈ 344.53 Hz`
+  (stride totale 128). È qui che vive il principio "Strided-Context": il carico CPU è
+  abbattuto subito, prima del trunk.
+- **Dilated Causal TCN Trunk (Macro-Context):** un singolo trunk di blocchi residui con
+  convoluzioni *dilatate causali* fornisce un receptive field grande (~1.5 s di contesto
+  passato) a basso costo. Le dilatazioni — non lo stride + upsampling — danno il contesto:
+  un solo grafo, 100% RTNeural-nativo. *(Il blocco "Sentinella/Scalpello" a 2 rate con
+  `Nearest-Neighbor Repeat` è stato abbandonato a F0-T4a: introduceva un'operazione di
+  upsampling non-nativa RTNeural, contraria allo scopo stesso del Comb-Filter Hack — vedi
+  `F0-T4a_TCN_TOPOLOGY_SPEC.md` §1.)*
+- **Latenza / Look-Ahead:** il trunk è causale; il look-ahead non-causale (~100 ms) è
+  realizzato come **ritardo d'ingresso pari al PDC** (la rete gira ~100 ms indietro →
+  vede il "futuro"). Coincide con la delay-line del Chronos Engine.
 - **Risoluzione Dati:** Training in mixed-precision (master FP32 + FP16). I tensori del dataset Gold sono storati in **FP16** per ridurre l'impronta su disco/banda. L'inferenza C++ in RTNeural opera in **`float32`** (RTNeural è template-based su tipo floating-point): nessuna quantizzazione intera (INT8/INT16) è prevista a runtime.
 - **Output:** Matrice differenziabile a 8 Canali (Piano Roll).
 

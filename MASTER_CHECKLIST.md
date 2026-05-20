@@ -20,7 +20,7 @@ Questa è la checklist operativa globale che copre tutti i domini necessari al l
 > 6. **Decision, Blueprint Lock & Docs Update:** A valle dell'approvazione, aggiornare sistematicamente la `MASTER_CHECKLIST.md` e i documenti tecnici/UI correlati (es. `DOSSIER_TECNICO.md`).
 
 ## 1. 🧠 AI & NEURAL ENGINEERING (PyTorch Core)
-- [x] **Topologia:** Strided-Context TCN (Comb-Filter Hack per compatibilità RTNeural).
+- [x] **Topologia:** Strided-Context TCN (compatibilità RTNeural). **Spec concreta LOCKED (2026-05-20, F0-T4a)** — Input-Agnostic Projection → Strided Encoder Stem (stride totale 128) → Dilated Causal TCN Trunk → 4 teste (onset/velocity/microtiming/hihat-opening). `R_target` ratificato a `44100/128 ≈ 344.53 Hz`; look-ahead ~100 ms realizzato come ritardo d'ingresso = PDC. Dettaglio: `docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md`.
 - [x] **Parametri:** Training mixed-precision (master FP32 + FP16), tensori del dataset storati in FP16, inferenza C++ in `float32` (RTNeural). Non-Causale, Look-ahead ~100ms. Output: matrice 8 target (piano-roll differenziabile).
 - [x] **Training Strategy:** Asymmetric Focal Loss (Zero Falsi Positivi) + Gaussian Target Smearing (±3ms).
 - [x] **Training Logistics:** Prototipazione locale su Mac M5 (MPS) per mini-batch. Addestramento "Gold" Finale su **Azure A100 Spot** per processare 1.5TB — incluso nel credito Azure $200 (non sono necessari servizi GPU cloud aggiuntivi a pagamento).
@@ -39,6 +39,13 @@ Questa è la checklist operativa globale che copre tutti i domini necessari al l
 ## 3. 🖥️ SOFTWARE ENGINEERING & DSP (C++ / JUCE)
 - [x] **Framework Inference:** RTNeural (Scelto per via del trucco Strided-Context compatibile).
 - [x] **Vincoli:** Zero-Allocation nel thread audio, latenza compensata (PDC).
+- [x] **[STRP-001] Testing & QA (trasversale):** Risolto (Executive Briefing 2026-05-20).
+  Adottata `04_INTELLIGENCE/TESTING_DOCTRINE.md` — tassonomia a 4 layer (unit, property-based,
+  fuzz, AI-Adversarial QA) + Layer-S statico; **mutation testing** come gate anti-pigrizia
+  (kill-rate critici ≥ 90 %, core ≥ 85 %; il conteggio test e la coverage non sono target).
+  Core DSP C++/GUI: `pluginval` ≥ 8 + test Zero-Allocation dinamico (coarse, dettaglio F4).
+  Pattern AI-Adversarial QA in `SUB_AGENT_GOVERNANCE.md` §6. Nuovi task F0-T9a/b
+  (`MASTER_SCHEDULING.md`); l'harness F0-T9b è **gate test-first di F0-T2b/c/d**.
 - [x] **Formati di Distribuzione:** v1.0 = **VST3 + AU**. AAX (Pro Tools) rinviato post-v1.0: richiede firma PACE, incompatibile con la filosofia anti-DRM (`DOSSIER_TECNICO.md` §11).
 - [x] **[STRP-001] PDC & Latenza:** Risolto. Scenario A (Honest Approach). La latenza di 100ms è fissa (setLatencySamples). UX gestita trasformando il vincolo in una feature: Badge UI "MODE: MIXING GRADE ONLY". Nessuna modalità live imperfetta.
 - [x] **[STRP-001] Logica di Routing MIDI:** Risolto. Implementata architettura **Chronos Engine** (Midi Delay-Line circolare). Il plugin garantisce un output **Sample-Accurate** compensando i 100ms di PDC. Il timing è deterministico e privo di jitter indipendentemente dalla dimensione del buffer DAW.
@@ -61,7 +68,7 @@ Questa è la checklist operativa globale che copre tutti i domini necessari al l
 Livelli di maturità progressivi citati in `SPRINT_BOARD.md`, `PIPELINE_STATUS.json` e nei documenti marketing. Definizione unica e vincolante:
 - **L1 — Design Lock:** Documentazione organica completa e internamente coerente. *(Gate corrente — pre-produzione documentale.)*
 - **L2 — Pipeline Dati Validata:** `batch_generator` produce un mini-dataset Gold corretto end-to-end (demo batch superato).
-- **L3 — Prototipo Neurale:** TCN addestrata su mini-batch (Mac M5 / MPS) con metriche di onset significativamente non casuali.
+- **L3 — Prototipo Neurale:** TCN addestrata su mini-batch (Mac M5 / MPS) con metriche di onset significativamente non casuali **e** topologia esportabile in RTNeural (round-trip JSON + smoke-test C++ + match numerico — ridefinizione STRP-001 D4). Soglia numerica delle metriche di onset bloccata in `docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md` §7 (F-measure ≥ 0.80 @ ±20 ms, controllo negativo < 0.10).
 - **L4 — Studio-Grade Validation:** Il modello "Gold" supera l'Holdout reale (ENST-Drums) e l'Ocular Proof. È il gate che **sblocca i claim di accuratezza pubblici** e la modalità "Full Mix".
 
 ## 7. 🗓️ EXECUTION SCHEDULING LAYER

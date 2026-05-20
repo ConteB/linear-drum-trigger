@@ -188,18 +188,18 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Azioni:* riscrivere `MidiRenderer` per pilotare **Sfizz** via CLI (librerie SFZ
   multi-layer) al posto di FluidSynth.
 - *DoD:* render di prova SFZ multi-layer corretto (log).
-- ⛔ F0-T2a.
+- ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)*.
 
 **F0-T2c · Integrazione DrumGizmo · `[F]` `P1`**
 - *Azioni:* integrare **DrumGizmo** via CLI; kit multi-microfono per il bleed reale.
 - *DoD:* render multi-mic con bleed presente e verificabile (log).
-- ⛔ F0-T2a.
+- ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)*.
 
 **F0-T2d · Writer Gold-tensor + DNA-Trace · `[F]` `P1`**
 - *Azioni:* implementare il writer del Gold tensor (FP16 multi-mic + matrice 8-target)
   e il generatore DNA-Trace, secondo la spec bloccata in F0-T2a.
 - *DoD:* un tensore Gold scritto su disco; integrità FP16 e DNA-Trace verificate.
-- ⛔ F0-T2a.
+- ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)*.
 
 **F0-T2e · Mini-batch end-to-end · `[F]` `P1`**
 - *Azioni:* orchestrare la pipeline (recipe → Sfizz/DrumGizmo → writer Gold tensor) e
@@ -233,6 +233,12 @@ stop compute + push HDD · **$10** → chiudi tutto.
   `MASTER_CHECKLIST` §1, `DOSSIER_TECNICO` §6.2). Fissare la **soglia numerica** che
   qualifica le metriche di onset come "significativamente non casuali".
 - *DoD:* Executive Briefing approvato dal CEO; spec e soglia archiviate.
+- ☑ **FATTO (2026-05-20):** Decision Lock CEO (Executive Briefing F0-T4a, STRP-001).
+  `R_target` ratificato a `44100/128 ≈ 344.53 Hz`; topologia 4-stadi (Input-Agnostic
+  Projection → Strided Encoder Stem → Dilated Causal TCN Trunk → 4 teste); look-ahead
+  ~100 ms come ritardo d'ingresso = PDC; abbandonato il Sentinella/Scalpello + NN-Repeat
+  (incoerenza RTNeural sanata); soglia L3 fissata. Spec in
+  `docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md`. Sblocca F0-T4b (con F0-T3).
 - → F0-T4b.
 
 **F0-T4b · Mini-prototipo + round-trip RTNeural · `[C]` `P1`**
@@ -270,6 +276,27 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Azioni:* dettagliare la spec dell'exporter (riuso del round-trip di F0-T4b) e dello
   schema di cifratura/header. Implementazione in **F4**.
 - *DoD:* spec archiviata. Decisione di design, eseguibile in parallelo.
+
+**F0-T9a · Testing & QA Doctrine (STRP-001) · `[C]` `P1`**
+- *Origine:* osservazione del CEO (2026-05-20) — il progetto non aveva alcuna strategia
+  di test oltre `audit_dsp_rigor.py` (gate statico) e l'Ocular Proof. Buco grave: il
+  codice è delegato a sub-agenti e il render Azure è spesa irreversibile.
+- *Azioni:* applicare STRP-001; fissare la dottrina di test trasversale — tassonomia a
+  4 layer, mutation testing come gate anti-pigrizia, protocollo AI-Adversarial QA.
+- *DoD:* Executive Briefing approvato dal CEO; dottrina archiviata.
+- ☑ **FATTO (2026-05-20):** Decision Lock CEO. Dottrina in `04_INTELLIGENCE/TESTING_DOCTRINE.md`;
+  pattern AI-Adversarial QA in `SUB_AGENT_GOVERNANCE.md` §6. Mutation kill-rate gate
+  (critici ≥ 90 %, core ≥ 85 %); `pluginval` ≥ 8 per il C++ (coarse, dettaglio F4).
+- → F0-T9b.
+
+**F0-T9b · F0 Pipeline Test Harness · `[F]` `P1`**
+- *Azioni:* scaffolding `pytest`/`Hypothesis`/`mutmut`/`coverage`/`Atheris`; scrivere i
+  test-oracolo derivati dal contratto F0-T2a (writer Gold-tensor, DNA-Trace, parser
+  recipe, standardizzazione mic) **prima** del codice di pipeline. Dettaglio in
+  `TESTING_DOCTRINE.md` §6.
+- *DoD:* harness eseguibile; test-oracolo del contratto F0-T2a verdi sullo scheletro;
+  gate mutation configurato. Ocular Proof — log.
+- ⛔ F0-T9a. **Gate di F0-T2b/c/d** (test-first).
 
 > **Gate d'uscita F0:** L2 superato (~05-28) **e** L3 superato (~06-02).
 
@@ -332,17 +359,19 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T1b | Survey & selezione kit (roster) | F0 | ☑ | — | — |
 | F0-T1c | Ridisegno Validation Protocol/Holdout | F0 | ☑ | — | — |
 | F0-T2a | Recipe + contratto dati (STRP-001) | F0 | ☑ | — | — |
-| F0-T2b | Render engine Sfizz | F0 | ☐ | F0-T2a | — |
-| F0-T2c | Integrazione DrumGizmo | F0 | ☐ | F0-T2a | — |
-| F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☐ | F0-T2a | — |
+| F0-T2b | Render engine Sfizz | F0 | ☐ | F0-T2a, F0-T9b | — |
+| F0-T2c | Integrazione DrumGizmo | F0 | ☐ | F0-T2a, F0-T9b | — |
+| F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☐ | F0-T2a, F0-T9b | — |
 | F0-T2e | Mini-batch end-to-end | F0 | ☐ | F0-T2b, F0-T2c, F0-T2d | — |
 | F0-T3 | Validazione Gate L2 | F0 | ☐ | F0-T2e | **L2** |
-| F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☐ | — | — |
+| F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☐ | F0-T3, F0-T4a | **L3** |
 | F0-T5 | DVC + struttura Medallion | F0 | ☐ | — | — |
 | F0-T6 | audit_dsp_rigor.py (predisp.) | F0 | ☐ | — | — |
 | F0-T7 | Classi JUCE (opz.) | F0 | ☐ | — | — |
 | F0-T8 | Model Artifact — spec export | F0 | ☐ | — | — |
+| F0-T9a | Testing & QA Doctrine (STRP-001) | F0 | ☑ | — | — |
+| F0-T9b | F0 Pipeline Test Harness | F0 | ☐ | F0-T9a | — |
 | F1-T1 | Setup Azure | F1 | ⊘ | F0-T3 | — |
 | F1-T2 | dvc remote Azure | F1 | ⊘ | F1-T1 | — |
 | F2-T1 | Render Gold 1.5 TB | F2 | ⊘ | F1-T1 | — |
@@ -353,10 +382,10 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F4 | Sviluppo Plugin | F4 | ⏸ | L4 | — |
 | F5 | Release v1.0 EA | F5 | ⏸ | F4 | — |
 
-**Stato globale:** Fase attiva **F0** · ☑ F0-T1 · ☑ F0-T1b · ☑ F0-T1c · ☑ F0-T2a
-(Decision Lock 2026-05-20) · Sbloccati: **F0-T2b/c/d** (codice, via sub-agenti) e **F0-T4a**
-(STRP-001 topologia TCN) · Scenario credito: *da fissare a CP-1* ·
-Prossimo checkpoint: **CP-1 / 2026-05-30**.
+**Stato globale:** Fase attiva **F0** · ☑ F0-T1 · ☑ F0-T1b · ☑ F0-T1c · ☑ F0-T2a · ☑ F0-T4a
+· ☑ F0-T9a (Decision Lock 2026-05-20) · Sbloccati: **F0-T9b** (harness test-first, via
+sub-agente — ora gate di F0-T2b/c/d) e **F0-T4b** (mini-prototipo TCN, gated anche da
+F0-T3) · Scenario credito: *da fissare a CP-1* · Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---
 *Decision Lock 2026-05-20. Aggiornare il Tracking Board (§7) e lo scenario credito (§4)

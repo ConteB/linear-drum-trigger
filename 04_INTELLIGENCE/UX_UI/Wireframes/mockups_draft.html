@@ -1,0 +1,195 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #111;
+    --bg-plugin: #1a1a1a;
+    --bg-panel: #0a0a0a;
+    --bg-matrix: #161616;
+    --border-color: #333;
+    --border-light: #444;
+    --text-dim: #777;
+    --text-bright: #ccc;
+    --accent: #fff;
+    --ghost: rgba(255, 255, 255, 0.4);
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-bright);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h2 {
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 14px;
+    margin-top: 40px;
+    margin-bottom: 10px;
+    width: 900px;
+  }
+  .plugin-window {
+    background-color: var(--bg-plugin);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    width: 900px;
+    display: flex;
+    flex-direction: column; /* RACK STYLE FORCED */
+    overflow: hidden;
+  }
+
+  /* --- OSCILLOSCOPE BASE --- */
+  .oscilloscope {
+    background-color: var(--bg-panel);
+    position: relative;
+    width: 100%;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .waveform-line { position: absolute; top: 50%; width: 100%; border-top: 1px solid #2a2a2a; }
+  .threshold-line { position: absolute; top: 30%; width: 100%; border-top: 1px solid #444; }
+  .marker-solid { position: absolute; height: 100%; width: 2px; background-color: var(--accent); box-shadow: 0 0 5px rgba(255,255,255,0.3); }
+  .marker-ghost { position: absolute; height: 100%; width: 1px; background-color: var(--ghost); }
+
+  /* --- MATRIX BASE --- */
+  .matrix {
+    background-color: var(--bg-matrix);
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    width: 100%;
+  }
+  .channel-strip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .ch-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .meter-bg { background-color: #000; position: relative; overflow: hidden; }
+  .meter-led { background-color: #aaa; position: absolute; bottom: 0; left: 0; width: 100%; }
+  .trigger-led { width: 8px; height: 8px; border-radius: 50%; background-color: #222; margin-top: 8px; }
+  .trigger-on { background-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
+
+  /* =========================================
+     VARIANTE 1: CLASSIC BALANCE (60/40 Split)
+     ========================================= */
+  .v1 { height: 550px; }
+  .v1 .oscilloscope { height: 330px; }
+  .v1 .matrix { height: 220px; padding: 10px 0; }
+  .v1 .channel-strip { width: 80px; height: 100%; border-right: 1px solid #222; }
+  .v1 .channel-strip:last-child { border-right: none; }
+  .v1 .meter-bg { width: 14px; height: 120px; border-radius: 2px; border: 1px solid #333; }
+
+  /* =========================================
+     VARIANTE 2: SCOPE DOMINANT (80/20 Split)
+     ========================================= */
+  .v2 { height: 550px; }
+  .v2 .oscilloscope { height: 440px; }
+  .v2 .matrix { height: 110px; padding: 5px 0; }
+  .v2 .channel-strip { width: 60px; }
+  .v2 .meter-bg { width: 24px; height: 40px; border-radius: 1px; } /* Short meters */
+  .v2 .ch-label { margin-bottom: 4px; font-size: 9px; }
+
+  /* =========================================
+     VARIANTE 3: HARDWARE CONSOLE (With Knobs)
+     ========================================= */
+  .v3 { height: 600px; }
+  .v3 .oscilloscope { height: 300px; }
+  .v3 .matrix { height: 300px; background-color: #202020; }
+  .v3 .channel-strip { width: 90px; height: 100%; background: #1a1a1a; margin: 0 5px; border: 1px solid #2a2a2a; border-radius: 4px; padding: 10px 0;}
+  .v3 .meter-bg { width: 10px; height: 100px; border-radius: 5px; }
+  .v3 .knob { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #555; margin-top: 15px; position: relative;}
+  .v3 .knob::after { content: ''; position: absolute; width: 2px; height: 10px; background: #888; top: 2px; left: 14px; } /* Knob indicator */
+
+  /* =========================================
+     VARIANTE 4: ULTRA-MINIMAL (No Borders)
+     ========================================= */
+  .v4 { height: 550px; border: none; box-shadow: 0 20px 50px rgba(0,0,0,1); }
+  .v4 .oscilloscope { height: 380px; border: none; background: #050505; }
+  .v4 .matrix { height: 170px; background: #080808; border-top: 1px solid #111; }
+  .v4 .channel-strip { width: 70px; }
+  .v4 .meter-bg { width: 4px; height: 90px; background: #111; } /* Hairline meters */
+  .v4 .meter-led { background: #fff; }
+  .v4 .ch-label { color: #555; }
+
+</style>
+</head>
+<body>
+  
+  <h2>V1: Classic Balance (60% Scope / 40% Matrix)</h2>
+  <div class="plugin-window v1">
+    <div class="oscilloscope">
+      <div class="waveform-line"></div><div class="threshold-line"></div>
+      <div class="marker-solid" style="left: 20%;"></div><div class="marker-ghost" style="left: 35%;"></div>
+      <div class="marker-solid" style="left: 70%;"></div>
+    </div>
+    <div class="matrix" id="m1"></div>
+  </div>
+
+  <h2>V2: Scope Dominant (80% Scope / 20% Matrix) - For detailed editing</h2>
+  <div class="plugin-window v2">
+    <div class="oscilloscope">
+      <div class="waveform-line"></div><div class="threshold-line"></div>
+      <div class="marker-solid" style="left: 15%;"></div><div class="marker-ghost" style="left: 45%;"></div>
+      <div class="marker-solid" style="left: 80%;"></div>
+    </div>
+    <div class="matrix" id="m2"></div>
+  </div>
+
+  <h2>V3: Hardware Console (With Rotary Knobs for Threshold)</h2>
+  <div class="plugin-window v3">
+    <div class="oscilloscope">
+      <div class="waveform-line"></div><div class="threshold-line"></div>
+      <div class="marker-ghost" style="left: 25%;"></div><div class="marker-solid" style="left: 60%;"></div>
+    </div>
+    <div class="matrix" id="m3"></div>
+  </div>
+
+  <h2>V4: Ultra-Minimalist (Data Only, No Borders)</h2>
+  <div class="plugin-window v4">
+    <div class="oscilloscope">
+      <div class="waveform-line"></div><div class="threshold-line"></div>
+      <div class="marker-solid" style="left: 30%;"></div><div class="marker-ghost" style="left: 50%;"></div>
+    </div>
+    <div class="matrix" id="m4"></div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNR', 'TOM1', 'TOM2', 'HHAT', 'RIDE', 'CRSH', 'SPLS'];
+    
+    function generateMatrix(containerId, isV3) {
+      let html = '';
+      for(let i=0; i<8; i++) {
+        const val = Math.random() * 100;
+        const isTrigger = val > 80;
+        html += `
+          <div class="channel-strip">
+            <div class="ch-label">${labels[i]}</div>
+            <div class="meter-bg"><div class="meter-led" style="height: ${val}%;"></div></div>
+            ${isV3 ? '<div class="knob" style="transform: rotate('+(Math.random()*270 - 135)+'deg)"></div>' : ''}
+            <div class="trigger-led ${isTrigger ? 'trigger-on' : ''}"></div>
+          </div>
+        `;
+      }
+      document.getElementById(containerId).innerHTML = html;
+    }
+
+    generateMatrix('m1', false);
+    generateMatrix('m2', false);
+    generateMatrix('m3', true);
+    generateMatrix('m4', false);
+  </script>
+
+</body>
+</html>

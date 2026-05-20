@@ -1,0 +1,340 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #121210; 
+    --bg-plugin: #2a2a28; /* Deep warm metal */
+    --bg-panel: #050505; /* CRT Tube */
+    --bg-matrix: #1a1a18;
+    --wood: #3d2212; /* Darker Walnut */
+    --wood-light: #52301c;
+    --text-engraved: #111111; /* For embossed/engraved text */
+    --text-bright: #b0ae9d;
+    --crt-green: #33ff33;
+    --nixie-orange: #ff8800; /* Nixie/Vintage LED orange */
+    --border-hardware: #1a1a18;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-bright);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  h2 { color: #333; text-transform: uppercase; letter-spacing: 5px; font-size: 10px; margin-bottom: 25px; width: 1000px; text-align: center; }
+
+  /* --- HARDWARE CHASSIS --- */
+  .plugin-chassis { 
+    display: flex; 
+    box-shadow: 0 60px 120px rgba(0,0,0,1); 
+    border-radius: 6px; 
+    overflow: hidden; 
+    border: 1px solid #000;
+  }
+
+  .wood-cheek {
+    width: 25px;
+    height: 720px;
+    background: linear-gradient(90deg, var(--wood), var(--wood-light), var(--wood));
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+  }
+
+  .plugin-window {
+    background-color: var(--bg-plugin);
+    width: 950px;
+    height: 720px;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
+
+  /* --- ALIGNMENT CORES --- */
+  .col-analysis { width: 640px; } /* SCOPE + MATRIX */
+  .col-master { width: 310px; }   /* MASTER CONTROLS + MAINTENANCE */
+
+  /* TOP ROW */
+  .top-row { display: flex; height: 440px; padding: 25px 25px 0 25px; gap: 20px; box-sizing: border-box; }
+  
+  /* CRT OSCILLOSCOPE (Vintage Industrial) */
+  .oscilloscope {
+    height: 100%;
+    background-color: var(--bg-panel);
+    border: 4px solid #151514;
+    border-radius: 8px;
+    box-shadow: inset 0 0 60px rgba(0,0,0,1), 0 2px 10px rgba(255,255,255,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  .oscilloscope::after {
+    content: ''; position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(51,255,51,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(51,255,51,0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* MASTER CONTROL PANEL (Vintage Hardware Feel) */
+  .master-panel {
+    height: 100%;
+    background-color: #222220;
+    border: 1px solid #1a1a18;
+    border-radius: 4px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 1px 2px rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  .hw-label { font-size: 9px; color: #444; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid #1a1a18; padding-bottom: 5px; }
+
+  /* Vintage Dials and Displays */
+  .dial-group { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 25px; }
+  .dial-cap { 
+    width: 45px; height: 45px; border-radius: 50%; 
+    background: radial-gradient(circle, #333 0%, #111 100%);
+    border: 2px solid #000;
+    position: relative;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+  }
+  .dial-cap::after { content: ''; position: absolute; width: 3px; height: 12px; background: #fff; top: 4px; left: 21px; border-radius: 1px; }
+  .dial-label { font-size: 8px; color: #555; text-align: center; }
+
+  .nixie-display {
+    background: #000;
+    border: 2px solid #111;
+    padding: 5px 12px;
+    color: var(--nixie-orange);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 0 0 10px var(--nixie-orange);
+    box-shadow: inset 0 0 10px rgba(255,136,0,0.2);
+    border-radius: 2px;
+    margin-top: 5px;
+  }
+
+  /* Vintage Toggle Switches */
+  .toggle-box { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px; }
+  .toggle-switch { width: 15px; height: 25px; background: #111; border-radius: 2px; border: 1px solid #333; position: relative; }
+  .toggle-switch::after { content: ''; position: absolute; width: 11px; height: 11px; background: #777; left: 2px; top: 2px; border-radius: 1px; box-shadow: 0 1px 3px #000; }
+  .toggle-switch.on::after { top: 12px; background: #ccc; }
+
+  /* --- BOTTOM ROW --- */
+  .bottom-row { display: flex; height: 280px; padding: 15px 25px 25px 25px; gap: 20px; box-sizing: border-box; }
+
+  .matrix {
+    height: 100%;
+    background-color: var(--bg-matrix);
+    border: 2px solid var(--border-color);
+    display: flex;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+  }
+
+  .channel-strip {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-right: 1px solid #000;
+    padding: 20px 0;
+  }
+  .channel-strip:last-child { border-right: none; }
+  .bus-label { font-size: 10px; color: #333; font-weight: 800; margin-bottom: 25px; letter-spacing: 2px; }
+  .bus-meter-bg { width: 18px; height: 130px; background: #000; border: 1px solid #222; position: relative; box-shadow: inset 0 0 10px rgba(255,255,255,0.05); }
+  .bus-meter-fill { position: absolute; bottom: 0; width: 100%; background: #888; border-top: 1px solid #fff; }
+
+  /* MAINTENANCE PANEL (Same dimensions as Master Panel) */
+  .maintenance-panel {
+    height: 100%;
+    background-color: #222220;
+    border: 1px solid #1a1a18;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(255,255,255,0.05);
+  }
+
+  /* CLOSED STATE */
+  .maint-cover {
+    position: absolute; inset: 0;
+    z-index: 100;
+    background: #1e1e1c;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  }
+  .screw-flat { 
+    width: 18px; height: 18px; border-radius: 50%; 
+    background: radial-gradient(circle, #444 0%, #222 100%); 
+    position: absolute; border: 1px solid #000;
+  }
+  .screw-flat::after { content: ''; position: absolute; width: 12px; height: 2px; background: #000; top: 8px; left: 3px; }
+  .sc-tl { top: 12px; left: 12px; } .sc-tr { top: 12px; right: 12px; }
+  .sc-bl { bottom: 12px; left: 12px; } .sc-br { bottom: 12px; right: 12px; }
+
+  .maint-text { margin-top: 30px; border-left: 2px solid #111; padding-left: 15px; }
+  .maint-owner { font-size: 13px; font-weight: bold; color: #111; opacity: 0.8; }
+  .maint-id { font-size: 9px; color: #111; opacity: 0.6; font-family: monospace; }
+  
+  .model-display-box {
+    margin-top: auto;
+    background: #0a0a0a;
+    border: 1px solid #1a1a18;
+    padding: 10px;
+    text-align: center;
+  }
+  .model-text { color: #333; font-size: 9px; font-weight: bold; letter-spacing: 2px; }
+
+  /* OPEN STATE (PCB) */
+  .maint-pcb {
+    position: absolute; inset: 0;
+    background-color: var(--pcb-green);
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+  }
+  .pcb-board { border: 2px solid #1a2a1a; flex-grow: 1; display: flex; flex-direction: column; padding: 15px; position: relative; }
+  .pcb-seri { margin-top: auto; border-top: 1px solid #1a2a1a; padding-top: 15px; display: flex; flex-direction: column; gap: 5px; }
+  .pcb-line { font-size: 8px; color: #1d2d1d; font-family: monospace; font-weight: bold; }
+
+</style>
+</head>
+<body>
+
+  <h2>OP-NeuroTrigger: Vintage Precision Unit (Perfection Alignment)</h2>
+  
+  <div class="plugin-chassis">
+    <div class="wood-cheek"></div>
+    
+    <div class="plugin-window">
+      
+      <!-- TOP: SCOPE & MASTER PANEL -->
+      <div class="top-row">
+        <div class="oscilloscope col-analysis">
+          <div style="position: absolute; top: 15px; left: 20px; font-size: 10px; color: rgba(51,255,51,0.2);">UNIT_STATUS: CALIBRATED</div>
+        </div>
+
+        <div class="master-panel col-master">
+          <div class="hw-label">SYSTEM COMMANDS</div>
+          
+          <div style="display: flex; justify-content: space-around; width: 100%;">
+            <div class="dial-group">
+              <div class="dial-label">SENSITIVITY</div>
+              <div class="dial-cap" style="transform: rotate(-20deg)"></div>
+              <div class="nixie-display">.942</div>
+            </div>
+            <div class="dial-group">
+              <div class="dial-label">MIX</div>
+              <div class="dial-cap" style="transform: rotate(45deg)"></div>
+              <div class="nixie-display">100%</div>
+            </div>
+          </div>
+
+          <div class="hw-label">MIDI ENGINE</div>
+          <div class="toggle-box">
+            <span class="dial-label">VELO_SMOOTH</span>
+            <div class="toggle-switch on"></div>
+          </div>
+          <div class="toggle-box">
+            <span class="dial-label">DAW_SYNC</span>
+            <div class="toggle-switch on"></div>
+          </div>
+          
+          <div class="dial-group" style="margin-top: auto; align-items: flex-start; width: 100%;">
+            <div class="dial-label">LOOK-AHEAD DELAY</div>
+            <div class="nixie-display" style="width: 100%; box-sizing: border-box; text-align: center;">100.00 MS</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- BOTTOM: MATRIX & MAINTENANCE -->
+      <div class="bottom-row">
+        <div class="matrix col-analysis" id="m1"></div>
+        
+        <div class="maintenance-panel col-master">
+          <div class="maint-cover">
+            <div class="screw-flat sc-tl"></div><div class="screw-flat sc-tr"></div>
+            <div class="screw-flat sc-bl"></div><div class="screw-flat sc-br"></div>
+            
+            <div class="maint-text">
+              <div class="maint-owner">OWNER: MARCO ROSSI</div>
+              <div class="maint-id">UNIT REF: OPX-9928-LN</div>
+            </div>
+
+            <div class="model-display-box">
+              <div class="model-text">CORE: TCN_GEN_II</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="wood-cheek"></div>
+  </div>
+
+  <h2 style="margin-top: 100px;">Internal Circuit Reveal</h2>
+  
+  <div class="plugin-chassis">
+    <div class="wood-cheek"></div>
+    <div class="plugin-window">
+      <div class="top-row">
+        <div class="oscilloscope col-analysis"></div>
+        <div class="master-panel col-master">
+          <div class="hw-label">SYSTEM STATUS</div>
+          <div class="nixie-display" style="color: #440000; text-shadow: none; border-color: #222;">BUSY...</div>
+        </div>
+      </div>
+      <div class="bottom-row">
+        <div class="matrix col-analysis" id="m2"></div>
+        <div class="maintenance-panel col-master">
+          <div class="maint-pcb">
+            <div class="pcb-board">
+              <div style="font-size: 8px; color: #1a2a1a; margin-bottom: 15px;">ADVANCED_BIAS_TRIM</div>
+              <div style="display: flex; gap: 15px;">
+                <div style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #1a2a1a; background: #3a4a3a; position: relative;">
+                   <div style="position: absolute; width: 100%; height: 2px; background: #1a2a1a; top: 9px; transform: rotate(30deg);"></div>
+                </div>
+                <div style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #1a2a1a; background: #3a4a3a; position: relative;">
+                   <div style="position: absolute; width: 100%; height: 2px; background: #1a2a1a; top: 9px; transform: rotate(-60deg);"></div>
+                </div>
+              </div>
+
+              <div class="pcb-seri">
+                <div class="pcb-line">AUTH_USER: MARCO ROSSI</div>
+                <div class="pcb-line">MODEL: TCN_NEURAL_V2.1</div>
+                <div class="pcb-line">BUILD: 2026.05.20_HQ</div>
+                <div class="pcb-line">VER: 1.0.4C</div>
+                <div class="pcb-line" style="margin-top: 5px; color: #080a08;">LINEAR DIVISION (C) 1970-2026</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wood-cheek"></div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNARE', 'TOM 1', 'TOM 2', 'H-HAT', 'RIDE', 'CRASH', 'SPLASH'];
+    function populate(id) {
+      const container = document.getElementById(id);
+      labels.forEach((l) => {
+        container.innerHTML += `
+          <div class="channel-strip">
+            <div class="bus-label">${l}</div>
+            <div class="bus-meter-bg">
+              <div class="bus-meter-fill" style="height: 40%;"></div>
+            </div>
+            <div style="width:6px; height:6px; border-radius:50%; background:#111; margin-top:20px; border:1px solid #000;"></div>
+          </div>`;
+      });
+    }
+    populate('m1'); populate('m2');
+  </script>
+
+</body>
+</html>

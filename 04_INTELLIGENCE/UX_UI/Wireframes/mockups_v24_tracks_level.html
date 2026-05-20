@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OP-NEUROTRIGGER V24 // MASTER RENDER</title>
+    <style>
+        body { margin: 0; background: #ececec; overflow: hidden; font-family: 'Helvetica', sans-serif; }
+        #overlay { position: absolute; bottom: 40px; width: 100%; text-align: center; color: #888; font-size: 11px; letter-spacing: 5px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+    <div id="overlay">Linear Division // OP-NeuroTrigger // High-End DSP Hardware Architecture</div>
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xececec);
+        const camera = new THREE.PerspectiveCamera(22, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(5, 4, 15);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.1;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // --- MATERIALS (HIGH-END PBR) ---
+        const woodMat = new THREE.MeshPhysicalMaterial({ 
+            color: 0x4a2c1a, roughness: 0.15, metalness: 0, clearcoat: 1.0, clearcoatRoughness: 0.1, reflectionIntensity: 1
+        });
+        const metalMat = new THREE.MeshPhysicalMaterial({ 
+            color: 0x222222, metalness: 0.9, roughness: 0.25, clearcoat: 0.1 
+        });
+        const panelMat = new THREE.MeshPhysicalMaterial({ 
+            color: 0x0c0c0c, roughness: 0.8, metalness: 0.1 
+        });
+        const screenMat = new THREE.MeshPhysicalMaterial({ 
+            color: 0x000000, emissive: 0x33ff33, emissiveIntensity: 0.1, roughness: 0.1 
+        });
+
+        // --- ENVIRONMENT SIMULATION ---
+        const envGroup = new THREE.Group();
+        const lightPlate = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        lightPlate.position.set(0, 10, 0); lightPlate.rotation.x = Math.PI/2;
+        envGroup.add(leftPlate);
+        scene.add(envGroup);
+
+        const unit = new THREE.Group();
+
+        // 1. CHASSIS (Rounded)
+        const body = new THREE.Mesh(new RoundedBoxGeometry(8, 5.5, 0.6, 6, 0.05), metalMat);
+        body.castShadow = body.receiveShadow = true;
+        unit.add(body);
+
+        // Wood Cheeks (Varnished)
+        const cheekGeo = new THREE.CapsuleGeometry(0.38, 5.6, 64, 64);
+        const cl = new THREE.Mesh(cheekGeo, woodMat); cl.position.set(-4.1, 0, 0); cl.castShadow = true; unit.add(cl);
+        const cr = new THREE.Mesh(cheekGeo, woodMat); cr.position.set(4.1, 0, 0); cr.castShadow = true; unit.add(cr);
+
+        // 2. LEFT PLATE (Analysis)
+        const leftPlate = new THREE.Mesh(new RoundedBoxGeometry(4.6, 5.1, 0.1, 4, 0.02), panelMat);
+        leftPlate.position.set(-1.4, 0, 0.35); unit.add(leftPlate);
+        
+        const scope = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 2.8), screenMat);
+        scope.position.set(-1.4, 0.9, 0.41); unit.add(scope);
+
+        // Matrix strips (Physical depth)
+        for(let i=0; i<8; i++) {
+            const strip = new THREE.Mesh(new RoundedBoxGeometry(0.42, 1.8, 0.05, 2, 0.01), panelMat);
+            strip.position.set(-3.0 + (i * 0.45), -1.5, 0.41); unit.add(strip);
+        }
+
+        // 3. RIGHT STACK (Rack Style)
+        const rightPlate = new THREE.Mesh(new RoundedBoxGeometry(2.4, 5.1, 0.1, 4, 0.02), panelMat);
+        rightPlate.position.set(2.4, 0, 0.35); unit.add(rightPlate);
+
+        // Edgewise Meter
+        const meter = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.45, 0.05), new THREE.MeshStandardMaterial({color:0x000000, roughness:0.1}));
+        meter.position.set(2.4, 2.1, 0.42); unit.add(meter);
+        const needle = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.4, 0.01), new THREE.MeshBasicMaterial({color:0xff0000}));
+        needle.position.set(2.8, 2.1, 0.46); unit.add(needle);
+
+        // Knobs (Detailed Hardware)
+        function createKnob(x, y) {
+            const g = new THREE.Group();
+            const b = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.3, 0.15, 64), metalMat);
+            const c = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.05, 64), new THREE.MeshStandardMaterial({color:0x000000, roughness:0.2}));
+            c.position.y = 0.1;
+            const p = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.12), new THREE.MeshBasicMaterial({color:0xffffff}));
+            p.position.set(0, 0.11, -0.12);
+            g.add(b); g.add(c); g.add(p);
+            g.rotation.x = Math.PI/2; g.position.set(x, y, 0.48);
+            return g;
+        }
+        unit.add(createKnob(1.9, 1.3)); unit.add(createKnob(2.9, 1.3));
+
+        // Neural Slot (Nixie Emissive)
+        const slot = new THREE.Mesh(new RoundedBoxGeometry(2.1, 0.8, 0.05, 2, 0.01), new THREE.MeshStandardMaterial({color:0x000000, emissive:0xff7700, emissiveIntensity:0.8}));
+        slot.position.set(2.4, -0.6, 0.43); unit.add(slot);
+
+        // Owner Plate (Anodized)
+        const plate = new THREE.Mesh(new RoundedBoxGeometry(2.0, 0.45, 0.02, 2, 0.005), metalMat);
+        plate.position.set(2.4, -2.1, 0.43); unit.add(plate);
+
+        scene.add(unit);
+
+        // --- LIGHTING (STUDIO SOFTBOX) ---
+        const light1 = new THREE.RectAreaLight(0xffffff, 5, 20, 20);
+        light1.position.set(5, 5, 10); light1.lookAt(0,0,0); scene.add(light1);
+
+        const light2 = new THREE.RectAreaLight(0xffffff, 2, 20, 20);
+        light2.position.set(-5, 2, 10); light2.lookAt(0,0,0); scene.add(light2);
+
+        const rim = new THREE.PointLight(0xffffff, 40);
+        rim.position.set(0, 8, -5); scene.add(rim);
+
+        // Studio Floor (Cyclorama)
+        const floorGeo = new THREE.PlaneGeometry(100, 100);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0xececec, roughness: 0.1, metalness: 0.1 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2; floor.position.y = -5; floor.receiveShadow = true;
+        scene.add(floor);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

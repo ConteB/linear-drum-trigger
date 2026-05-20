@@ -1,0 +1,285 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #111;
+    --bg-plugin: #1a1a1a;
+    --bg-panel: #0a0a0a;
+    --bg-matrix: #161616;
+    --border-color: #333;
+    --border-light: #555;
+    --text-dim: #777;
+    --text-bright: #ccc;
+    --accent: #fff;
+    --ghost: rgba(255, 255, 255, 0.4);
+    --active-bg: #222;
+    --warning: #cc3333;
+    --linear-blue: #4444aa;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-bright);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h2 {
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 14px;
+    margin-top: 40px;
+    margin-bottom: 10px;
+    width: 900px;
+  }
+  .desc {
+    color: #666;
+    font-size: 12px;
+    width: 900px;
+    margin-bottom: 20px;
+    line-height: 1.4;
+  }
+  
+  /* BASE PLUGIN WINDOW */
+  .plugin-window {
+    background-color: var(--bg-plugin);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    width: 900px;
+    height: 550px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* --- OSCILLOSCOPE BASE --- */
+  .oscilloscope {
+    background-color: var(--bg-panel);
+    position: relative;
+    width: 100%;
+    height: 330px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .waveform-line { position: absolute; top: 50%; width: 100%; border-top: 1px solid #2a2a2a; }
+  .marker-solid { position: absolute; height: 100%; width: 2px; background-color: var(--accent); box-shadow: 0 0 5px rgba(255,255,255,0.3); }
+  .marker-ghost { position: absolute; height: 100%; width: 1px; background-color: var(--ghost); }
+  .threshold-line { position: absolute; top: 35%; width: 100%; border-top: 1px dashed #888; }
+  
+  /* --- MATRIX AREA --- */
+  .matrix-area {
+    display: flex;
+    width: 100%;
+    height: 220px;
+  }
+  .matrix {
+    background-color: var(--bg-matrix);
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-grow: 1;
+    padding: 0 10px;
+  }
+  .channel-strip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 85px;
+    height: 100%;
+    padding-top: 10px;
+    border-right: 1px solid #222;
+    position: relative;
+  }
+  .channel-strip.active { background-color: #1a1a1a; box-shadow: inset 0 0 20px rgba(0,0,0,1); }
+  .ch-label { font-size: 10px; color: var(--text-dim); font-weight: bold; letter-spacing: 1px; margin-bottom: 12px; }
+  .meter-bg { background-color: #000; position: relative; overflow: hidden; border-radius: 2px; border: 1px solid #333; width: 18px; height: 100px; }
+  .meter-led { background-color: #aaa; position: absolute; bottom: 0; left: 0; width: 100%; }
+  .inline-threshold { position: absolute; width: 100%; height: 2px; background: #fff; z-index: 10; }
+  .trigger-led { width: 6px; height: 6px; border-radius: 50%; background-color: #222; margin-top: 10px; }
+  .trigger-on { background-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
+
+  /* --- OWNERSHIP PLATE (Serigrafia sulla scocca) --- */
+  .ownership-plate {
+    width: 180px;
+    height: 100%;
+    background-color: #1a1a1a;
+    border-left: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    position: relative;
+  }
+  .plate-label { font-size: 8px; color: #444; letter-spacing: 1px; margin-bottom: 3px; font-weight: bold; }
+  .plate-value { font-size: 10px; color: #777; font-family: 'Courier New', Courier, monospace; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 2px; }
+  .logo-placeholder { margin-top: auto; color: #333; font-weight: bold; font-size: 12px; letter-spacing: 3px; border: 1px solid #222; padding: 5px; text-align: center; }
+
+  /* --- MAINTENANCE PANEL (Il Cassettino Sovrapposto) --- */
+  .maint-panel-overlay {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 180px; /* Copre esattamente l'ownership plate */
+    height: 220px;
+    background-color: #141414;
+    border-left: 2px solid #222;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease;
+  }
+  .maint-panel-overlay.open {
+    width: 350px; /* Si espande verso sinistra coprendo parte della matrix */
+    background-color: #0c0c0c;
+  }
+  
+  .panel-cover {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .screw { width: 14px; height: 14px; border-radius: 50%; background: #2a2a2a; border: 1px solid #111; position: absolute; cursor: pointer; }
+  .screw-tl { top: 10px; left: 10px; }
+  .screw-tr { top: 10px; right: 10px; }
+  .screw-bl { bottom: 10px; left: 10px; }
+  .screw-br { bottom: 10px; right: 10px; }
+  .screw::after { content: ''; position: absolute; width: 80%; height: 2px; background: #111; top: 5px; left: 1px; transform: rotate(45deg); }
+  .screw::before { content: ''; position: absolute; width: 2px; height: 80%; background: #111; top: 1px; left: 5px; transform: rotate(45deg); }
+
+  /* Contenuto interno (PCB) */
+  .pcb-content {
+    display: none;
+    padding: 20px;
+    flex-direction: column;
+    height: 100%;
+  }
+  .maint-panel-overlay.open .pcb-content { display: flex; }
+  .maint-panel-overlay.open .panel-cover { display: none; }
+
+  .pcb-board {
+    background-color: #121812;
+    border: 1px solid #1a2a1a;
+    flex-grow: 1;
+    border-radius: 2px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* REPLICATED INFO ON PCB */
+  .pcb-serigraphy {
+    border-top: 1px solid #1a2a1a;
+    margin-top: auto;
+    padding-top: 10px;
+  }
+  .serigraph-text { font-size: 7px; color: #2a3a2a; font-family: monospace; text-transform: uppercase; margin-bottom: 2px; }
+
+  .trimmer-row { display: flex; justify-content: space-between; align-items: center; }
+  .trimmer { width: 18px; height: 18px; border-radius: 50%; background: #888; border: 1px solid #444; position: relative; }
+  .trimmer::after { content: ''; position: absolute; width: 100%; height: 2px; background: #222; top: 7px; left: 0; transform: rotate(20deg); }
+  .pcb-label { color: #55a; font-size: 8px; font-family: monospace; }
+
+</style>
+</head>
+<body>
+  
+  <h2>Var 5.1: Ownership Plate & Internal Serigraphy</h2>
+  <div class="desc">In basso a destra, la scocca ha una placca serigrafata (Ownership Plate) con i dati della licenza. Sopra di essa è avvitato il cassettino di calibrazione.</div>
+  
+  <div class="plugin-window">
+    <div class="oscilloscope">
+      <div class="waveform-line"></div>
+      <div class="threshold-line" style="top: 35%"></div>
+      <div class="marker-solid" style="left: 30%;"></div>
+    </div>
+    
+    <div class="matrix-area">
+      <div class="matrix" id="m1"></div>
+      
+      <!-- L'AREA FISSA DI DESTRA (Sotto il cassettino) -->
+      <div class="ownership-plate">
+        <div class="plate-label">LICENSED TO</div>
+        <div class="plate-value">MARCO ROSSI</div>
+        
+        <div class="plate-label">SYSTEM ID</div>
+        <div class="plate-value">OP-NX-9928-11</div>
+        
+        <div class="plate-label">VERSION</div>
+        <div class="plate-value">1.0.0-PROTOTYPE</div>
+        
+        <div class="logo-placeholder">LINEAR</div>
+      </div>
+
+      <!-- IL CASSETTINO (Maintenance Panel) - Stato CHIUSO -->
+      <div class="maint-panel-overlay">
+        <div class="panel-cover">
+          <div class="screw screw-tl"></div><div class="screw screw-tr"></div>
+          <div class="screw screw-bl"></div><div class="screw screw-br"></div>
+          <div style="writing-mode: vertical-rl; color: #333; font-size: 9px; letter-spacing: 3px;">FACTORY SEALED</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Var 5.2: PCB Reveal (Dati Replicati)</h2>
+  <div class="desc">Aprendo il cassettino (cliccando sulle viti), si scopre la PCB. I dati del possessore e del sistema sono serigrafati direttamente sul "silicio" (il rame della scheda), rafforzando l'idea che la licenza sia fusa con l'hardware.</div>
+  
+  <div class="plugin-window">
+    <div class="oscilloscope"></div>
+    <div class="matrix-area">
+      <div class="matrix" id="m2"></div>
+      
+      <!-- IL CASSETTINO - Stato APERTO -->
+      <div class="maint-panel-overlay open">
+        <div class="pcb-content">
+          <div style="color: var(--warning); font-size: 9px; font-weight: bold; margin-bottom: 10px; text-align: center;">INTERNAL CALIBRATION UNIT</div>
+          
+          <div class="pcb-board">
+            <div class="trimmer-row">
+              <div class="pcb-label">BIAS_ADJ</div>
+              <div class="trimmer"></div>
+            </div>
+            <div class="trimmer-row">
+              <div class="pcb-label">TCN_DECAY</div>
+              <div class="trimmer" style="transform: rotate(-45deg);"></div>
+            </div>
+            
+            <!-- INFO REPLICATE SULLA PCB -->
+            <div class="pcb-serigraphy">
+              <div class="serigraph-text">PROPERTY OF: MARCO ROSSI</div>
+              <div class="serigraph-text">HW_UID: OP-NX-9928-11</div>
+              <div class="serigraph-text">BUILD_REF: 2026.05.19.ALPHA</div>
+              <div class="serigraph-text" style="margin-top: 5px; color: #3a4a3a;">(C) OPENPHASE LINEAR DIV.</div>
+            </div>
+          </div>
+          
+        </div>
+        <!-- Viti rimosse o svitate -->
+        <div class="screw screw-tr" style="opacity: 0.2;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNR', 'TOM1', 'TOM2', 'HHAT', 'RIDE', 'CRSH', 'SPLS'];
+    function generateMatrix(containerId) {
+      let html = '';
+      for(let i=0; i<8; i++) {
+        const isActive = i === 1;
+        html += `<div class="channel-strip ${isActive ? 'active' : ''}"><div class="ch-label">${labels[i]}</div><div class="meter-bg"><div class="meter-led" style="height: 40%;"></div></div><div class="trigger-led"></div></div>`;
+      }
+      document.getElementById(containerId).innerHTML = html;
+    }
+    generateMatrix('m1'); generateMatrix('m2');
+  </script>
+
+</body>
+</html>

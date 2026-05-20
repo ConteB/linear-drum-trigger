@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OP-NEUROTRIGGER V22 // ABSOLUTE FIDELITY</title>
+    <style>
+        body { margin: 0; background: #111; overflow: hidden; font-family: 'Helvetica', sans-serif; }
+        #ui-info { position: absolute; top: 30px; left: 30px; color: #444; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="ui-info">Linear Division // V22 Master Prototype // Layout: Asymmetric V19</div>
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a0a);
+        const camera = new THREE.PerspectiveCamera(25, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 15);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // --- MATERIALS ---
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0x3a2010, roughness: 0.3, metalness: 0.1 });
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.9 });
+        const panelMat = new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.8, metalness: 0.2 });
+        const emissiveNixie = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xff7700, emissiveIntensity: 2 });
+        const emissiveCrt = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x33ff33, emissiveIntensity: 0.1 });
+
+        // --- UNIT GROUP ---
+        const unit = new THREE.Group();
+
+        // 1. CHASSIS & CHEEKS
+        const bodyGeo = new THREE.BoxGeometry(8, 5.5, 0.6);
+        const body = new THREE.Mesh(bodyGeo, metalMat);
+        unit.add(body);
+
+        const cheekGeo = new THREE.CapsuleGeometry(0.35, 5.8, 32, 32);
+        const cl = new THREE.Mesh(cheekGeo, woodMat); cl.position.set(-4.1, 0, 0); unit.add(cl);
+        const cr = new THREE.Mesh(cheekGeo, woodMat); cr.position.set(4.1, 0, 0); unit.add(cr);
+
+        // 2. LEFT COLUMN (ANALYSIS & MATRIX) - Continuous Block
+        const leftGroup = new THREE.Group();
+        const leftPlate = new THREE.Mesh(new THREE.BoxGeometry(4.8, 5.1, 0.1), panelMat);
+        leftPlate.position.set(-1.3, 0, 0.35);
+        leftGroup.add(leftPlate);
+
+        // Scope
+        const scope = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 2.8), emissiveCrt);
+        scope.position.set(-1.3, 0.9, 0.41);
+        leftGroup.add(scope);
+
+        // Matrix (8 strips)
+        for(let i=0; i<8; i++) {
+            const strip = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.8, 0.05), panelMat);
+            strip.position.set(-3.05 + (i * 0.5), -1.5, 0.41);
+            leftGroup.add(strip);
+            // Small Meter
+            const m = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 1.0), new THREE.MeshBasicMaterial({color:0x444444}));
+            m.position.set(-3.05 + (i * 0.5), -1.5, 0.44);
+            leftGroup.add(m);
+        }
+        unit.add(leftGroup);
+
+        // 3. RIGHT COLUMN (TRIPLE STACK)
+        const rightGroup = new THREE.Group();
+        
+        // Stack 1: Master Plate
+        const masterPlate = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.8, 0.1), panelMat);
+        masterPlate.position.set(2.5, 1.15, 0.35);
+        rightGroup.add(masterPlate);
+
+        // Edgewise Meter (Top of Master)
+        const edgeMeter = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.4, 0.05), new THREE.MeshStandardMaterial({color:0x000000}));
+        edgeMeter.position.set(2.5, 2.1, 0.41);
+        rightGroup.add(edgeMeter);
+        const pointer = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.3, 0.01), new THREE.MeshBasicMaterial({color:0xff0000}));
+        pointer.position.set(2.8, 2.1, 0.47);
+        rightGroup.add(pointer);
+
+        // Knobs
+        const k1 = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.15, 32), metalMat);
+        k1.rotation.x = Math.PI/2; k1.position.set(2.0, 1.3, 0.45); rightGroup.add(k1);
+        const k2 = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.15, 32), metalMat);
+        k2.rotation.x = Math.PI/2; k2.position.set(3.0, 1.3, 0.45); rightGroup.add(k2);
+
+        // Nixie MIDI Rack (Bottom of Master)
+        const nixieBox = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.8, 0.05), new THREE.MeshStandardMaterial({color:0x000000}));
+        nixieBox.position.set(2.5, 0.4, 0.41);
+        rightGroup.add(nixieBox);
+
+        // Stack 2: Neural Slot (MIDDLE)
+        const slot = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.6, 0.1), new THREE.MeshStandardMaterial({color:0x111111}));
+        slot.position.set(2.5, -0.7, 0.35);
+        rightGroup.add(slot);
+        const slotText = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.3), emissiveNixie);
+        slotText.position.set(2.5, -0.7, 0.41);
+        rightGroup.add(slotText);
+
+        // Stack 3: Toolbox (BOTTOM)
+        const toolbox = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 0.1), new THREE.MeshStandardMaterial({color:0x151515}));
+        toolbox.position.set(2.5, -1.8, 0.35);
+        rightGroup.add(toolbox);
+        // Owner Plate
+        const plate = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.4, 0.02), metalMat);
+        plate.position.set(2.5, -2.1, 0.41);
+        rightGroup.add(plate);
+
+        unit.add(rightGroup);
+        scene.add(unit);
+
+        // --- LIGHTING ---
+        const key = new THREE.SpotLight(0xffffff, 100); key.position.set(5, 10, 10); key.castShadow = true; scene.add(key);
+        const fill = new THREE.RectAreaLight(0x4488ff, 5, 10, 10); fill.position.set(-8, 2, 5); fill.lookAt(0,0,0); scene.add(fill);
+        const rim = new THREE.PointLight(0xffffff, 30); rim.position.set(0, 5, -5); scene.add(rim);
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.2}));
+        floor.rotation.x = -Math.PI/2; floor.position.y = -5; scene.add(floor);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

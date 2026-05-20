@@ -1,0 +1,206 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #0a0a09; 
+    --bg-plugin: #242422;
+    --bg-panel: #050505;
+    --wood: #3d2212;
+    --wood-light: #5a351e;
+    --crt-green: #33ff33;
+    --crt-glow: rgba(51, 255, 51, 0.4);
+    --nixie: #ff7700;
+    --text-dim: #444;
+    --text-mid: #666;
+    --hit-white: #ffffff;
+  }
+
+  body { background: var(--bg-main); color: #b0ae9d; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; display: flex; flex-direction: column; align-items: center; }
+  
+  .chassis { display: flex; box-shadow: 0 80px 160px rgba(0,0,0,1); border-radius: 14px; overflow: hidden; border: 1px solid #000; }
+  
+  /* 13.1 WALNUT CHEEKS (High Detail) */
+  .cheek { 
+    width: 32px; height: 760px; 
+    background: linear-gradient(90deg, #1a1008, var(--wood), #1a1008);
+    border-radius: 14px 0 0 14px;
+    box-shadow: inset -5px 0 15px rgba(0,0,0,0.6);
+  }
+  .cheek-right { border-radius: 0 14px 14px 0; box-shadow: inset 5px 0 15px rgba(0,0,0,0.6); }
+
+  .window { background: var(--bg-plugin); width: 1020px; height: 760px; display: flex; flex-direction: column; border: 1px solid #1a1a18; }
+
+  /* TOP ROW: SCOPE & MASTER */
+  .top-row { display: flex; height: 480px; padding: 30px; gap: 30px; box-sizing: border-box; }
+  
+  .scope-container { flex: 2; position: relative; }
+  .master-container { flex: 1; background: #1e1e1c; border: 1px solid #151514; border-radius: 4px; display: flex; flex-direction: column; padding: 25px; box-sizing: border-box; }
+
+  /* OSCILLOSCOPE */
+  .scope { background: var(--bg-panel); border: 6px solid #151514; border-radius: 10px; height: 100%; position: relative; overflow: hidden; box-shadow: inset 0 0 80px #000; }
+  .scope-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(51,255,51,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(51,255,51,0.02) 1px, transparent 1px); background-size: 40px 40px; }
+  
+  /* MASTER CONTROLS */
+  .label-hw { font-size: 10px; font-weight: 800; letter-spacing: 3px; color: var(--text-dim); border-bottom: 1px solid #151514; padding-bottom: 8px; margin-bottom: 25px; text-transform: uppercase; }
+  
+  .knob-box { display: flex; flex-direction: column; align-items: center; margin-bottom: 30px; }
+  .knob { background: radial-gradient(circle, #333, #111); border-radius: 50%; border: 3px solid #000; position: relative; box-shadow: 0 8px 15px rgba(0,0,0,0.6); }
+  .knob::after { content: ''; position: absolute; background: #fff; border-radius: 1px; }
+  
+  .k-large { width: 75px; height: 75px; } .k-large::after { width: 3px; height: 18px; top: 8px; left: 36px; }
+  .k-mid { width: 50px; height: 50px; } .k-mid::after { width: 2px; height: 12px; top: 6px; left: 24px; }
+  
+  .knob-label { font-size: 8px; font-weight: bold; color: var(--text-mid); margin-top: 10px; letter-spacing: 1px; }
+
+  .nixie-box { background: #000; padding: 12px; border: 2px solid #151514; border-radius: 4px; text-align: center; margin-top: auto; box-shadow: inset 0 0 15px rgba(0,0,0,1); }
+  .nixie-val { font-family: 'Courier New', monospace; color: var(--nixie); font-size: 22px; font-weight: bold; text-shadow: 0 0 15px var(--nixie); }
+
+  /* BOTTOM ROW: MATRIX & TOOLBOX */
+  .bottom-row { display: flex; height: 280px; padding: 0 30px 30px 30px; gap: 30px; box-sizing: border-box; }
+  
+  .matrix { flex: 2; background: #181816; border: 2px solid #151514; border-radius: 4px; display: flex; box-shadow: inset 0 0 40px #000; overflow: hidden; }
+  
+  .strip { flex: 1; border-right: 1px solid #000; display: flex; flex-direction: column; align-items: center; padding: 20px 0; position: relative; }
+  .strip:last-child { border-right: none; }
+  .strip.selected { background: rgba(51, 255, 51, 0.03); }
+  .strip-name { font-size: 9px; font-weight: 900; color: #333; margin-bottom: 25px; letter-spacing: 1.5px; }
+  
+  .meter-track { width: 14px; height: 120px; background: #000; border: 1px solid #222; position: relative; }
+  .meter-level { position: absolute; bottom: 0; width: 100%; background: #555; transition: height 0.05s, background 0.05s; }
+  .meter-level.firing { background: #fff; box-shadow: 0 0 12px #fff; }
+  .threshold { position: absolute; left: -5px; width: 24px; height: 2px; background: #cc3333; z-index: 10; border-radius: 1px; }
+
+  /* TOOLBOX (SEZIONE D) */
+  .toolbox { flex: 1; background: #1e1e1c; border: 1px solid #151514; border-radius: 4px; position: relative; overflow: hidden; padding: 25px; box-sizing: border-box; }
+  .screw { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle, #444, #222); border: 1px solid #000; position: absolute; }
+  .screw::after { content: ''; position: absolute; width: 10px; height: 1px; background: #000; top: 6px; left: 2px; }
+  
+  .toolbox-content { display: flex; flex-direction: column; height: 100%; }
+  .owner-plate { margin-top: 15px; border-left: 2px solid #111; padding-left: 15px; }
+  .owner-name { font-size: 13px; font-weight: 800; color: #111; letter-spacing: 1px; }
+  
+  .expert-link { margin-top: auto; background: #151514; padding: 8px; border: 1px solid #222; text-align: center; border-radius: 2px; cursor: pointer; }
+  .expert-link:hover { background: #222; }
+  .expert-text { font-size: 8px; font-weight: bold; color: #444; letter-spacing: 2px; }
+
+</style>
+</head>
+<body>
+
+  <h2 style="font-size:10px; letter-spacing:8px; color:#444; margin-bottom:30px; text-transform:uppercase;">V15: Precision Audit (Cymbal Isolation Strategy)</h2>
+
+  <div class="chassis">
+    <div class="cheek"></div>
+    <div class="window">
+      
+      <!-- TOP: ANALYTICS & CONTROL -->
+      <div class="top-row">
+        <div class="scope-container">
+          <div class="scope">
+            <div class="scope-grid"></div>
+            <div style="position:absolute; top:20px; left:25px; font-size:9px; color:var(--crt-green); opacity:0.6; font-family:monospace;">SRC: OH_LEFT | ANALYZING: SNARE</div>
+            
+            <!-- WAVEFORM SIMULATION -->
+            <svg style="position:absolute; inset:0; width:100%; height:100%;" preserveAspectRatio="none">
+              <path d="M0 240 Q 100 100 200 240 T 400 240 T 600 240" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2"/>
+            </svg>
+
+            <!-- HITS -->
+            <div style="position:absolute; left:20%; top:15%; bottom:15%; width:2px; background:#fff; box-shadow:0 0 20px #fff;"></div>
+            <div style="position:absolute; left:45%; top:40%; bottom:40%; width:1px; background:#fff; opacity:0.3; border-left:1px dashed #fff;"></div>
+            <div style="position:absolute; left:70%; top:15%; bottom:15%; width:2px; background:#fff; box-shadow:0 0 20px #fff;"></div>
+
+            <div style="position:absolute; bottom:20px; right:25px; display:flex; gap:10px; align-items:center;">
+               <div style="width:8px; height:8px; background:var(--crt-green); border-radius:50%; box-shadow:0 0 10px var(--crt-green);"></div>
+               <span style="font-size:10px; font-weight:bold; color:#fff; letter-spacing:1px;">LOCKED</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="master-container">
+          <div class="label-hw">MASTER ENGINE</div>
+          
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div class="knob-box">
+              <div class="knob k-large" style="transform: rotate(20deg);"></div>
+              <div class="knob-label">SENSITIVITY</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:20px;">
+              <div class="knob-box">
+                <div class="knob k-mid" style="transform: rotate(-45deg);"></div>
+                <div class="knob-label">DISCRIM.</div>
+              </div>
+              <div class="knob-box">
+                <div class="knob k-mid" style="transform: rotate(10deg);"></div>
+                <div class="knob-label">DYNAMICS</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="nixie-box">
+            <div style="font-size:8px; color:var(--text-dim); margin-bottom:8px; letter-spacing:1px;">LOOK-AHEAD DELAY</div>
+            <div class="nixie-val">100.00 MS</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM: MATRIX & TOOLBOX -->
+      <div class="bottom-row">
+        <div class="matrix" id="matrix-root"></div>
+
+        <div class="toolbox">
+          <div class="screw" style="top:10px; left:10px;"></div>
+          <div class="screw" style="top:10px; right:10px;"></div>
+          <div class="screw" style="bottom:10px; left:10px;"></div>
+          <div class="screw" style="bottom:10px; right:10px;"></div>
+
+          <div class="toolbox-content">
+            <div class="label-hw" style="margin-bottom:15px;">UNIT DATA</div>
+            <div class="owner-plate">
+              <div class="owner-name">MARCO ROSSI</div>
+              <div style="font-size:9px; color:#111; font-weight:bold; margin-top:4px;">REF: OPX-LN-9928</div>
+            </div>
+            
+            <div style="margin-top:20px; font-size:9px; color:#444; font-weight:bold;">
+              CORE: <span style="color:#222;">TCN_GEN_II_HYBRID</span>
+            </div>
+
+            <div class="expert-link">
+              <div class="expert-text">REVEAL EXPERT TRIM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="cheek cheek-right"></div>
+  </div>
+
+  <script>
+    const data = [
+      { id: 'KICK', v: 80, t: 40, f: true },
+      { id: 'SNARE', v: 95, t: 50, f: true, s: true },
+      { id: 'TOM 1', v: 10, t: 30, f: false },
+      { id: 'TOM 2', v: 15, t: 30, f: false },
+      { id: 'H-HAT', v: 75, t: 20, f: true },
+      { id: 'RIDE', v: 40, t: 45, f: false },
+      { id: 'CRASH', v: 65, t: 30, f: true },
+      { id: 'SPLASH', v: 5, t: 35, f: false }
+    ];
+
+    const root = document.getElementById('matrix-root');
+    data.forEach(d => {
+      root.innerHTML += `
+        <div class="strip ${d.s ? 'selected' : ''}">
+          <div class="strip-name">${d.id}</div>
+          <div class="meter-track">
+            <div class="meter-level ${d.f ? 'firing' : ''}" style="height: ${d.v}%;"></div>
+            <div class="threshold" style="bottom: ${d.t}%;"></div>
+          </div>
+          <div style="width:6px; height:6px; border-radius:50%; background:${d.f ? '#fff' : '#111'}; margin-top:20px; box-shadow: ${d.f ? '0 0 10px #fff' : 'none'}; border:1px solid #000;"></div>
+        </div>`;
+    });
+  </script>
+
+</body>
+</html>

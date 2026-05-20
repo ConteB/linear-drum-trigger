@@ -1,30 +1,27 @@
-# SESSION HANDOVER REVISION (SOP-013)
-**Data:** 2026-05-18
-**Stato:** STRATEGIC BLUEPRINT LOCKED
-**Project:** Drum-Trigger (Fresh)
+# SESSION HANDOVER - 2026-05-20 (rev. post-audit)
+**Task Attivo:** AUDIT DI COERENZA DOCUMENTALE — COMPLETATO
+**Stato:** Documentazione a Gate L1 (Design Lock)
 
-## 🎯 MANDATO ESEGUITO (2026-05-18)
-Completata la definizione dottrinale, architetturale, infrastrutturale ed estetica di **OP-NeuroTrigger**. Il progetto è ora un asset industriale pronto per la fase di setup tecnico e generazione dati.
+## KEY CONTEXT
+È stato condotto un audit completo della documentazione di Intelligence. Risolte ~30 incoerenze su 15 documenti. Registro integrale: `AUDIT_RESOLUTION_LOG.md`.
 
-## 🛠️ STATO TECNICO & STRATEGICO
-- **Repository:** `drum-trigger-fresh` sincronizzato su GitHub (main). 100% clean.
-- **Infrastruttura:** **Scenario BETA (Hybrid)** confermato. Azure Blob Storage + DVC per il versionamento.
-- **Data Doctrine:** 99.9% (Stem), 98% (AI-Isolates), 75-80% (Mix Mode). Stack di rendering zero-cost (Sfizz/GMD/SM Drums).
-- **UI/UX Identity:** **"Laboratory Precision"**. Estetica vettoriale, monocromatica (Ghiaccio/Fosforo), ispirata agli oscilloscopi e agli strumenti di misura scientifici. Scartato definitivamente il look "90s Digital".
-- **Architettura Nucleo:** Multi-Scale TCN con interfaccia modulare `IDrumBrain`.
+### Decision Lock di questa sessione
+- **Render engine:** Sfizz + DrumGizmo (FluidSynth/SF2 scartato).
+- **Prezzo:** $149 USD a regime / $99 USD Early-Access.
+- **Formati v1.0:** VST3 + AU (AAX escluso).
 
-## ✅ MILESTONE RAGGIUNTE
-1. [x] **Infrastructure Audit:** Selezione Azure/DVC per scalabilità industriale.
-2. [x] **Compliance Lock:** Registro provenienza dati (CC-BY/CC0) per vendita commerciale blindata.
-3. [x] **UI/UX Pivot:** Definizione identità visiva High-End "Laboratory Grade".
-4. [x] **Budget Calibration:** Allocazione dei €500 (Focus su Marketing e mantenimento Cloud).
+## STATO PRECEDENTE (ancora valido)
+- Estetica definitiva: Industrial Lab anni '70, metallo spazzolato, fianchetti in noce. Layout V19, render V26.
+- Sinistra (2/3): Display CRT + Matrix 8-bus. Destra (1/3): Stack Master, Neural Slot (Nixie), Toolbox.
 
-## ⏭️ PROSSIMI STEP (MANDATO PER IL SUCCESSORE)
-1. **Azure Setup:** Configurazione fisica del container Blob e inizializzazione DVC.
-2. **Guerrilla Pipeline:** Scripting per il download automatico dei kit (SM Drums, DrumGizmo) e primo rendering batch asincrono.
-3. **Brain Specification:** Definizione matematica dei layer della Multi-Scale TCN (Dilatazioni, Kernel sizes).
-4. **UI Sketches:** Generazione dei primi asset procedurali (textures alluminio, display vettoriale).
+## PENDING ACTIONS FOR NEXT SESSION
+1. **Compliance (blocco Gate L2):** ottenere conferma scritta dei termini di licenza di ENST-Drums e MedleyDB; verificare la licenza "Donationware" di SM Drums.
+2. **Completamento documentale residuo** prima dell'avvio dello sviluppo.
+3. Creazione classi JUCE Custom Component: Edgewise Meter, Nixie Display, Bakelite Knobs (PBR).
+4. Implementazione "Toolbox" con reveal della PCB.
+5. Mapping dei parametri DSP (Sensitivity, Discrim, Dynamics) ai controlli Master.
 
-## 📡 NOTE DI GOVERNANCE (Gianpiero Scappelloni)
-*Il progetto ha ora un valore percepito di ordine superiore. La scelta estetica "Laboratory Precision" deve riflettersi in ogni aspetto della comunicazione: precisione assoluta, zero fronzoli, verità matematica. Non deviare dal binario Azure/DVC: è la nostra assicurazione sulla vita professionale.*
-
+## MANDATES
+- Nessun claim di accuratezza numerico pubblico prima del Gate L4.
+- Rispettare beveling e riflessi del render V26.
+- Zero-Allocation durante il rendering del segnale sull'oscilloscopio.

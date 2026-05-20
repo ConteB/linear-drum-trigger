@@ -1,0 +1,250 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #1a1a16; /* Warm dark grey */
+    --bg-plugin: #2a2a26; /* Metal casing color */
+    --bg-panel: #0a0e0a; /* CRT background */
+    --bg-matrix: #1e1e1a;
+    --border-color: #3a3a34;
+    --text-dim: #66635a;
+    --text-bright: #c0beb0;
+    --accent: #eee;
+    --crt-green: #22ff22;
+    --crt-glow: rgba(34, 255, 34, 0.2);
+    --warning: #aa2222;
+    --pcb-green: #0d120d;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-bright);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; /* 70s choice */
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  h2 {
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-size: 11px;
+    margin-top: 40px;
+    margin-bottom: 15px;
+    width: 750px;
+  }
+
+  /* --- 70s BENCH FORM FACTOR (More Square / 4:3 style) --- */
+  .plugin-window {
+    background-color: var(--bg-plugin);
+    border: 3px solid #1a1a18;
+    width: 750px; /* Reduced width */
+    height: 650px; /* Increased height */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.9);
+    border-radius: 8px;
+  }
+
+  /* TOP: CRT OSCILLOSCOPE (Vintage Look) */
+  .oscilloscope {
+    background-color: var(--bg-panel);
+    position: relative;
+    width: 100%;
+    height: 380px; /* Dominant CRT */
+    border-bottom: 4px solid #1a1a18;
+    box-shadow: inset 0 0 50px rgba(0,0,0,1);
+    border-radius: 4px 4px 0 0;
+    margin: 10px;
+    width: calc(100% - 20px);
+  }
+  /* CRT Grid */
+  .oscilloscope::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(34,255,34,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,255,34,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .waveform-axis { position: absolute; top: 50%; width: 100%; border-top: 1px solid rgba(34,255,34,0.1); }
+  .marker-crt { 
+    position: absolute; 
+    height: 100%; 
+    width: 2px; 
+    background-color: var(--crt-green); 
+    box-shadow: 0 0 10px var(--crt-green); 
+    opacity: 0.8;
+  }
+
+  /* BOTTOM AREA: CONTROLS & MATRIX */
+  .bottom-area {
+    display: flex;
+    width: 100%;
+    height: 260px;
+    background-color: #22221e;
+  }
+
+  /* Matrix (Grouped like bench hardware) */
+  .matrix {
+    display: flex;
+    flex-wrap: wrap; /* 2 rows of 4 channels */
+    width: 470px;
+    height: 100%;
+    padding: 10px;
+    gap: 2px;
+    border-right: 4px solid #1a1a18;
+  }
+
+  .channel-strip {
+    width: 105px;
+    height: 110px;
+    background-color: #2a2a26;
+    border: 1px solid #1e1e1c;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0;
+  }
+  .ch-label { font-size: 9px; color: #555; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px;}
+  .meter-vintage {
+    width: 12px;
+    height: 60px;
+    background: #000;
+    border: 1px solid #333;
+    position: relative;
+  }
+  .led-bar { position: absolute; bottom: 0; width: 100%; background: #999; }
+  .trigger-led { width: 4px; height: 4px; border-radius: 50%; background: #111; margin-top: 10px;}
+
+  /* MAINTENANCE & OWNERSHIP (70s Style) */
+  .maint-area {
+    flex-grow: 1;
+    position: relative;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Plate Serigraphy */
+  .ownership-plate {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .plate-label { font-size: 8px; color: #444; font-weight: bold; }
+  .plate-value { font-size: 10px; color: #777; border-bottom: 1px solid #333; padding-bottom: 2px; font-family: monospace; }
+
+  /* The Screw-down cover */
+  .maint-cover {
+    position: absolute;
+    inset: 10px;
+    background-color: #22221e;
+    border: 2px solid #1a1a18;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+  }
+  .screw { width: 14px; height: 14px; background: #333; border: 1px solid #000; border-radius: 50%; position: absolute; }
+  .screw-tl { top: 10px; left: 10px; } .screw-tr { top: 10px; right: 10px; }
+  .screw-bl { bottom: 10px; left: 10px; } .screw-br { bottom: 10px; right: 10px; }
+  .screw::after { content: ''; position: absolute; width: 10px; height: 2px; background: #000; top: 6px; left: 2px; }
+
+  .seal-text { color: #333; font-weight: bold; font-size: 9px; letter-spacing: 2px; border: 1px solid #1a1a18; padding: 4px; }
+
+  /* PCB REVEAL (Same size) */
+  .maint-pcb {
+    position: absolute;
+    inset: 10px;
+    background-color: #0d120d;
+    z-index: 10;
+    padding: 15px;
+    border: 1px solid #1a2a1a;
+  }
+  .pcb-serigraph { border-top: 1px solid #1a2a1a; margin-top: auto; padding-top: 8px; }
+  .seri-line { font-size: 7px; color: #1a2a1a; font-family: monospace; }
+
+</style>
+</head>
+<body>
+
+  <h2>V8.1: 1970s Bench Instrument (Closed)</h2>
+  <div class="plugin-window">
+    <!-- CRT DISPLAY -->
+    <div class="oscilloscope">
+      <div class="waveform-axis"></div>
+      <div class="marker-crt" style="left: 30%;"></div>
+      <div class="marker-crt" style="left: 65%; opacity: 0.3;"></div>
+    </div>
+    
+    <div class="bottom-area">
+      <!-- Matrix organized in 4x2 grid for hardware density -->
+      <div class="matrix" id="m1"></div>
+      
+      <div class="maint-area">
+        <div class="ownership-plate">
+          <div class="plate-label">OPERATOR ID</div>
+          <div class="plate-value">MARCO ROSSI</div>
+          <div class="plate-label">ASSET REF</div>
+          <div class="plate-value">LN-9928-OPX</div>
+        </div>
+        
+        <!-- COVER -->
+        <div class="maint-cover">
+          <div class="screw screw-tl"></div><div class="screw screw-tr"></div>
+          <div class="screw screw-bl"></div><div class="screw screw-br"></div>
+          <div class="seal-text">FACTORY CALIBRATION</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>V8.2: 1970s Bench Instrument (PCB Reveal)</h2>
+  <div class="plugin-window">
+    <div class="oscilloscope"></div>
+    <div class="bottom-area">
+      <div class="matrix" id="m2"></div>
+      <div class="maint-area">
+        <div class="maint-pcb">
+           <div style="font-size: 8px; color: #223322; margin-bottom: 10px;">INTERNAL TRIMMERS</div>
+           <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <div style="width: 15px; height: 15px; background: #555; border-radius: 50%; border: 1px solid #111;"></div>
+              <div style="width: 15px; height: 15px; background: #555; border-radius: 50%; border: 1px solid #111;"></div>
+           </div>
+           
+           <div class="pcb-serigraph">
+              <div class="seri-line">USER: MARCO ROSSI</div>
+              <div class="seri-line">MODEL: TCN_ENGINE_V2.1</div>
+              <div class="seri-line">APP_V: 1.0.4C</div>
+              <div class="seri-line">LINEAR (C) 1970-2026</div>
+           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNARE', 'TOM 1', 'TOM 2', 'H-HAT', 'RIDE', 'CRASH', 'SPLASH'];
+    function populate(id) {
+      const container = document.getElementById(id);
+      let html = '';
+      labels.forEach((l, i) => {
+        html += `<div class="channel-strip"><div class="ch-label">${l}</div><div class="meter-vintage"><div class="led-bar" style="height: 35%;"></div></div><div class="trigger-led"></div></div>`;
+      });
+      container.innerHTML = html;
+    }
+    populate('m1'); populate('m2');
+  </script>
+
+</body>
+</html>

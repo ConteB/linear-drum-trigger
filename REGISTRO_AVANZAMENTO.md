@@ -1,13 +1,11 @@
-# REGISTRO AVANZAMENTO COMMESSA - DRUM-TRIGGER (FRESH)
-**Status:** RECOVERED - CLEAN SLATE
+# REGISTRO AVANZAMENTO — PUNTATORE (ARCHIVIATO)
 **ID:** LIN-DT-REC-001
 
-## 📈 ROADMAP
-- [x] **M0: Emergency Recovery** - Creazione repo "Fresh" e bonifica logica.
-- [ ] **M1: GitHub Sync** - Push su nuovo remote pulito.
-- [ ] **M2: Data Re-linking** - Collegamento agli asset locali (non versionati).
+⚠️ Questo file è stato **consolidato** in audit (2026-05-20) per eliminare la duplicazione.
 
-## 📝 LOG TECNICO
-| Data | Task | Descrizione | Status |
-| :--- | :--- | :--- | :--- |
-| 2026-05-18 | RECOVERY | Operazione Clean Slate: migrazione selettiva logica e docs. | COMPLETATO |
+Il registro di avanzamento **canonico** del progetto è:
+👉 [`04_INTELLIGENCE/REGISTRO_AVANZAMENTO.md`](04_INTELLIGENCE/REGISTRO_AVANZAMENTO.md)
+
+La fase di "Clean Slate Recovery" (creazione repo Fresh, sync su GitHub, re-linking degli asset locali) è **completata** ed è tracciata come milestone M0/M1 nel registro canonico.
+
+**Non aggiornare più questo file.**

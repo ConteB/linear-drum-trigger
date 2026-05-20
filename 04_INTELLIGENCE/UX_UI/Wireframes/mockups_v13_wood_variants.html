@@ -1,0 +1,144 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #11110f; 
+    --bg-plugin: #282826;
+    --bg-panel: #050505;
+    --bg-matrix: #181816;
+    --wood: #422816; /* Noce scuro */
+    --wood-mid: #5a351e;
+    --wood-light: #6b4028;
+    --crt-green: #33ff33;
+    --nixie: #ff7700;
+    --metal-edge: #1a1a18;
+    --text-label: #55524a;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: #b0ae9d;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  h2 { color: #333; text-transform: uppercase; letter-spacing: 5px; font-size: 10px; margin-bottom: 25px; width: 1000px; text-align: center; }
+
+  /* --- COMMON STRUCTURE --- */
+  .chassis { display: flex; box-shadow: 0 60px 120px rgba(0,0,0,1); border-radius: 4px; overflow: hidden; margin-bottom: 100px;}
+  .cheek { width: 25px; height: 720px; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); }
+  .window { background-color: var(--bg-plugin); width: 950px; height: 720px; display: flex; flex-direction: column; }
+  .top-row { display: flex; height: 440px; padding: 25px 25px 0 25px; gap: 20px; box-sizing: border-box; }
+  .bottom-row { display: flex; height: 280px; padding: 15px 25px 25px 25px; gap: 20px; box-sizing: border-box; }
+  .col-scope { width: 640px; }
+  .col-master { width: 310px; }
+  
+  .scope { background-color: var(--bg-panel); border: 4px solid #151514; border-radius: 8px; position: relative; overflow: hidden; height: 100%; box-shadow: inset 0 0 60px #000; }
+  .matrix { background-color: var(--bg-matrix); border: 2px solid var(--metal-edge); display: flex; height: 100%; box-shadow: inset 0 0 30px #000; }
+  .master { background-color: #222220; border: 1px solid var(--metal-edge); border-radius: 4px; display: flex; flex-direction: column; padding: 20px; height: 100%; box-sizing: border-box; }
+  .maint { background-color: #1e1e1c; border: 1px solid var(--metal-edge); height: 100%; position: relative; }
+
+  /* --- VAR 13.1: "THE NEVE/STUDER" (Smooth rounded wood edges) --- */
+  .v1 .cheek {
+    background: linear-gradient(90deg, var(--wood), var(--wood-light), var(--wood));
+    border-radius: 12px 0 0 12px;
+  }
+  .v1 .cheek-right { border-radius: 0 12px 12px 0; }
+  .v1 .window { border-top: 1px solid #333; border-bottom: 2px solid #000; }
+
+  /* --- VAR 13.2: "THE INDUSTRIAL LAB" (Angled Wood, Screw-on) --- */
+  .v2 .cheek {
+    background: repeating-linear-gradient(45deg, var(--wood), var(--wood) 2px, var(--wood-mid) 2px, var(--wood-mid) 4px);
+    width: 30px;
+    border: 1px solid #000;
+    position: relative;
+  }
+  .v2 .cheek::before {
+    content: ''; position: absolute; top: 20px; left: 7px; width: 16px; height: 16px; border-radius: 50%; background: #333; border: 1px solid #000;
+  }
+  .v2 .cheek::after {
+    content: ''; position: absolute; bottom: 20px; left: 7px; width: 16px; height: 16px; border-radius: 50%; background: #333; border: 1px solid #000;
+  }
+
+  /* --- VAR 13.3: "BRUTALIST PRECISION" (Thin, High-contrast dark wood) --- */
+  .v3 .cheek {
+    background: #2a180d; /* Very dark walnut */
+    width: 15px;
+    border-left: 2px solid #5a351e;
+  }
+  .v3 .window { background-color: #1a1a18; } /* Darker metal */
+
+  /* METER RE-STYLE FOR HIGH END FEEL */
+  .strip { flex: 1; display: flex; flex-direction: column; align-items: center; border-right: 1px solid #000; padding: 15px 0; }
+  .label { font-size: 10px; color: #333; font-weight: 800; margin-bottom: 25px; letter-spacing: 2px; }
+  .mbg { width: 16px; height: 120px; background: #000; border: 1px solid #222; position: relative; }
+  .mf { position: absolute; bottom: 0; width: 100%; background: #888; border-top: 1px solid #fff; }
+
+</style>
+</head>
+<body>
+
+  <h2>V13.1: "The Studio Classic" (Rounded Walnut, Neve-Style Polish)</h2>
+  <div class="chassis v1">
+    <div class="cheek"></div>
+    <div class="window">
+      <div class="top-row">
+        <div class="scope col-scope"></div>
+        <div class="master col-master"><div style="font-size:8px; color:#444;">MASTER_CTRL</div></div>
+      </div>
+      <div class="bottom-row">
+        <div class="matrix col-scope" id="m1"></div>
+        <div class="maint col-master"></div>
+      </div>
+    </div>
+    <div class="cheek cheek-right"></div>
+  </div>
+
+  <h2>V13.2: "The Scientific Lab" (Wide Angled Wood, Visible Mounting Screws)</h2>
+  <div class="chassis v2">
+    <div class="cheek"></div>
+    <div class="window">
+      <div class="top-row">
+        <div class="scope col-scope"></div>
+        <div class="master col-master"></div>
+      </div>
+      <div class="bottom-row">
+        <div class="matrix col-scope" id="m2"></div>
+        <div class="maint col-master"></div>
+      </div>
+    </div>
+    <div class="cheek"></div>
+  </div>
+
+  <h2>V13.3: "Brutalist Precision" (Stealth Dark Walnut, Metal Dominant)</h2>
+  <div class="chassis v3">
+    <div class="cheek"></div>
+    <div class="window">
+      <div class="top-row">
+        <div class="scope col-scope"></div>
+        <div class="master col-master"></div>
+      </div>
+      <div class="bottom-row">
+        <div class="matrix col-scope" id="m3"></div>
+        <div class="maint col-master"></div>
+      </div>
+    </div>
+    <div class="cheek"></div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNARE', 'TOM 1', 'TOM 2', 'H-HAT', 'RIDE', 'CRASH', 'SPLASH'];
+    function populate(id) {
+      const container = document.getElementById(id);
+      labels.forEach((l) => {
+        container.innerHTML += `<div class="strip"><div class="label">${l}</div><div class="mbg"><div class="mf" style="height:40%;"></div></div></div>`;
+      });
+    }
+    populate('m1'); populate('m2'); populate('m3');
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OP-NEUROTRIGGER 3D RENDER</title>
+    <style>
+        body { margin: 0; background: #050505; overflow: hidden; font-family: sans-serif; }
+        #ui-overlay { position: absolute; top: 20px; left: 20px; color: #444; font-size: 10px; letter-spacing: 2px; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="ui-overlay">LINEAR DIVISION // V20 3D PROTOTYPE // USE MOUSE TO ROTATE</div>
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050505);
+        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        camera.position.set(0, 0, 10);
+
+        // --- PROCEDURAL WOOD TEXTURE ---
+        const woodCanvas = document.createElement('canvas');
+        woodCanvas.width = woodCanvas.height = 512;
+        const ctx = woodCanvas.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 512, 0);
+        grad.addColorStop(0, '#2a180d');
+        grad.addColorStop(0.5, '#4a2c1a');
+        grad.addColorStop(1, '#2a180d');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 512, 512);
+        for(let i=0; i<500; i++) {
+            ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.1})`;
+            ctx.fillRect(Math.random() * 512, 0, 1, 512);
+        }
+        const woodTex = new THREE.CanvasTexture(woodCanvas);
+
+        // --- MATERIALS ---
+        const woodMat = new THREE.MeshStandardMaterial({ 
+            map: woodTex, roughness: 0.4, metalness: 0.1,
+            color: new THREE.Color(0x886655) 
+        });
+        const metalMat = new THREE.MeshStandardMaterial({ 
+            color: 0x151515, roughness: 0.3, metalness: 0.8 
+        });
+        const panelMat = new THREE.MeshStandardMaterial({ 
+            color: 0x050505, roughness: 0.9, metalness: 0.1 
+        });
+
+        // --- GEOMETRY: THE CHASSIS ---
+        const chassisGroup = new THREE.Group();
+
+        // Main Body (Window)
+        const bodyGeo = new THREE.BoxGeometry(5, 3.5, 0.5);
+        const body = new THREE.Mesh(bodyGeo, metalMat);
+        body.receiveShadow = true;
+        chassisGroup.add(body);
+
+        // Wood Cheeks (Rounded)
+        const cheekGeo = new THREE.BoxGeometry(0.3, 3.8, 0.8);
+        const cheekLeft = new THREE.Mesh(cheekGeo, woodMat);
+        cheekLeft.position.x = -2.65;
+        cheekLeft.castShadow = true;
+        chassisGroup.add(cheekLeft);
+
+        const cheekRight = new THREE.Mesh(cheekGeo, woodMat);
+        cheekRight.position.x = 2.65;
+        cheekRight.castShadow = true;
+        chassisGroup.add(cheekRight);
+
+        // Screens (Emissive)
+        const scopeGeo = new THREE.PlaneGeometry(3, 2);
+        const scopeMat = new THREE.MeshBasicMaterial({ color: 0x001100 });
+        const scope = new THREE.Mesh(scopeGeo, scopeMat);
+        scope.position.set(-0.8, 0.6, 0.26);
+        chassisGroup.add(scope);
+
+        // Knobs (Simple Cylinders)
+        const knobGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.1, 32);
+        const knobMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.2, metalness: 0.5 });
+        const knob1 = new THREE.Mesh(knobGeo, knobMat);
+        knob1.rotation.x = Math.PI/2;
+        knob1.position.set(1.2, 0.5, 0.3);
+        chassisGroup.add(knob1);
+
+        const knob2 = new THREE.Mesh(knobGeo, knobMat);
+        knob2.rotation.x = Math.PI/2;
+        knob2.position.set(2.0, 0.5, 0.3);
+        chassisGroup.add(knob2);
+
+        scene.add(chassisGroup);
+
+        // --- LIGHTING (STUDIO SETUP) ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+        scene.add(ambientLight);
+
+        const keyLight = new THREE.DirectionalLight(0xffffff, 2);
+        keyLight.position.set(5, 5, 5);
+        keyLight.castShadow = true;
+        scene.add(keyLight);
+
+        const fillLight = new THREE.RectAreaLight(0x4444ff, 2, 10, 10);
+        fillLight.position.set(-5, 2, 2);
+        fillLight.lookAt(0,0,0);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.PointLight(0xffffff, 5);
+        rimLight.position.set(0, 4, -2);
+        scene.add(rimLight);
+
+        // Reflection Floor
+        const floorGeo = new THREE.PlaneGeometry(100, 100);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1, metalness: 0.5 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -3;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+# 🎯 MASTER CHECKLIST (OP-NEUROTRIGGER LAUNCHPAD)
+**Data ultima revisione:** 20 Maggio 2026
+**Status:** PRE-PRODUZIONE DOCUMENTALE — DESIGN ALIGNMENT
+Questa è la checklist operativa globale che copre tutti i domini necessari al lancio del prodotto, definita dopo l'astrazione concettuale.
+
+> ### 📌 LEGENDA DI STATO (LETTURA OBBLIGATORIA)
+> Il progetto è in **PRE-PRODUZIONE DOCUMENTALE**: nessun codice di produzione è stato scritto. Gli script presenti in `src/` sono prototipi-test usa e getta, **non vincolanti** e destinati alla riscrittura.
+> - `[x]` = **DESIGN LOCK** — decisione di design/architettura approvata e blindata via STRP-001. **NON** significa "implementato".
+> - `[ ]` = **DA TRATTARE** — decisione di design ancora aperta.
+> - **Stato implementazione codice:** 0% (l'avvio dello sviluppo è subordinato al completamento documentale — Gate L1).
+> Tracciamento implementazione: `SPRINT_BOARD.md` e `04_INTELLIGENCE/REGISTRO_AVANZAMENTO.md`.
+
+> ### 🛑 PROTOCOLLO DI RISOLUZIONE TASK (STRP-001)
+> Ogni punto marcato "DA TRATTARE" deve essere processato attraverso questa pipeline in 6 fasi:
+> 1. **Competitor & Market Analysis:** Studio soluzioni industria per problematiche analoghe.
+> 2. **Open-Source Codebase Analysis:** Ricerca e analisi di progetti open-source (es. GitHub) per studiare pattern implementativi stabili e collaudati.
+> 3. **UX/UI Impact:** Progettazione esperienza utente (es. "Laboratory Precision").
+> 4. **C++ / Tech Implementation Matrix:** Valutazione tecnica (Complessità, Aderenza Mandati Linear, Rischi).
+> 5. **Executive Briefing:** Presentazione di un resoconto finale dettagliato al CEO per la scelta e l'approvazione.
+> 6. **Decision, Blueprint Lock & Docs Update:** A valle dell'approvazione, aggiornare sistematicamente la `MASTER_CHECKLIST.md` e i documenti tecnici/UI correlati (es. `DOSSIER_TECNICO.md`).
+
+## 1. 🧠 AI & NEURAL ENGINEERING (PyTorch Core)
+- [x] **Topologia:** Strided-Context TCN (Comb-Filter Hack per compatibilità RTNeural).
+- [x] **Parametri:** Training mixed-precision (master FP32 + FP16), tensori del dataset storati in FP16, inferenza C++ in `float32` (RTNeural). Non-Causale, Look-ahead ~100ms. Output: matrice 8 target (piano-roll differenziabile).
+- [x] **Training Strategy:** Asymmetric Focal Loss (Zero Falsi Positivi) + Gaussian Target Smearing (±3ms).
+- [x] **Training Logistics:** Prototipazione locale su Mac M5 (MPS) per mini-batch. Addestramento "Gold" Finale delegato a GPU Cloud (Nvidia A100) per processare 1.5TB.
+- [x] **Validation Protocol:** Holdout Set Reale (ENST-Drums) e Franken-Mix (MedleyDB) — entrambi asset **Evaluation-Only** (mai usati per il training, mai ridistribuiti; vedi `DATA_PROVENANCE_LOG.md` §2.B) — più Ocular Proof. Nessun test su dati sintetici.
+
+## 2. 🗄️ DATA INFRASTRUCTURE & DATA ENGINEERING
+- [x] **Infrastruttura & Size:** Azure Blob (LRS) + DVC. Target Definitivo: **1.5 Terabyte (450 ore)**. Costo storage stimato ~$27/mo, coperto dal credito Azure di $200 per ~7 mesi (dettaglio in `STRATEGIC_INFRASTRUCTURE_AUDIT.md` §7).
+- [x] **Sovereignty:** Protocollo Escape Hatch (Dual Remote + Backup tar.zst in chiaro). `ONBOARDING_HUMAN.md` completato.
+- [x] **Pipeline Rendering (Python):** Motore ufficiale **Sfizz** (librerie SFZ multi-layer) + **DrumGizmo** (CLI, kit multi-microfono per il bleed reale). FluidSynth/SF2 scartato: i SoundFont non espongono tracce multi-mic e non possono generare il bleed, moat primario del prodotto.
+- [x] **Data Mutilation & Saboteurs:** Approvato modulo "Studio Mutilation". Approvata iniezione "Transient Saboteurs" (Sintetici via Sfizz + Dataset Esterni).
+- [x] **Machine-Gun Chaos:** Implementazione generazione stocastica di MIDI impossibili (Blast beats, multi-hits) per prevenire l'overfitting ritmico.
+- [x] **Acoustic Reverb:** Implementazione Convoluzione via `pedalboard` usando IRs (OpenAIR).
+- [x] **Augmentation & Lineage:** MIDI Jittering (Pre-render) e Protocollo DNA-Trace approvati.
+
+## 3. 🖥️ SOFTWARE ENGINEERING & DSP (C++ / JUCE)
+- [x] **Framework Inference:** RTNeural (Scelto per via del trucco Strided-Context compatibile).
+- [x] **Vincoli:** Zero-Allocation nel thread audio, latenza compensata (PDC).
+- [x] **Formati di Distribuzione:** v1.0 = **VST3 + AU**. AAX (Pro Tools) rinviato post-v1.0: richiede firma PACE, incompatibile con la filosofia anti-DRM (`DOSSIER_TECNICO.md` §11).
+- [x] **[STRP-001] PDC & Latenza:** Risolto. Scenario A (Honest Approach). La latenza di 100ms è fissa (setLatencySamples). UX gestita trasformando il vincolo in una feature: Badge UI "MODE: MIXING GRADE ONLY". Nessuna modalità live imperfetta.
+- [x] **[STRP-001] Logica di Routing MIDI:** Risolto. Implementata architettura **Chronos Engine** (Midi Delay-Line circolare). Il plugin garantisce un output **Sample-Accurate** compensando i 100ms di PDC. Il timing è deterministico e privo di jitter indipendentemente dalla dimensione del buffer DAW.
+- [ ] **DA TRATTARE (v1.x/v2.0 - C++ / Drag & Drop):** Implementazione tecnica del "Ghost File System" per l'esportazione asincrona. Architettura Chronos già predisposta per il mirroring su disco.
+- [x] **[STRP-001] Sistema di Licensing:** Risolto. Adottato modello "Soft-DRM" (stile Valhalla DSP) per rispettare l'UX dell'utente. Implementazione 100% offline tramite `juce::RSAKey` e `Keyfile`. Crittografia asimmetrica per bloccare i KeyGen. Sicurezza anti-patching garantita dal pattern "Poisoned DSP" (variabili di sblocco intrecciate nella logica di Look-ahead invece di semplici booleani). L'UI mostrerà `REGISTERED TO: [NOME]`.
+
+## 4. 🎨 PRODUCT DESIGN & UI/UX
+- [x] **Brand & Aesthetic:** "Laboratory Precision", Alluminio/Fumé, Monocromatico (Vector-style).
+- [x] **[STRP-001] DA TRATTARE (UX):** Gestione visiva dell'incertezza AI risolta tramite Architettura "Split-Focus". Master Matrix (8 LED Confidence Meters) + Detail Oscilloscope (Ghost Markers e Solid Hits rispetto alla soglia). Blueprint bloccato in `UX_BLUEPRINT_STRP-001.md`.
+- [x] **[STRP-001] DA TRATTARE (UX):** Prototipazione UI (Wireframes vettoriali). Risolto con Estetica "Hybrid Studio-Bench" (Noce/CRT/Metallo). Proporzioni 4:3. Mockup v09 bloccato. Guida di stile creata in `LINEAR_DESIGN_GUIDE.md`.
+
+## 5. 💼 BUSINESS, MARKETING & GOVERNANCE
+- [x] **Posizionamento & Prezzo:** Ultra-High-End, Premium Tier. **Prezzo ufficiale: $149 USD**; **Early-Access $99 USD** per la fase di validazione di mercato. Il budget interno di progetto resta espresso in EUR.
+- [x] **Rischi & Budget:** Budget €500, Azure coperto, Leakage chiavi mitigato.
+- [x] **[STRP-001] Go-to-Market:** Risolto. Definita strategia **"Ocular Proof"** basata sulla "Impossible Triad" (Extreme Bleed, Dynamic Ghosting, Machine-Gun Chaos). Documentato in `04_INTELLIGENCE/MARKETING_OCULAR_PROOF.md`.
+- [x] **[STRP-001] Governance:** Risolto. Implementato Protocollo **LINEAR-SHIELD** in `04_INTELLIGENCE/SUB_AGENT_GOVERNANCE.md`. Definiti i Trigger di Delega e i Verification Gates per i sub-agenti (DSP/UI).
+- [x] **[STRP-001] Ops:** Risolto. Adottata **Zero-PII Log Policy** (Protocollo ANONYMOUS-TRACE). Nessun dato sensibile, percorso utente o identificativo reale viene mai loggato o trasmesso. Diagnostica basata esclusivamente su Hash hardware e codici errore (Enums).
+
+## 6. 🚦 VALIDATION GATES (DEFINIZIONE CANONICA L1–L4)
+Livelli di maturità progressivi citati in `SPRINT_BOARD.md`, `PIPELINE_STATUS.json` e nei documenti marketing. Definizione unica e vincolante:
+- **L1 — Design Lock:** Documentazione organica completa e internamente coerente. *(Gate corrente — pre-produzione documentale.)*
+- **L2 — Pipeline Dati Validata:** `batch_generator` produce un mini-dataset Gold corretto end-to-end (demo batch superato).
+- **L3 — Prototipo Neurale:** TCN addestrata su mini-batch (Mac M5 / MPS) con metriche di onset significativamente non casuali.
+- **L4 — Studio-Grade Validation:** Il modello "Gold" supera l'Holdout reale (ENST-Drums) e l'Ocular Proof. È il gate che **sblocca i claim di accuratezza pubblici** e la modalità "Full Mix".
+
+---
+*Ogni punto "DA TRATTARE" è un blocco esecutivo per le prossime sessioni.*
+*Le decisioni di Design Lock derivano dal protocollo STRP-001 (6 fasi). Le risoluzioni dell'audit del 2026-05-20 sono tracciate in `04_INTELLIGENCE/AUDIT_RESOLUTION_LOG.md`.*

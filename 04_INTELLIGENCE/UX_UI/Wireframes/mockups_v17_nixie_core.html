@@ -1,0 +1,187 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #060605; 
+    --bg-plugin: #1c1c1a;
+    --chassis: #252523;
+    --panel-metal: #181817;
+    --wood: #3a2010;
+    --nixie-glow: #ff7700;
+    --nixie-dim: #331100;
+    --crt-green: #33ff33;
+    --needle: #ee3322;
+    --text-engraved: #000;
+    --text-label: #555;
+  }
+
+  body { background: var(--bg-main); color: #999; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; display: flex; flex-direction: column; align-items: center; }
+  
+  .chassis { display: flex; box-shadow: 0 120px 240px rgba(0,0,0,1); border-radius: 20px; overflow: hidden; border: 1px solid #000; }
+  
+  /* REAL WALNUT CHEEKS */
+  .cheek { 
+    width: 40px; height: 820px; 
+    background: linear-gradient(90deg, #150d06, var(--wood) 40%, #150d06);
+    border-radius: 20px 0 0 20px;
+    box-shadow: inset -8px 0 25px rgba(0,0,0,0.8);
+  }
+  .cheek-right { border-radius: 0 20px 20px 0; box-shadow: inset 8px 0 25px rgba(0,0,0,0.8); }
+
+  .window { background: var(--chassis); width: 1100px; height: 820px; display: flex; flex-direction: column; padding: 5px; box-sizing: border-box; }
+
+  /* TOP ROW: ANALYSIS & MASTER CONSOLE */
+  .top-row { display: flex; height: 520px; padding: 25px; gap: 25px; }
+  
+  .scope-area { flex: 2; background: #000; border: 10px solid #111; border-radius: 15px; position: relative; overflow: hidden; box-shadow: inset 0 0 120px rgba(0,0,0,1), 0 2px 5px rgba(255,255,255,0.05); }
+  .scope-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(51,255,51,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(51,255,51,0.015) 1px, transparent 1px); background-size: 40px 40px; }
+
+  /* MASTER CONSOLE (THE INTEGRATED PLATE) */
+  .master-plate { flex: 1.2; background: var(--panel-metal); border-radius: 8px; border: 1px solid #111; padding: 30px; display: flex; flex-direction: column; box-shadow: inset 0 2px 10px rgba(0,0,0,0.8), 0 1px 1px rgba(255,255,255,0.05); position: relative; }
+  
+  /* THE GALVANOMETER */
+  .meter-unit { height: 120px; background: #dcdcc0; border-radius: 6px 6px 60% 60%; border: 5px solid #111; position: relative; overflow: hidden; margin-bottom: 35px; box-shadow: inset 0 15px 30px rgba(0,0,0,0.3); }
+  .meter-scale { position: absolute; top: 15px; width: 100%; text-align: center; font-size: 9px; font-weight: 900; color: #222; letter-spacing: 3px; }
+  .meter-needle { position: absolute; bottom: -15px; left: 50%; width: 2px; height: 110px; background: var(--needle); transform-origin: bottom center; transform: rotate(10deg); box-shadow: 1px 0 3px rgba(0,0,0,0.3); }
+
+  /* BAKELITE KNOBS */
+  .controls-row { display: flex; justify-content: space-around; margin-bottom: 30px; }
+  .knob-unit { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .knob-bakelite { 
+    width: 60px; height: 60px; border-radius: 50%; 
+    background: radial-gradient(circle, #222 0%, #050505 100%);
+    border: 2px solid #000;
+    position: relative;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.8), inset 0 2px 2px rgba(255,255,255,0.1);
+  }
+  .knob-bakelite::after { content: ''; position: absolute; width: 4px; height: 18px; background: #eee; top: 6px; left: 28px; border-radius: 1px; }
+  .label-engraved { font-size: 8px; color: var(--text-label); font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
+
+  /* NIXIE DISPLAY CHANNEL (VETRO SCURO INCASSATO) */
+  .nixie-display { 
+    background: #050505; border: 2px solid #111; border-radius: 4px; 
+    padding: 15px; display: flex; flex-direction: column; gap: 15px;
+    box-shadow: inset 0 5px 20px rgba(0,0,0,1);
+    margin-top: auto;
+  }
+  .nixie-row { display: flex; justify-content: space-between; align-items: center; }
+  .nixie-tube { 
+    font-family: 'Courier New', monospace; font-size: 20px; font-weight: bold;
+    color: var(--nixie-glow); text-shadow: 0 0 15px var(--nixie-glow), 0 0 5px #fff;
+    padding: 2px 10px; background: rgba(255,100,0,0.05); border-radius: 3px;
+  }
+  .label-nixie { font-size: 7px; color: #333; letter-spacing: 2px; font-weight: bold; }
+
+  /* BOTTOM ROW: MATRIX & MAINTENANCE */
+  .bottom-row { display: flex; height: 300px; padding: 0 25px 25px 25px; gap: 25px; }
+  
+  .matrix-area { flex: 2; background: #121211; border: 4px solid #1a1a19; border-radius: 10px; display: flex; overflow: hidden; box-shadow: inset 0 0 40px #000; }
+  
+  /* MAINTENANCE / TOOLBOX (THE SCREWED PLATE) */
+  .maintenance-plate { flex: 1.2; background: #1e1e1c; border: 1px solid #111; border-radius: 6px; padding: 25px; position: relative; box-shadow: inset 0 1px 1px rgba(255,255,255,0.05); }
+  .screw { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle, #555, #222); border: 1px solid #000; position: absolute; }
+  .screw::after { content: ''; position: absolute; width: 10px; height: 1px; background: #000; top: 6px; left: 2px; }
+
+  .strip { flex: 1; border-right: 1px solid #000; display: flex; flex-direction: column; align-items: center; padding: 25px 0; }
+  .strip.selected { background: rgba(51, 255, 51, 0.02); }
+  .strip-label { font-size: 10px; font-weight: 900; color: #222; margin-bottom: 25px; letter-spacing: 1px; }
+  .m-bg { width: 16px; height: 130px; background: #000; border: 1px solid #1a1a19; position: relative; }
+  .m-f { position: absolute; bottom: 0; width: 100%; background: #444; }
+  .m-f.active { background: #fff; box-shadow: 0 0 15px #fff; }
+
+</style>
+</head>
+<body>
+
+  <h2 style="font-size:10px; letter-spacing:10px; color:#333; margin-bottom:30px; text-transform:uppercase;">OP-NEUROTRIGGER // V17 // NIXIE-CORE CONSOLE</h2>
+
+  <div class="chassis">
+    <div class="cheek"></div>
+    <div class="window">
+      
+      <!-- TOP: ANALYSIS & MASTER CONSOLE -->
+      <div class="top-row">
+        <div class="scope-area">
+          <div class="scope-grid"></div>
+          <div style="position:absolute; top:25px; left:30px; font-size:10px; color:var(--crt-green); opacity:0.6; letter-spacing:1px;">ANALYSIS_MODE: TCN_V2 // TARGET: SNARE</div>
+          
+          <div style="position:absolute; left:20%; top:10%; bottom:10%; width:2px; background:#fff; box-shadow:0 0 20px #fff;"></div>
+          <div style="position:absolute; left:50%; top:10%; bottom:10%; width:2px; background:#fff; box-shadow:0 0 20px #fff;"></div>
+        </div>
+
+        <div class="master-plate">
+          <div class="screw" style="top:10px; left:10px;"></div><div class="screw" style="top:10px; right:10px;"></div>
+          
+          <div class="meter-unit">
+            <div class="meter-scale">NEURAL_CONFIDENCE (%)</div>
+            <div class="meter-needle"></div>
+          </div>
+
+          <div class="controls-row">
+            <div class="knob-unit">
+              <div class="knob-bakelite"></div>
+              <div class="label-engraved">SENSITIVITY</div>
+            </div>
+            <div class="knob-unit">
+              <div class="knob-bakelite" style="transform: rotate(45deg);"></div>
+              <div class="label-engraved">DISCRIM.</div>
+            </div>
+          </div>
+
+          <div class="nixie-display">
+            <div class="nixie-row">
+              <span class="label-nixie">MIDI_NOTE</span>
+              <span class="nixie-tube">38</span>
+            </div>
+            <div class="nixie-row">
+              <span class="label-nixie">VELO_GAIN</span>
+              <span class="nixie-tube">1.20</span>
+            </div>
+            <div class="nixie-row">
+               <span class="label-nixie">GATE_TIME</span>
+               <span class="nixie-tube">15ms</span>
+            </div>
+          </div>
+
+          <div style="margin-top:20px; text-align:right; font-size:8px; color:#222; font-weight:bold; letter-spacing:2px;">LINEAR_DSP_UNIT // 9928-LN</div>
+        </div>
+      </div>
+
+      <!-- BOTTOM: MATRIX & MAINTENANCE -->
+      <div class="bottom-row">
+        <div class="matrix-area" id="matrix-container"></div>
+
+        <div class="maintenance-plate">
+          <div class="screw" style="top:10px; left:10px;"></div><div class="screw" style="top:10px; right:10px;"></div>
+          <div class="screw" style="bottom:10px; left:10px;"></div><div class="screw" style="bottom:10px; right:10px;"></div>
+          
+          <div style="margin-top:20px; border-left:3px solid #111; padding-left:20px;">
+             <div style="font-size:14px; font-weight:900; color:#111; letter-spacing:1px;">MARCO ROSSI</div>
+             <div style="font-size:9px; color:#111; font-weight:bold; margin-top:5px;">REG_ID: OPX-74-BETA</div>
+          </div>
+          
+          <div style="position:absolute; bottom:25px; left:25px; right:25px; height:40px; background:#000; border-radius:3px; display:flex; align-items:center; justify-content:center;">
+             <div style="font-size:10px; color:var(--nixie-glow); font-family:monospace; text-shadow:0 0 10px var(--nixie-glow);">LOOK-AHEAD: 100.00ms</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="cheek cheek-right"></div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNARE', 'TOM 1', 'TOM 2', 'H-HAT', 'RIDE', 'CRASH', 'SPLASH'];
+    const container = document.getElementById('matrix-container');
+    labels.forEach(l => {
+      const active = (l === 'SNARE');
+      container.innerHTML += '<div class="strip ' + (active ? 'selected' : '') + '">' +
+        '<div class="strip-label">' + l + '</div>' +
+        '<div class="m-bg"><div class="m-f ' + (active ? 'active' : '') + '" style="height: ' + (active ? '85' : '15') + '%;"></div></div>' +
+        '<div style="width:8px; height:8px; border-radius:50%; background:' + (active ? '#fff' : '#0a0a0a') + '; margin-top:25px; border:1px solid #000; box-shadow:' + (active ? '0 0 15px #fff' : 'none') + ';"></div>' +
+        '</div>';
+    });
+  </script>
+
+</body>
+</html>

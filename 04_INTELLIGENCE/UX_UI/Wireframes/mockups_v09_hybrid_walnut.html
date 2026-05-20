@@ -1,0 +1,269 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #141412; 
+    --bg-plugin: #242422; /* Brushed metal */
+    --bg-panel: #080a08; /* CRT black */
+    --bg-matrix: #1a1a18;
+    --wood: #4d2d18; /* Walnut / Noce base */
+    --wood-light: #5d3d28;
+    --text-dim: #55524a;
+    --text-bright: #b0ae9d;
+    --crt-green: #33ff33;
+    --border-color: #33312c;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-bright);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  h2 {
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-size: 11px;
+    margin-bottom: 20px;
+    width: 980px;
+    text-align: left;
+  }
+
+  /* --- THE HYBRID BENCH/STUDIO FORM FACTOR --- */
+  .plugin-chassis {
+    display: flex;
+    box-shadow: 0 50px 100px rgba(0,0,0,0.9);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  /* WOOD CHEEKS (Fianchetti in Noce) */
+  .wood-cheek {
+    width: 25px;
+    height: 650px;
+    background: linear-gradient(90deg, var(--wood), var(--wood-light), var(--wood));
+    border-left: 1px solid rgba(0,0,0,0.3);
+    border-right: 1px solid rgba(0,0,0,0.3);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+  }
+
+  .plugin-window {
+    background-color: var(--bg-plugin);
+    width: 930px;
+    height: 650px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border-top: 1px solid #333;
+    border-bottom: 1px solid #111;
+  }
+
+  /* OSCILLOSCOPE CRT (Professional Studio Finish) */
+  .oscilloscope {
+    background-color: var(--bg-panel);
+    position: relative;
+    margin: 20px 30px;
+    height: 350px;
+    border: 3px solid #181816;
+    border-radius: 4px;
+    box-shadow: inset 0 0 40px rgba(0,0,0,1);
+    overflow: hidden;
+  }
+  .oscilloscope::after {
+    content: ''; position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(51,255,51,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(51,255,51,0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+  .marker-crt { position: absolute; height: 100%; width: 2px; background: var(--crt-green); box-shadow: 0 0 12px var(--crt-green); opacity: 0.7; }
+
+  /* BOTTOM AREA */
+  .bottom-area {
+    display: flex;
+    width: 100%;
+    height: 260px;
+    padding: 0 30px 20px 30px;
+    box-sizing: border-box;
+    gap: 20px;
+  }
+
+  /* BUS LINE (I Bus in linea come richiesto) */
+  .matrix {
+    display: flex;
+    flex-grow: 1;
+    background-color: var(--bg-matrix);
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    height: 100%;
+  }
+
+  .channel-strip {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-right: 1px solid #111;
+    padding: 15px 0;
+    position: relative;
+  }
+  .channel-strip:last-child { border-right: none; }
+  .ch-label { font-size: 9px; font-weight: bold; color: #444; margin-bottom: 15px; letter-spacing: 1.5px; }
+  .meter-v {
+    width: 14px;
+    height: 110px;
+    background: #000;
+    border: 1px solid #2a2a28;
+    position: relative;
+  }
+  .led-fill { position: absolute; bottom: 0; width: 100%; background: #999; }
+  .trigger-led { width: 4px; height: 4px; border-radius: 50%; background: #000; margin-top: 15px; border: 1px solid #222; }
+
+  /* MAINTENANCE PANEL (FIXED 280px) */
+  .maint-area {
+    width: 280px;
+    height: 100%;
+    position: relative;
+  }
+
+  /* Exterior State */
+  .maint-cover {
+    position: absolute; inset: 0;
+    background-color: #222220;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    z-index: 50;
+  }
+  .screw { width: 14px; height: 14px; background: #333; border-radius: 50%; position: absolute; border: 1px solid #111; }
+  .screw-tl { top: 8px; left: 8px; } .screw-tr { top: 8px; right: 8px; }
+  .screw-bl { bottom: 8px; left: 8px; } .screw-br { bottom: 8px; right: 8px; }
+  .screw::after { content: ''; position: absolute; width: 10px; height: 2px; background: #111; top: 6px; left: 2px; }
+
+  .ext-serigraphy {
+    margin-top: 10px;
+    border-left: 3px solid #1a1a18;
+    padding-left: 15px;
+  }
+  .ext-owner { font-size: 11px; color: #555; font-weight: bold; margin-bottom: 5px; }
+  .ext-watermark { font-size: 8px; color: #3a3a38; font-family: monospace; }
+  
+  .model-selector-space {
+    margin-top: auto;
+    background: #111;
+    padding: 10px;
+    border: 1px solid #2a2a28;
+    color: #444;
+    font-size: 9px;
+    font-family: monospace;
+    text-align: center;
+  }
+
+  /* Interior State (PCB) */
+  .maint-pcb {
+    position: absolute; inset: 0;
+    background-color: #0d120d;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+  }
+  .pcb-board {
+    border: 1px solid #1a2a1a;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+  }
+  .pcb-info {
+    margin-top: auto;
+    border-top: 1px solid #1a2a1a;
+    padding-top: 10px;
+  }
+  .pcb-line { font-size: 7px; color: #1a2a1a; font-family: monospace; text-transform: uppercase; margin-bottom: 2px; }
+
+</style>
+</head>
+<body>
+
+  <h2>V9.1: Hybrid Bench-Studio (Walnut Cheeks, Inline Bus)</h2>
+  
+  <div class="plugin-chassis">
+    <div class="wood-cheek"></div>
+    <div class="plugin-window">
+      <!-- CRT DISPLAY -->
+      <div class="oscilloscope">
+        <div class="marker-crt" style="left: 30%;"></div>
+        <div class="marker-crt" style="left: 70%; opacity: 0.2;"></div>
+      </div>
+      
+      <div class="bottom-area">
+        <!-- I Bus sono tornati in linea (8 canali) -->
+        <div class="matrix" id="m1"></div>
+        
+        <div class="maint-area">
+          <div class="maint-cover">
+            <div class="screw screw-tl"></div><div class="screw screw-tr"></div>
+            <div class="screw screw-bl"></div><div class="screw screw-br"></div>
+            
+            <div class="ext-serigraphy">
+              <div class="ext-owner">MARCO ROSSI</div>
+              <div class="ext-watermark">LINEAR DIGITAL ASSET #9928</div>
+            </div>
+
+            <div class="model-selector-space">
+              SELECT: [ TCN_GEN2 ]
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wood-cheek"></div>
+  </div>
+
+  <h2 style="margin-top: 80px;">V9.2: Internal Reveal (PCB)</h2>
+  <div class="plugin-chassis">
+    <div class="wood-cheek"></div>
+    <div class="plugin-window">
+      <div class="oscilloscope"></div>
+      <div class="bottom-area">
+        <div class="matrix" id="m2"></div>
+        <div class="maint-area">
+          <div class="maint-pcb">
+            <div class="pcb-board">
+              <div style="font-size: 8px; color: #223322;">FACTORY TRIM: V_BIAS_01</div>
+              <div style="width: 15px; height: 15px; background: #444; border-radius: 50%; margin-top: 5px;"></div>
+              
+              <div class="pcb-info">
+                <div class="pcb-line">PROPERTY OF: MARCO ROSSI</div>
+                <div class="pcb-line">ASSET: LN-9928-OP-X</div>
+                <div class="pcb-line">MODEL: TCN_NEURAL_V2</div>
+                <div class="pcb-line">VERSION: 1.0.4C</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wood-cheek"></div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNARE', 'TOM 1', 'TOM 2', 'H-HAT', 'RIDE', 'CRASH', 'SPLASH'];
+    function populate(id) {
+      const container = document.getElementById(id);
+      let html = '';
+      labels.forEach((l, i) => {
+        html += `<div class="channel-strip"><div class="ch-label">${l}</div><div class="meter-v"><div class="led-fill" style="height: 30%;"></div></div><div class="trigger-led"></div></div>`;
+      });
+      container.innerHTML = html;
+    }
+    populate('m1'); populate('m2');
+  </script>
+
+</body>
+</html>

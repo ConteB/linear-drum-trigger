@@ -62,7 +62,7 @@ Prima di sintetizzare l'audio, i MIDI "perfetti" di Ground Truth subiscono una d
 
 <a id="aug-l1"></a>
 ### 3.2 Livello 1: Stem Isolate & Micro-Bleed (30% Dataset)
-- **Baseline:** Segnale generato tramite `Sfizz` (SM Drums, Salamander Drumkit) e `DrumGizmo` via CLI (kit multi-microfono). Motore di rendering ufficiale del progetto (Decision Lock 2026-05-20); FluidSynth/SF2 scartato perché privo di tracce multi-mic.
+- **Baseline:** Segnale generato tramite `Sfizz` (kit SFZ del roster F0-T1b — Salamander, Karoryfer) e `DrumGizmo` via CLI (kit multi-microfono). Motore di rendering ufficiale del progetto (Decision Lock 2026-05-20); FluidSynth/SF2 scartato perché privo di tracce multi-mic.
 - **Focus:** Precisione assoluta del transiente d'attacco e apprendimento del rientro microfonico reale.
 
 ### 3.3 Livello 2: The Studio Mutilation (40% Dataset)
@@ -205,7 +205,7 @@ Il design del plugin adotta un pattern "Strategy". Il core audio e l'UI non sann
 Questo isola il debito tecnico e permette di aggiornare i modelli o testare nuove architetture (es. Mamba/State-Space in V2) con zero modifiche al codice VST.
 
 ## 8. Guerrilla Rendering Pipeline (Zero-Cost Infrastructure)
-La pipeline di generazione dati automatizza la trasformazione di MIDI e librerie Open (SM Drums, DrumGizmo) in tracce di addestramento. Si basa sul rendering locale tramite Sfizz (per SFZ) e un orchestration in Python.
+La pipeline di generazione dati automatizza la trasformazione di MIDI e librerie Open (DrumGizmo, Karoryfer, Salamander) in tracce di addestramento. Si basa sul rendering locale tramite Sfizz (per SFZ) e un orchestration in Python.
 
 ## 9. Data Infrastructure & Cloud Governance (Medallion Flow)
 Per garantire la scalabilità e la tracciabilità "Industrial Grade", il progetto adotta:
@@ -218,7 +218,7 @@ Per garantire la scalabilità e la tracciabilità "Industrial Grade", il progett
 <a id="medallion"></a>
 ### 9.2 Medallion Flow (Livelli del Dato)
 Il processamento del dato è strutturato a livelli incrementali di qualità gestiti via DVC:
-- **BRONZE LAYER (Raw):** Immutabile. Dataset originali (GMD, SM Drums, DrumGizmo, Noise/Stems per Negative Sampling).
+- **BRONZE LAYER (Raw):** Immutabile. Dataset originali (GMD, DrumGizmo, kit SFZ Karoryfer/Salamander, Noise/Stems per Negative Sampling).
 - **SILVER LAYER (Clean & Target):** Generato tramite `midi_renderer.py` e `ugt_generator.py`. Contiene i Clean Stems estratti dai MIDI e i Tensori MIDI Target (Piano Roll a 8 canali).
 - **GOLD LAYER (Augmented Tensors):** Gestito dall' `augmentation_engine.py`. Fonde i Clean Stems con Phase Chirping, Bleed e "Stealth Mix Mode" (Negative Sampling). Tensori quantizzati a 16-bit pronti per l'Inference Layer (TCN). **Impacchettamento:** WebDataset in tar-shard da ~1 GB (terna `audio.f16` / `target.f16` / `dna.json` per campione), tracciati da DVC come shard — non come micro-file (Decision Lock STRP-001 2026-05-20, D1). Layout di byte FP16 di `audio.f16` / `target.f16` (`[n_mic,n_sample]` e `[n_frame,25]` flat-25) e schema dello shard: [`F0-T2a` §3 — contratto dati](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract).
 

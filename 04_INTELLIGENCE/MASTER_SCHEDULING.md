@@ -318,6 +318,19 @@ stop compute + push HDD · **$10** → chiudi tutto.
   archiviati a puntatori; gate `lychee` **blocking** via pre-commit hook (`tools/pre-commit`,
   installabile con `tools/install-hooks.sh`). `lychee --offline`: 109 OK, 0 errori.
 
+**F0-T11 · Content-rot audit — allineamento al roster F0-T1b · `[F]` `P2`**
+- *Origine:* il "controllone" di F0-T10 ha isolato rot di *contenuto* (non di linking):
+  **SM Drums** — kit escluso dal Decision Lock F0-T1b — era ancora citato come asset
+  *attivo* in spec tecniche, in contraddizione con il roster approvato.
+- *Azioni:* grep trasversale di tutte le menzioni di SM Drums; distinguere i record
+  storici/compliance legittimi (da NON toccare) dalle citazioni stale come asset attivo;
+  riallineare queste ultime al roster F0-T1b (DrumGizmo / Karoryfer / Salamander).
+- *DoD:* zero menzioni di SM Drums come asset attivo; record storici intatti.
+- ☑ **FATTO (2026-05-20):** 6 siti corretti — `DOSSIER_TECNICO` §3.2/§8/§9.2 e
+  `F0-T2a` §2.1/§2.3/§5 (survey HH). I record storici (F0-T1/T1b, `DATA_PROVENANCE_LOG`,
+  `AUDIT_RESOLUTION_LOG`, diario, doc-fossili) lasciati intatti — documentano
+  correttamente l'esclusione.
+
 > **Gate d'uscita F0:** L2 superato (~05-28) **e** L3 superato (~06-02).
 
 ### Fase F1 — Provisioning Azure · gate d'ingresso: L2 superato
@@ -394,6 +407,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T9a | Testing & QA Doctrine (STRP-001) | F0 | ☑ | — | — |
 | F0-T9b | F0 Pipeline Test Harness | F0 | ☐ | F0-T9a | — |
 | F0-T10 | Documentation Linking Layer (STRP-001) | F0 | ☑ | — | — |
+| F0-T11 | Content-rot audit (roster F0-T1b) | F0 | ☑ | — | — |
 | F1-T1 | Setup Azure | F1 | ⊘ | F0-T3 | — |
 | F1-T2 | dvc remote Azure | F1 | ⊘ | F1-T1 | — |
 | F2-T1 | Render Gold 1.5 TB | F2 | ⊘ | F1-T1 | — |
@@ -406,6 +420,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 
 **Stato globale:** Fase attiva **F0** · ☑ F0-T1 · ☑ F0-T1b · ☑ F0-T1c · ☑ F0-T2a · ☑ F0-T4a
 · ☑ F0-T9a · ☑ F0-T10 (Doc Linking Layer — standard + INDEX + gate lychee blocking, chiuso)
+· ☑ F0-T11 (content-rot audit — SM Drums riallineato al roster F0-T1b)
 (Decision Lock 2026-05-20) · Sbloccati: **F0-T9b** (harness test-first, via sub-agente —
 ora gate di F0-T2b/c/d) e **F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) ·
 Scenario credito: *da fissare a CP-1* · Prossimo checkpoint: **CP-1 / 2026-05-30**.

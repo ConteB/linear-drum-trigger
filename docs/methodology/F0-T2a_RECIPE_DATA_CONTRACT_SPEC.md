@@ -95,11 +95,11 @@ output:
 
 ### 2.1 Sfizz (librerie SFZ multi-layer)
 - Pilotato via CLI (`sfizz_render --sfz <file> --midi <file> --wav <out>`).
-- Le librerie SFZ (SM Drums, Salamander, VSCO-2 CE) gestiscono **internamente** velocity
+- Le librerie SFZ (Salamander, Karoryfer, VSCO-2 CE) gestiscono **internamente** velocity
   layer e round-robin: la recipe non li espande, referenzia solo il `.sfz`.
 - Uscita: stem **pulito** stereo o mono — **nessun bleed** inter-strumento.
 - Ruolo: baseline Livello-1 (precisione del transiente) + sintesi percussioni accessorie
-  sincrone ([DOSSIER §3.4](DOSSIER_TECNICO.md#aug-l3)) + kit Salamander/SM Drums.
+  sincrone ([DOSSIER §3.4](DOSSIER_TECNICO.md#aug-l3)) + kit SFZ Salamander/Karoryfer.
 
 ### 2.2 DrumGizmo (kit multi-microfono)
 - Pilotato via CLI; il kit `.xml` espone N canali microfonici reali → **sorgente del bleed**.
@@ -241,7 +241,7 @@ JSON che permette il reverse-engineering totale del campione:
 | Libreria | Articolazioni HH disponibili | Note d'uso |
 | :-- | :-- | :-- |
 | **DrumGizmo (kit multi-mic)** | Closed, Pedal, Open (a gradi), Tip/Shank | I kit espongono più stati di apertura → sorgente primaria per addestrare la **testa continua**. |
-| **SM Drums** | Closed, Open, Pedal (multi-layer) | Stati discreti; mappati su valori di apertura `{0.0, 0.5, 1.0}` per il target continuo. |
+| **Karoryfer Unruly Drums** | Closed, Open, Pedal (multi-layer) | Stati discreti; mappati su valori di apertura `{0.0, 0.5, 1.0}` per il target continuo. |
 | **Salamander** | Closed, Semi-open, Open, Pedal | 4 gradi → granularità intermedia utile. |
 
 **Conseguenza per il contratto:** la testa continua `hihat_opening` è addestrata da stati

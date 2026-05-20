@@ -23,11 +23,11 @@ Questa è la checklist operativa globale che copre tutti i domini necessari al l
 - [x] **Topologia:** Strided-Context TCN (Comb-Filter Hack per compatibilità RTNeural).
 - [x] **Parametri:** Training mixed-precision (master FP32 + FP16), tensori del dataset storati in FP16, inferenza C++ in `float32` (RTNeural). Non-Causale, Look-ahead ~100ms. Output: matrice 8 target (piano-roll differenziabile).
 - [x] **Training Strategy:** Asymmetric Focal Loss (Zero Falsi Positivi) + Gaussian Target Smearing (±3ms).
-- [x] **Training Logistics:** Prototipazione locale su Mac M5 (MPS) per mini-batch. Addestramento "Gold" Finale delegato a GPU Cloud (Nvidia A100) per processare 1.5TB.
+- [x] **Training Logistics:** Prototipazione locale su Mac M5 (MPS) per mini-batch. Addestramento "Gold" Finale su **Azure A100 Spot** per processare 1.5TB — incluso nel credito Azure $200 (non sono necessari servizi GPU cloud aggiuntivi a pagamento).
 - [x] **Validation Protocol:** Holdout Set Reale (ENST-Drums) e Franken-Mix (MedleyDB) — entrambi asset **Evaluation-Only** (mai usati per il training, mai ridistribuiti; vedi `DATA_PROVENANCE_LOG.md` §2.B) — più Ocular Proof. Nessun test su dati sintetici.
 
 ## 2. 🗄️ DATA INFRASTRUCTURE & DATA ENGINEERING
-- [x] **Infrastruttura & Size:** Azure Blob (LRS) + DVC. Target Definitivo: **1.5 Terabyte (450 ore)**. Costo storage stimato ~$27/mo, coperto dal credito Azure di $200 per ~7 mesi (dettaglio in `STRATEGIC_INFRASTRUCTURE_AUDIT.md` §7).
+- [x] **Infrastruttura & Size:** Azure Blob (LRS) + DVC. Target Definitivo: **1.5 Terabyte (450 ore)**. Pianificazione basata sul **credito Azure di $200** (budget-driven, non time-driven); piano di spesa per task in `STRATEGIC_INFRASTRUCTURE_AUDIT.md` §7.1. Archivio permanente post-Azure: HDD fisico 2 TB (~€100–150).
 - [x] **Sovereignty:** Protocollo Escape Hatch (Dual Remote + Backup tar.zst in chiaro). `ONBOARDING_HUMAN.md` completato.
 - [x] **Pipeline Rendering (Python):** Motore ufficiale **Sfizz** (librerie SFZ multi-layer) + **DrumGizmo** (CLI, kit multi-microfono per il bleed reale). FluidSynth/SF2 scartato: i SoundFont non espongono tracce multi-mic e non possono generare il bleed, moat primario del prodotto.
 - [x] **Data Mutilation & Saboteurs:** Approvato modulo "Studio Mutilation". Approvata iniezione "Transient Saboteurs" (Sintetici via Sfizz + Dataset Esterni).
@@ -63,6 +63,25 @@ Livelli di maturità progressivi citati in `SPRINT_BOARD.md`, `PIPELINE_STATUS.j
 - **L3 — Prototipo Neurale:** TCN addestrata su mini-batch (Mac M5 / MPS) con metriche di onset significativamente non casuali.
 - **L4 — Studio-Grade Validation:** Il modello "Gold" supera l'Holdout reale (ENST-Drums) e l'Ocular Proof. È il gate che **sblocca i claim di accuratezza pubblici** e la modalità "Full Mix".
 
+## 7. 🗓️ EXECUTION SCHEDULING LAYER
+Le sezioni §1–§5 registrano *cosa* è deciso (Design Lock). Questa sezione è la **mappa di fase**; il dettaglio dei task, le date e il tracking vivono in `04_INTELLIGENCE/MASTER_SCHEDULING.md`, governato da `04_INTELLIGENCE/SCHEDULING_DOCTRINE.md` (7 criteri concorrenti + arbitraggio).
+
+> **Vincolo duro:** il credito Azure $200 scade il **2026-06-19** (clock 30 gg attivo). Le fasi F0–F2 sono back-pianificate da quella data. Mandato: il credito va consumato **interamente e utilmente** prima della scadenza.
+
+| Fase | Gate d'ingresso | Contenuto | Spend |
+| :-- | :-- | :-- | :-- |
+| **F0** Fondazione Locale | post-L1 *(corrente)* | Compliance licenze; batch_generator + recipes; Gate **L2** e **L3** in locale. | €0 |
+| **F1** Provisioning Azure | L2 superato | Resource Group, Blob LRS, SAS, alert spesa; dvc remote. | minimo |
+| **F2** Burn Compute | F1 completa | Render Gold 1.5 TB (gate L2) + augmentation/Demucs + training A100 (gate L3) → **L4**. | $200 |
+| **F3** Consolidamento | scadenza credito o L4 | Acquisto HDD 2 TB (€120); push Gold + teardown Azure. | €120 |
+| **F4** Sviluppo Plugin C++/JUCE | L4 superato | Implementazione plugin (codice da 0%). | — |
+| **F5** Release v1.0 EA | plugin + QA | Build Early-Access $99 (target ~2026-10-20). | — |
+
+> ⚠️ **Correzione del SESSION_HANDOVER:** la priorità "Setup Azure = PRIORITÀ 1, sblocca L2" è superata. L2 e L3 sono mini-batch **locali** (§1, §6): non richiedono Azure. Il render Azure è gated da L2; il training da L3 (vedi `MASTER_SCHEDULING.md` §4).
+
+➡️ **Esecuzione, task detate e Tracking Board:** `04_INTELLIGENCE/MASTER_SCHEDULING.md`.
+
 ---
 *Ogni punto "DA TRATTARE" è un blocco esecutivo per le prossime sessioni.*
 *Le decisioni di Design Lock derivano dal protocollo STRP-001 (6 fasi). Le risoluzioni dell'audit del 2026-05-20 sono tracciate in `04_INTELLIGENCE/AUDIT_RESOLUTION_LOG.md`.*
+*L'ordine di esecuzione (§7) è governato da `04_INTELLIGENCE/SCHEDULING_DOCTRINE.md`; il piano operativo e il tracking sono in `04_INTELLIGENCE/MASTER_SCHEDULING.md` (Decision Lock 2026-05-20).*

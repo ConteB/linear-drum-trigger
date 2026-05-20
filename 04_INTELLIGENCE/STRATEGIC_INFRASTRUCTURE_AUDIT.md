@@ -97,13 +97,57 @@ DVC ofusca la struttura dei file nel remote rinominandoli con hash MD5. Per scon
 - Questo garantisce che il dato sia recuperabile con un semplice download manuale e il comando universale `tar`, anche se il progetto DVC si corrompesse irreparabilmente.
 
 ## 7. ALLOCAZIONE BUDGET STRATEGICO (€500)
-- **Cloud Infrastructure (Azure):** €0 cash — coperto dal credito Azure di $200. Allo storage stimato (~$27/mo per 1.5 TB Blob LRS) il credito copre **~7 mesi** di R&D. Oltre i 7 mesi: burn rate cash atteso **<€15/mo**.
-- **GPU Cloud (Final Training):** €100 allocati; spesa attesa **€25–40** per la "cottura" del dataset Gold (RunPod A100, ~15–25h). Il margine prudenziale copre eventuali re-run.
-- **Sviluppo & IP Protection:** €50 (Domini, certificati).
-- **Marketing & Launch:** €350.
 
-### 7.1 Nota sulla Sostenibilità
-L'utilizzo dei crediti Azure permette di estendere la fase di R&D a costo monetario quasi zero per ~7 mesi, preservando il capitale liquido per la fase di Go-To-Market. *(Nota di audit 2026-05-20: la stima "10-12 mesi" precedente era errata — $200 / ~$27/mo ≈ 7,4 mesi.)*
+> **Mandate (Decision Lock 2026-05-20):** Azure copre **tutto il compute** del progetto — generazione dataset (rendering, augmentation, Demucs) e training neurale. Obiettivo: completare l'intero ciclo data+training entro il credito di $200. La voce "GPU Cloud RunPod" è eliminata: era ridondante con Azure A100 Spot.
+
+- **Cloud Infrastructure + Compute (Azure):** €0 cash — coperto dal credito Azure di $200 (rendering + augmentation + Demucs + training TCN). Vedere §7.1 per piano di spesa per task.
+- **Storage Fisico (HDD 2 TB):** €120 (archivio permanente Gold tensor + recipes post-Azure).
+- **Sviluppo & IP Protection:** €50 (domini, certificati).
+- **Marketing & Launch:** €330.
+
+### 7.1 Piano di Spesa Azure ($200 Credit — Budget-Driven)
+
+Il credito è l'unità di misura primaria. La strategia è massimizzare il valore estratto prima di esaurirlo, indipendentemente dal tempo impiegato.
+
+#### Stimato per task (costi Azure indicativi)
+
+| Task | Servizio Azure | Stima ore compute | Costo stimato |
+| :--- | :--- | :--- | :--- |
+| **Storage Gold 1.5 TB (Blob LRS)** | Blob Storage | — | ~$27/mese |
+| **Rendering Sfizz/DrumGizmo** (450h audio, CPU parallelizzato) | Standard_D8s_v3 (~$0.38/h) | ~5–10h wall-clock | ~$4–8 |
+| **Augmentation Python** (pedalboard, mixing, MIDI jitter) | Standard_D8s_v3 | ~10–20h | ~$4–8 |
+| **Demucs AI-Isolation** (scenario AI-Isolates, 150h audio su T4) | Standard_NC4as_T4_v3 Spot (~$0.56/h) | ~17h | ~$10–15 |
+| **Training Gold (TCN finale su A100)** | Standard_NC24ads_A100_v4 Spot (~$3.67/h) | ~15–25h | ~$55–92 |
+| **Re-run training + sperimentazione** | A100 Spot | ~10h margine | ~$37 |
+| **Misc (rete, log, MLflow)** | — | — | ~$5 |
+| **TOTALE STIMATO** | | | **~$115–175** |
+
+Il margine residuo (~$25–85) copre re-run imprevisti o iterazioni architetturali.
+
+#### Priorità di utilizzo del credito
+
+1. **Prima priorità — Data Sprint:** rendering + augmentation + Demucs. I Gold tensor sono il capitale irreplaceable. Fino a che il credito non è esaurito si genera dataset.
+2. **Seconda priorità — Training:** una o più run complete sul dataset Gold. Ciclo prototipazione locale (Mac M5/MPS) → run finale A100 Azure.
+3. **Terza priorità — Sperimentazione:** re-training su sotto-set, ablation study, tuning degli iperparametri.
+
+#### Soglie di allerta credito (CEO le monitora)
+
+- **$100 residui:** segnalazione al team → valutazione se interrompere storage e spostare i Gold tensor su HDD.
+- **$40 residui:** STOP nuovo compute. Eseguire `dvc push -r cold_backup` (Gold + recipes su HDD). Azure usato solo per storage residuo se ancora conveniente.
+- **$10 residui:** chiudere tutto su Azure. Archivio offline su HDD diventa unico master.
+
+### 7.2 Storage Post-Azure (HDD Fisico — Archivio Permanente)
+
+Quando il credito Azure si esaurisce, i Gold tensor (~1.5 TB) e le recipes (codice + DNA-Trace JSON, ~pochi GB) vengono trasferiti su un **HDD esterno da 2 TB (€100–150)**. Il modello di archivio:
+
+| Dato | Dimensione | Archivio HDD? | Motivo |
+| :--- | :--- | :--- | :--- |
+| Gold tensors (.npy FP16) | ~1.5 TB | **Sì — irreplaceable** | Compute non riproducibile a zero costo |
+| Recipes (codice + DNA-Trace) | ~1–2 GB | **Sì** | Necessario per rigenerare Silver da Bronze |
+| Silver layer (WAV renderizzati) | ~variabile | **No** | Rigenerabile da Bronze + recipes |
+| Bronze layer (raw stems) | ~50–100 GB | **No** | Re-scaricabile (dataset pubblici) |
+
+*(Nota di audit 2026-05-20: la stima precedente "~7 mesi" era basata sul burn rate mensile $27/mo, non sulla durata reale del credito. Quella stima è stata ritirata. La pianificazione usa esclusivamente il budget totale disponibile.)*
 
 ---
 *Approvato: CEO & Strategic Advisor*

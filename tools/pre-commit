@@ -1,0 +1,36 @@
+#!/bin/sh
+# OP-NEUROTRIGGER Doc Standard — gate BLOCKING della documentazione.
+# Riferimento: 04_INTELLIGENCE/DOC_LINKING_STANDARD.md (LIN-DT-DOCSTD-001).
+#
+# Installazione (una tantum):  tools/install-hooks.sh
+# Cosa fa, a ogni commit:
+#   1. rigenera docs/INDEX.md e blocca se non e' allineato al frontmatter;
+#   2. esegue lychee --offline e blocca su link/ancore interni rotti.
+
+REPO="$(git rev-parse --show-toplevel)" || exit 0
+cd "$REPO" || exit 0
+
+# --- 1. INDEX coerente col frontmatter -------------------------------------
+if command -v python3 >/dev/null 2>&1; then
+  python3 tools/gen_docs_index.py >/dev/null 2>&1
+  if ! git diff --quiet -- docs/INDEX.md 2>/dev/null; then
+    echo "✗ Doc gate: docs/INDEX.md non era allineato al frontmatter ed e' stato rigenerato."
+    echo "  Esegui:  git add docs/INDEX.md  e ricommitta."
+    exit 1
+  fi
+fi
+
+# --- 2. lychee: link e ancore interni --------------------------------------
+if ! command -v lychee >/dev/null 2>&1; then
+  echo "⚠ Doc gate: lychee non installato — check link saltato (brew install lychee)."
+  exit 0
+fi
+if ! lychee --offline --no-progress . >/dev/null 2>&1; then
+  echo "✗ Doc gate: link o ancore rotti nella documentazione —"
+  lychee --offline --no-progress .
+  echo "  Commit bloccato. Correggi i riferimenti e ricommitta."
+  exit 1
+fi
+
+echo "✓ Doc gate: INDEX allineato, link e ancore validi."
+exit 0

@@ -1,3 +1,17 @@
+---
+id: LIN-DT-AUDIT-001
+title: Audit Resolution Log — Coerenza Documentale
+type: registro
+status: ACTIVE
+phase: cross-cutting
+domain: Operations / Knowledge Management
+version: 1.0.0
+updated: 2026-05-20
+tags: [audit, governance, consistency]
+related: [LIN-DT-DOCSTD-001, LIN-DT-CHKLST-001, LIN-DT-DOSSIER-001]
+supersedes: []
+---
+
 # 🔧 AUDIT RESOLUTION LOG — COERENZA DOCUMENTALE
 **Data:** 2026-05-20
 **Tipo:** Audit di pre-produzione documentale (Gate L1)

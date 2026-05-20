@@ -1,3 +1,17 @@
+---
+id: LIN-DT-PII-001
+title: Zero-PII Log Policy (Anonymous-Trace)
+type: standard
+status: LOCKED
+phase: cross-cutting
+domain: Legal / Privacy
+version: 1.0.0
+updated: 2026-05-20
+tags: [privacy, pii, legal, logging, standard]
+related: [LIN-DT-GOV-001]
+supersedes: []
+---
+
 # 🔐 ZERO-PII LOG POLICY (ANONYMOUS-TRACE)
 **Versione:** 1.0
 **Status:** MANDATORY / LEGAL LOCK

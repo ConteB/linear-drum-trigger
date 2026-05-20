@@ -13,7 +13,7 @@ supersedes: []
 ---
 
 # 🧪 TESTING & QA DOCTRINE — OP-NEUROTRIGGER
-**ID:** LIN-DT-TESTDOC-001 · **Status:** LOCKED — Decision Lock 2026-05-20 (Executive Briefing STRP-001)
+**Status:** LOCKED — Decision Lock 2026-05-20 (Executive Briefing STRP-001)
 **Versione:** 1.0 · **Status operativo:** MANDATORIO / ACTIVE LOCK
 
 > Documento di dottrina. Definisce *come si testa* in OP-NEUROTRIGGER — la pipeline dati
@@ -26,8 +26,8 @@ supersedes: []
 | Documento | Ruolo |
 | :-- | :-- |
 | **`TESTING_DOCTRINE.md`** (questo) | *Come si testa* — layer, metriche, gate. |
-| `SUB_AGENT_GOVERNANCE.md` §6 | Il protocollo operativo dell'AI-Adversarial QA. |
-| `MASTER_CHECKLIST.md` | Registra il presidio test come Design Lock. |
+| [`SUB_AGENT_GOVERNANCE.md` §6](SUB_AGENT_GOVERNANCE.md#ai-adversarial-qa) | Il protocollo operativo dell'AI-Adversarial QA. |
+| [`MASTER_CHECKLIST.md`](../MASTER_CHECKLIST.md) | Registra il presidio test come Design Lock. |
 | `audit_dsp_rigor.py` (F0-T6) | Gate *statico* — è il Layer-S di questa dottrina. |
 
 Ambito di dettaglio (Decision Lock): la **dottrina** (§1–§4) e il **test plan F0** (§6) sono
@@ -43,7 +43,7 @@ all'avvio di F4 — il codice C++ è a 0%.
    (mutanti) nel codice e contando quanti la suite *uccide*. Un test pigro sopravvive ai
    mutanti → viene smascherato meccanicamente. È la metrica anti-pigrizia (§3).
 3. **La spec è l'oracolo.** I test si derivano dai contratti versionati
-   (`F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md`, `F0-T4a_TCN_TOPOLOGY_SPEC.md`), non dal codice.
+   ([`F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md), [`F0-T4a_TCN_TOPOLOGY_SPEC.md`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md)), non dal codice.
    Test-first: l'harness precede l'implementazione (Decision Lock — F0-T9b gate-a F0-T2b/c/d).
 4. **Il codice è scritto da AI.** Il codice di progetto è delegato a sub-agenti
    (`POL-AI-001` §3). Il mutation testing e l'AI-Adversarial QA (§4) sono la rete di
@@ -87,6 +87,7 @@ DoD = (suite verde)  AND  (mutation kill-rate ≥ soglia)  AND  (coverage ≥ fl
 > sopravvissuti vanno *uccisi* (test aggiunto) o *giustificati per iscritto* (mutante
 > equivalente), mai ignorati.
 
+<a id="ai-adversarial"></a>
 ## 4. Protocollo AI-Adversarial QA (Layer 4)
 
 L'idea: i test scritti dallo stesso agente che scrive il codice ereditano il bias
@@ -105,8 +106,9 @@ il bias per costruzione.
 - **Verification Gate (triage delle failure):** ogni test rosso del Layer 4 è triagiato
   in `{bug reale · ambiguità di spec · test non valido}`. Nessuna failure si chiude senza
   triage scritto.
-- **Governance:** è un pattern di delega formale — vedi `SUB_AGENT_GOVERNANCE.md` §6.
+- **Governance:** è un pattern di delega formale — vedi [`SUB_AGENT_GOVERNANCE.md` §6](SUB_AGENT_GOVERNANCE.md#ai-adversarial-qa).
 
+<a id="dsp-tests"></a>
 ## 5. Core DSP C++/JUCE & GUI — coarse (dettaglio a F4)
 
 Direzione bloccata; i dettagli si raffinano all'avvio di F4 (codice C++ a 0%).
@@ -129,6 +131,7 @@ Direzione bloccata; i dettagli si raffinano all'avvio di F4 (codice C++ a 0%).
   da pluginval) + eventuali snapshot test. Dettaglio a F4.
 - **Unit/property C++:** Catch2 + RapidCheck — scelta ratificata a F4.
 
+<a id="f0-test-plan"></a>
 ## 6. Test plan della pipeline F0 (dettagliato)
 
 Implementato in **F0-T9b** (harness), che **gate-a F0-T2b/c/d** (test-first).
@@ -180,9 +183,9 @@ Un sub-agente QA attacca il contratto F0-T2a *prima* che il codice di F0-T2d sia
 
 - I layer automatici di questa dottrina sono **precondizione**, non sostituto, della
   firma di Gate. L'**Ocular Proof** resta la firma umana dei Gate L2/L3/L4.
-- **Gate L2:** i check FP16/DNA-Trace (F0-T2a §3.7) sono eseguiti dalla suite F0-T9b; la
+- **Gate L2:** i check FP16/DNA-Trace ([F0-T2a §3.7](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#fp16-integrity)) sono eseguiti dalla suite F0-T9b; la
   firma L2 resta l'ispezione manuale (F0-T3).
-- **Gate L3:** la soglia metrica è in `F0-T4a_TCN_TOPOLOGY_SPEC.md` §7; il round-trip
+- **Gate L3:** la soglia metrica è in [`F0-T4a_TCN_TOPOLOGY_SPEC.md` §7](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md#l3-threshold); il round-trip
   RTNeural è il differential test canonico (§5).
 - **Gate L4 / F5:** "QA conforme agli standard interni" = applicazione piena di questa
   dottrina, inclusa la validazione pluginval ≥ 8.
@@ -194,7 +197,7 @@ Approvato dal CEO (Executive Briefing STRP-001 — Testing & QA Doctrine):
 1. ✅ Numero di test rifiutato come metrica; **mutation kill-rate** come gate di DoD
    (critici ≥ 90 %, core ≥ 85 %); coverage solo come floor diagnostico (≥ 90 %).
 2. ✅ Tassonomia a 4 layer + Layer-S statico.
-3. ✅ Protocollo **AI-Adversarial QA** (§4) — formalizzato in `SUB_AGENT_GOVERNANCE.md` §6.
+3. ✅ Protocollo **AI-Adversarial QA** (§4) — formalizzato in [`SUB_AGENT_GOVERNANCE.md` §6](SUB_AGENT_GOVERNANCE.md#ai-adversarial-qa).
 4. ✅ `pluginval` ≥ 8 come validatore C++ (coarse, dettaglio F4).
 5. ✅ Nuovi task **F0-T9a** (questa dottrina) e **F0-T9b** (harness pipeline F0),
    quest'ultimo **gate di F0-T2b/c/d** (test-first).

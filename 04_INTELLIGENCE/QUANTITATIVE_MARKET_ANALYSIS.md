@@ -1,3 +1,17 @@
+---
+id: LIN-DT-QMA-001
+title: Analisi Quantitativa di Mercato (Business Case)
+type: reference
+status: ACTIVE
+phase: cross-cutting
+domain: Marketing / Strategy
+version: 1.0.0
+updated: 2026-05-18
+tags: [marketing, market-analysis, business-case]
+related: [LIN-DT-COMPAN-001, LIN-DT-MKTSTRAT-001]
+supersedes: []
+---
+
 # 📈 ANALISI QUANTITATIVA DI MERCATO (BUSINESS CASE)
 **Progetto:** OP-NeuroTrigger
 **Responsabile:** Gianpiero Scappelloni (Strategic Advisor)

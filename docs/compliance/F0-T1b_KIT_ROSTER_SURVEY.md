@@ -1,3 +1,17 @@
+---
+id: LIN-DT-ROSTER-F0T1b
+title: F0-T1b — Survey & Selezione Kit (Roster di Training)
+type: registro
+status: ACTIVE
+phase: F0
+domain: Legal / Compliance
+version: 1.0.0
+updated: 2026-05-20
+tags: [compliance, kit-roster, F0-T1b]
+related: [LIN-DT-DPL-001, LIN-DT-SPEC-F0T2a]
+supersedes: []
+---
+
 # 🥁 F0-T1b — SURVEY & SELEZIONE KIT (Roster di Training)
 **Task:** F0-T1b · **Avviato:** 2026-05-20 · **Stato:** ◐ IN CORSO → proposta di roster per Decision Lock
 **Origine:** osservazione del CEO — SM Drums è un solo kit; serve diversità timbrica.

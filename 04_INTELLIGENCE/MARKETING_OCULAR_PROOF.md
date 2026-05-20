@@ -1,3 +1,17 @@
+---
+id: LIN-DT-MKTOCULAR-001
+title: Strategia Ocular Proof — The Impossible Triad
+type: reference
+status: ACTIVE
+phase: cross-cutting
+domain: Marketing
+version: 1.0.0
+updated: 2026-05-20
+tags: [marketing, ocular-proof, demo]
+related: [LIN-DT-MKTSTRAT-001, LIN-DT-CHKLST-001]
+supersedes: []
+---
+
 # 👁️ STRATEGIA OCULAR PROOF: "THE IMPOSSIBLE TRIAD"
 **Versione:** 1.0
 **Status:** MARKETING LOCK / EXECUTION READY

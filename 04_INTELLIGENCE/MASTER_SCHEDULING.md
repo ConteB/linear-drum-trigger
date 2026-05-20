@@ -61,6 +61,7 @@ parallelo — *Track Cloud* (F1 → F2 render, spend a basso rischio) e *Track L
 (prototipazione TCN → L3). Il render NON aspetta L3. Il training parte quando L3 è
 pronto. Questo è ciò che protegge il consumo del credito.
 
+<a id="checkpoints"></a>
 ## 3. Checkpoint del Credito — Bivi Decisionali
 
 A ogni checkpoint si valuta lo **scenario** e si ri-decide il deployment del credito
@@ -72,6 +73,7 @@ residuo. Un checkpoint è un bivio, non un report.
 | **CP-2** | D20 | 2026-06-09 | % render completata · stato L3 · $ spesi | Se L3 ok → autorizzare training. Altrimenti → render + Tier 2. Fissare scenario. |
 | **CP-3** | D25 | 2026-06-14 | $ residui · training in corso? | Credit-soak finale: desplegare ogni dollaro residuo sulla scala §4. |
 
+<a id="credit-scale"></a>
 ## 4. Scala di Deployment del Credito — Spendere Ogni Dollaro
 
 Regola (doctrine §5, Lente 3): si spende per intero, in ordine di **rischio crescente**.
@@ -109,6 +111,7 @@ architettura, gated solo da L2); il **training** è spesa a rischio (gated da L3
 Soglie di monitoraggio (il CEO controlla il saldo): **$100** → valutazione · **$40** →
 stop compute + push HDD · **$10** → chiudi tutto.
 
+<a id="tasks"></a>
 ## 6. Task Detate — Esecuzione Precisa
 
 ### Fase F0 — Fondazione Locale · gate d'ingresso: post-L1 (corrente)
@@ -151,13 +154,13 @@ stop compute + push HDD · **$10** → chiudi tutto.
 
 **F0-T1c · Ridisegno Validation Protocol / Holdout reale · `[C]` `P1`**
 - *Origine:* l'esclusione di ENST-Drums e MedleyDB (dottrina §1.1) ha rimosso lo Holdout
-  reale e il Franken-Mix (`DOSSIER_TECNICO` §10.3, `MASTER_CHECKLIST` §1).
+  reale e il Franken-Mix ([`DOSSIER_TECNICO` §10.3](../docs/methodology/DOSSIER_TECNICO.md#holdout), [`MASTER_CHECKLIST` §1](../MASTER_CHECKLIST.md#ai-neural)).
 - *Azioni:* survey di fonti di registrazioni reali di batteria con ground-truth a licenza
   commerciale chiara (CC0/CC-BY); ridisegnare il Validation Protocol; se nessuna fonte
   idonea → Piano B (registrazioni proprietarie annotate). Decisione critica — tocca il
   Gate L4 e i claim pubblici di accuratezza.
-- *DoD:* Validation Protocol ridisegnato e approvato dal CEO; `DOSSIER_TECNICO` §10 e
-  `MASTER_CHECKLIST` §1 aggiornati.
+- *DoD:* Validation Protocol ridisegnato e approvato dal CEO; [`DOSSIER_TECNICO` §10](../docs/methodology/DOSSIER_TECNICO.md#validation) e
+  [`MASTER_CHECKLIST` §1](../MASTER_CHECKLIST.md#ai-neural) aggiornati.
 - ☑ **FATTO (2026-05-20):** Decision Lock CEO. Holdout reale = E-GMD (CC-BY 4.0),
   Stealth-Mix = Slakh2100, Ocular Proof invariato. Piano B (registrazioni proprietarie)
   scartato dal CEO. Esito in `docs/compliance/F0-T1c_HOLDOUT_SURVEY.md`.
@@ -165,7 +168,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 **F0-T2 · Pipeline di rendering Gold — *riscrittura* · `[F]` `P1`**
 > ⚠️ **Non è una verifica.** Gli script in `src/data_engineering/`
 > (`midi_renderer.py`, `batch_generator.py`) sono prototipi **FluidSynth/SF2** — motore
-> **scartato** dal Design Lock (`MASTER_CHECKLIST` §2, `DOSSIER_TECNICO` §3.2). Vanno
+> **scartato** dal Design Lock ([`MASTER_CHECKLIST` §2](../MASTER_CHECKLIST.md#data-infra), [`DOSSIER_TECNICO` §3.2](../docs/methodology/DOSSIER_TECNICO.md#aug-l1)). Vanno
 > riscritti, non riusati. Spacchettato in 5 sotto-task; T2a passa per **STRP-001**
 > (6 fasi + Executive Briefing) prima di scrivere codice.
 - *Obiettivo macro:* pipeline locale che produce un mini-batch Gold corretto end-to-end.
@@ -178,8 +181,8 @@ stop compute + push HDD · **$10** → chiudi tutto.
   **MIDI Mapping Table** `GM↔8-bus` bidirezionale + toggle d'uscita HH (CC continuo /
   Note discrete).
 - *Azioni:* dettagliare (i) schema recipe SFZ multi-layer + kit multi-mic DrumGizmo
-  (`DOSSIER_TECNICO` §3.2); (ii) layout esatto del Gold tensor FP16 e dello shard
-  WebDataset (`DOSSIER_TECNICO` §9.2); (iii) formato DNA-Trace (`DOSSIER_TECNICO` §3.5);
+  ([`DOSSIER_TECNICO` §3.2](../docs/methodology/DOSSIER_TECNICO.md#aug-l1)); (ii) layout esatto del Gold tensor FP16 e dello shard
+  WebDataset ([`DOSSIER_TECNICO` §9.2](../docs/methodology/DOSSIER_TECNICO.md#medallion)); (iii) formato DNA-Trace ([`DOSSIER_TECNICO` §3.5](../docs/methodology/DOSSIER_TECNICO.md#dna-trace));
   (iv) la MIDI Mapping Table come artefatto versionato; survey delle articolazioni HH
   delle librerie.
 - *DoD:* spec archiviata; MIDI Mapping Table committata; checklist aggiornata.
@@ -214,13 +217,13 @@ stop compute + push HDD · **$10** → chiudi tutto.
 **F0-T3 · Gate L2 (validazione recipe) · `[C]` `P1`**
 - *Obiettivo:* validare che il mini-dataset è corretto.
 - *Azioni:* ispezione manuale di ≥2 campioni (waveform multi-mic coerente, bleed
-  presente, piano-roll 8-target allineato ±3 ms — schema `DOSSIER_TECNICO` §4);
-  verifica integrità FP16; check DNA-Trace lineage (`DOSSIER_TECNICO` §3.5).
+  presente, piano-roll 8-target allineato ±3 ms — schema [`DOSSIER_TECNICO` §4](../docs/methodology/DOSSIER_TECNICO.md#midi-matrix));
+  verifica integrità FP16; check DNA-Trace lineage ([`DOSSIER_TECNICO` §3.5](../docs/methodology/DOSSIER_TECNICO.md#dna-trace)).
 - *DoD:* **Ocular Proof** — checklist L2 firmata nel `REGISTRO_AVANZAMENTO.md`.
 - ⛔ F0-T2e. **Sblocca lo spend RENDER (F1 + F2-T1).**
 
 **F0-T4 · TCN mini-prototipo → Gate L3 · `[C]` `P1`**
-> ⚠️ La "topologia `MASTER_CHECKLIST` §1" è un Design Lock concettuale (Strided-Context
+> ⚠️ La "topologia [`MASTER_CHECKLIST` §1](../MASTER_CHECKLIST.md#ai-neural)" è un Design Lock concettuale (Strided-Context
 > TCN, Comb-Filter Hack, look-ahead ~100ms), **non** una spec implementabile: mancano
 > numero di layer, kernel, dilatazioni e receptive field. Spacchettato in 2 sotto-task;
 > T4a passa per **STRP-001** (6 fasi + Executive Briefing) prima di scrivere codice.
@@ -233,8 +236,8 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Azioni:* applicare STRP-001; fissare numero di layer, kernel size, dilatazioni,
   receptive field (coerente col look-ahead ~100ms), shape del tensore di input e teste
   di output — matrice 8-target + testa di regressione apertura Hi-Hat
-  (`DOSSIER_TECNICO` §2.2, §4) — e la loss (Asymmetric Focal + Gaussian smearing,
-  `MASTER_CHECKLIST` §1, `DOSSIER_TECNICO` §6.2). Fissare la **soglia numerica** che
+  ([`DOSSIER_TECNICO` §2.2](../docs/methodology/DOSSIER_TECNICO.md#midi-output), [§4](../docs/methodology/DOSSIER_TECNICO.md#midi-matrix)) — e la loss (Asymmetric Focal + Gaussian smearing,
+  [`MASTER_CHECKLIST` §1](../MASTER_CHECKLIST.md#ai-neural), [`DOSSIER_TECNICO` §6.2](../docs/methodology/DOSSIER_TECNICO.md#loss)). Fissare la **soglia numerica** che
   qualifica le metriche di onset come "significativamente non casuali".
 - *DoD:* Executive Briefing approvato dal CEO; spec e soglia archiviate.
 - ☑ **FATTO (2026-05-20):** Decision Lock CEO (Executive Briefing F0-T4a, STRP-001).
@@ -258,7 +261,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 
 **F0-T5 · DVC + struttura Medallion · `[F]` `P2`**
 - *Azioni:* `dvc init` nel repo; definire la struttura **Medallion** Bronze/Silver/Gold
-  (`DOSSIER_TECNICO` §9.2) e la strategia di **sharding WebDataset** del layer Gold
+  ([`DOSSIER_TECNICO` §9.2](../docs/methodology/DOSSIER_TECNICO.md#medallion)) e la strategia di **sharding WebDataset** del layer Gold
   (shard ~1 GB tracciati da DVC, non micro-file); senza remote.
 - *DoD:* `dvc status` pulito, struttura committata.
 
@@ -289,7 +292,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
   4 layer, mutation testing come gate anti-pigrizia, protocollo AI-Adversarial QA.
 - *DoD:* Executive Briefing approvato dal CEO; dottrina archiviata.
 - ☑ **FATTO (2026-05-20):** Decision Lock CEO. Dottrina in `04_INTELLIGENCE/TESTING_DOCTRINE.md`;
-  pattern AI-Adversarial QA in `SUB_AGENT_GOVERNANCE.md` §6. Mutation kill-rate gate
+  pattern AI-Adversarial QA in [`SUB_AGENT_GOVERNANCE.md` §6](SUB_AGENT_GOVERNANCE.md#ai-adversarial-qa). Mutation kill-rate gate
   (critici ≥ 90 %, core ≥ 85 %); `pluginval` ≥ 8 per il C++ (coarse, dettaglio F4).
 - → F0-T9b.
 
@@ -297,7 +300,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Azioni:* scaffolding `pytest`/`Hypothesis`/`mutmut`/`coverage`/`Atheris`; scrivere i
   test-oracolo derivati dal contratto F0-T2a (writer Gold-tensor, DNA-Trace, parser
   recipe, standardizzazione mic) **prima** del codice di pipeline. Dettaglio in
-  `TESTING_DOCTRINE.md` §6.
+  [`TESTING_DOCTRINE.md` §6](TESTING_DOCTRINE.md#f0-test-plan).
 - *DoD:* harness eseguibile; test-oracolo del contratto F0-T2a verdi sullo scheletro;
   gate mutation configurato. Ocular Proof — log.
 - ⛔ F0-T9a. **Gate di F0-T2b/c/d** (test-first).
@@ -308,11 +311,12 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Azioni:* STRP-001; definire l'OP-NEUROTRIGGER Doc Standard (frontmatter YAML + ancore
   HTML stabili + link relativi + INDEX generato + validatore `lychee`); rollout incrementale.
 - *DoD:* standard archiviato; INDEX generato; `lychee` in gate; hot-set conforme.
-- ◐ **IN CORSO (2026-05-20):** Decision Lock CEO. FATTO: `04_INTELLIGENCE/DOC_LINKING_STANDARD.md`,
-  `tools/gen_docs_index.py`, `lychee.toml`, frontmatter su 9 documenti, `docs/INDEX.md`
-  generato. APERTO: ancore stabili + conversione riferimenti prosa→link sul hot-set;
-  retrofit dei 20 documenti restanti (opportunistico); `lychee` warn→blocking.
-- *Non blocca il percorso del credito (L2/L3) — `P2`, parallelizzabile.*
+- ☑ **FATTO (2026-05-20):** Decision Lock CEO. Standard `DOC_LINKING_STANDARD.md` (v1.1.0);
+  `gen_docs_index.py` esteso ai doc root; `lychee.toml` corretto; frontmatter su **33
+  documenti** (copertura 100 %, 0 backlog); ancore stabili + cross-ref prosa→link sul
+  hot-set; 3 doc-fossili (`PROJECT_ROADMAP`, `SPRINT_BOARD`, `PROJECT_MASTER_INDEX`)
+  archiviati a puntatori; gate `lychee` **blocking** via pre-commit hook (`tools/pre-commit`,
+  installabile con `tools/install-hooks.sh`). `lychee --offline`: 109 OK, 0 errori.
 
 > **Gate d'uscita F0:** L2 superato (~05-28) **e** L3 superato (~06-02).
 
@@ -367,6 +371,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - **F5 · Release v1.0 EA:** QA conforme agli standard interni; build VST3 + AU;
   pubblicazione Early-Access $99.
 
+<a id="tracking-board"></a>
 ## 7. Tracking Board
 
 | ID | Task | Fase | Stato | ⛔ Bloccato da | Gate |
@@ -388,7 +393,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T8 | Model Artifact — spec export | F0 | ☐ | — | — |
 | F0-T9a | Testing & QA Doctrine (STRP-001) | F0 | ☑ | — | — |
 | F0-T9b | F0 Pipeline Test Harness | F0 | ☐ | F0-T9a | — |
-| F0-T10 | Documentation Linking Layer (STRP-001) | F0 | ◐ | — | — |
+| F0-T10 | Documentation Linking Layer (STRP-001) | F0 | ☑ | — | — |
 | F1-T1 | Setup Azure | F1 | ⊘ | F0-T3 | — |
 | F1-T2 | dvc remote Azure | F1 | ⊘ | F1-T1 | — |
 | F2-T1 | Render Gold 1.5 TB | F2 | ⊘ | F1-T1 | — |
@@ -400,7 +405,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F5 | Release v1.0 EA | F5 | ⏸ | F4 | — |
 
 **Stato globale:** Fase attiva **F0** · ☑ F0-T1 · ☑ F0-T1b · ☑ F0-T1c · ☑ F0-T2a · ☑ F0-T4a
-· ☑ F0-T9a · ◐ F0-T10 (Doc Linking Layer — standard locked, retrofit in corso)
+· ☑ F0-T9a · ☑ F0-T10 (Doc Linking Layer — standard + INDEX + gate lychee blocking, chiuso)
 (Decision Lock 2026-05-20) · Sbloccati: **F0-T9b** (harness test-first, via sub-agente —
 ora gate di F0-T2b/c/d) e **F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) ·
 Scenario credito: *da fissare a CP-1* · Prossimo checkpoint: **CP-1 / 2026-05-30**.

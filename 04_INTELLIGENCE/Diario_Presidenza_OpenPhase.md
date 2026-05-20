@@ -1,5 +1,18 @@
+---
+id: LIN-DT-DIARY-001
+title: Diario di Presidenza — Drum-Trigger
+type: registro
+status: ACTIVE
+phase: cross-cutting
+domain: Governance
+version: 1.0.0
+updated: 2026-05-20
+tags: [governance, decisions, registro]
+related: [LIN-DT-REGAV-001, LIN-DT-AUDIT-001]
+supersedes: []
+---
+
 # DIARIO DI PRESIDENZA - DRUM-TRIGGER
-**ID:** LIN-DT-DIARY
 
 ## SESSIONE: 2026-05-18 - FRESH START & RECOVERY
 **Partecipanti:** CEO, Gianpiero Scappelloni (AI)

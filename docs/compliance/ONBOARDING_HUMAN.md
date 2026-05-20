@@ -1,5 +1,18 @@
+---
+id: LIN-DT-ONBOARD-001
+title: Manuale di Sopravvivenza & Data Recovery (Human-Only)
+type: reference
+status: ACTIVE
+phase: cross-cutting
+domain: Operations
+version: 1.0.0
+updated: 2026-05-20
+tags: [onboarding, recovery, operations]
+related: [LIN-DT-MSCHED-001]
+supersedes: []
+---
+
 # 🆘 MANUALE DI SOPRAVVIVENZA & DATA RECOVERY (HUMAN-ONLY)
-**ID:** OP-HR-001
 **Livello di Accesso:** CEO / Executive
 **Scopo:** Garantire l'accesso totale ai dati (Data Sovereignty) e la riattivazione della pipeline in caso di assenza, malfunzionamento o sostituzione degli agenti AI (o perdita dell'hardware fisico locale).
 

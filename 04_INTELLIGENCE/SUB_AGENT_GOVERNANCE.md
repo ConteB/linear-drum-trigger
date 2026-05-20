@@ -22,7 +22,7 @@ Nessun sub-agente (DSP, UI, Test) può operare nel repository `drum-trigger-fres
 ## 2. PROCEDURA DI ATTIVAZIONE (INNESCO)
 Ogni volta che viene invocato un sub-agente, la prima istruzione deve essere:
 1. **DNA Ingestion:** Lettura dei `Linear_DSP_Mandates.md`.
-2. **Context Alignment:** Lettura del `DOSSIER_TECNICO.md` e della `MASTER_CHECKLIST.md`.
+2. **Context Alignment:** Lettura del [`DOSSIER_TECNICO.md`](../docs/methodology/DOSSIER_TECNICO.md) e della [`MASTER_CHECKLIST.md`](../MASTER_CHECKLIST.md).
 3. **Role Lock:** Accettazione formale dei divieti (es. No `malloc`, No `new`, No `printf` nel thread audio).
 
 ## 3. THE "SANDBOX & GATE" WORKFLOW
@@ -43,8 +43,9 @@ Il lavoro dei sub-agenti segue questo percorso obbligato:
 ## 5. ESCALATION PROTOCOL
 Se un sub-agente non riesce a risolvere un task senza violare i mandati, deve fermarsi e richiedere un'analisi strategica a Gianpiero invece di procedere con "hack" temporanei.
 
+<a id="ai-adversarial-qa"></a>
 ## 6. PATTERN DI DELEGA "AI-ADVERSARIAL QA"
-Pattern di delega formale introdotto dalla `TESTING_DOCTRINE.md` (§4, Layer 4). Serve a
+Pattern di delega formale introdotto dalla [`TESTING_DOCTRINE.md` §4](TESTING_DOCTRINE.md#ai-adversarial) (Layer 4). Serve a
 rimuovere il bias dell'implementatore: i test scritti dallo stesso agente che scrive il
 codice testano solo i percorsi che quell'agente *ha pensato*.
 

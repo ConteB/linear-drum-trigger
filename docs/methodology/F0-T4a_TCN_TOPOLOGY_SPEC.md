@@ -13,9 +13,9 @@ supersedes: []
 ---
 
 # 🧠 F0-T4a — SPEC DI DETTAGLIO: TOPOLOGIA TCN CONCRETA
-**ID:** LIN-DT-SPEC-F0T4a · **Status:** LOCKED — Decision Lock 2026-05-20 (Executive Briefing F0-T4a)
-**Riferimenti:** `DOSSIER_TECNICO.md` §2.2/§2.3/§6.1/§6.2 · `MASTER_CHECKLIST.md` §1 ·
-`docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md` §3 · `MASTER_SCHEDULING.md` §6 F0-T4a
+**Status:** LOCKED — Decision Lock 2026-05-20 (Executive Briefing F0-T4a)
+**Riferimenti:** [`DOSSIER_TECNICO.md`](DOSSIER_TECNICO.md) §[2.2](DOSSIER_TECNICO.md#midi-output)/[2.3](DOSSIER_TECNICO.md#cymbals)/[6.1](DOSSIER_TECNICO.md#tcn)/[6.2](DOSSIER_TECNICO.md#loss) · [`MASTER_CHECKLIST.md` §1](../../MASTER_CHECKLIST.md#ai-neural) ·
+[`F0-T2a` §3](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`MASTER_SCHEDULING.md` §6](../../04_INTELLIGENCE/MASTER_SCHEDULING.md#tasks) F0-T4a
 
 > Questo documento traduce il Design Lock concettuale "Strided-Context TCN" in una **spec
 > di rete implementabile**: numero di layer, kernel, dilatazioni, receptive field, shape
@@ -29,21 +29,22 @@ supersedes: []
 
 | Voce | Decisione bloccata |
 | :-- | :-- |
-| `R_target` (frame-rate target) | **44100 / 128 = 344.53125 Hz** — ratifica del provvisorio F0-T2a §3.4 |
+| `R_target` (frame-rate target) | **44100 / 128 = 344.53125 Hz** — ratifica del provvisorio [F0-T2a §3.4](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#r-target) |
 | Famiglia architetturale | Strided encoder + **dilated causal TCN trunk** (1 solo grafo RTNeural) |
 | Realizzazione del look-ahead | TCN causale + **ritardo d'ingresso = PDC** (~100 ms) |
 | NN-Repeat / Sentinella-Scalpello a 2 rate | **Abbandonato** (vedi §6 — incoerenza sanata) |
 | Teste d'uscita | onset[8] · velocity[8] · microtiming[8] · hihat_opening[1] → `flat-25` |
 
+<a id="design-lock-fix"></a>
 ## 1. Incoerenza del Design Lock concettuale — sanata
 
-`DOSSIER §6.1` descriveva il "Comb-Filter Hack" come *Sentinella* `stride=4` (analisi a
+[`DOSSIER §6.1`](DOSSIER_TECNICO.md#tcn) descriveva il "Comb-Filter Hack" come *Sentinella* `stride=4` (analisi a
 "~11 kHz") + *Scalpello* `stride=1` ("massima risoluzione") fusi via **Nearest-Neighbor
 Repeat**. Due problemi rilevati traducendo il concetto in spec:
 
 1. **Numeri incoerenti col target.** Lo "Scalpello a massima risoluzione (44.1 kHz)"
    implicherebbe un'uscita a 44.1 kHz, non a `R_target ≈ 344 Hz`. La cifra "~11 kHz" è un
-   artefatto **pre-R_target** (il documento concettuale precede F0-T2a §3.4).
+   artefatto **pre-R_target** (il documento concettuale precede [F0-T2a §3.4](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#r-target)).
 2. **L'NN-Repeat lavora contro il suo scopo.** Il Comb-Filter Hack nasce *per* la
    compatibilità RTNeural; ma RTNeural non espone un layer di upsampling → l'NN-Repeat
    richiederebbe un'operazione custom in C++ e lo split del modello in due grafi RTNeural,
@@ -55,20 +56,21 @@ lo **strided encoder** porta l'audio raw sul frame-grid del target; il **trunk d
 causale** fornisce il receptive field grande tramite dilatazioni (non stride + upsampling).
 Un solo grafo RTNeural, nessuna op custom → de-risca il round-trip del Gate L3.
 
+<a id="r-target-ratifica"></a>
 ## 2. `R_target` — ratifica
 
 `R_target` = **44100 / 128 = 344.53125 Hz** · periodo frame = **2.902 ms**.
 
-- Coerente con il **Gaussian smear ±3 ms** (`DOSSIER §6.2`): un onset "sfocato" copre
+- Coerente con il **Gaussian smear ±3 ms** ([`DOSSIER §6.2`](DOSSIER_TECNICO.md#loss)): un onset "sfocato" copre
   ~1 frame per lato.
 - Margine anti-collisione: un frame contiene **un solo onset per bus**; a 2.9 ms i flam
-  e i blast-beat del modulo Machine-Gun (`DOSSIER §3 / §10.1`) non collassano nello
+  e i blast-beat del modulo Machine-Gun ([`DOSSIER §3`](DOSSIER_TECNICO.md#data-doctrine) / [`§10.1`](DOSSIER_TECNICO.md#training-set)) non collassano nello
   stesso frame, cosa che accadrebbe al frame-rate ADT standard di 100 Hz (10 ms).
 - Stride totale **128 = 2⁷** → encoder pulito a sole conv strided.
 - La **sample-accuracy** resta disaccoppiata da `R_target` (canale microtiming,
-  F0-T2a §3.4): `R_target` definisce la griglia, non la precisione finale.
+  [F0-T2a §3.4](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#r-target)): `R_target` definisce la griglia, non la precisione finale.
 
-→ `output.target_frame_rate_hz` in F0-T2a §3.4 passa da *provvisorio* a **ratificato**.
+→ `output.target_frame_rate_hz` in [F0-T2a §3.4](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#r-target) passa da *provvisorio* a **ratificato**.
 
 ## 3. Topologia concreta
 
@@ -102,10 +104,10 @@ Output   [n_frame, 8, 3]  +  [n_frame, 1]   ≡   layout `flat-25` di F0-T2a §3
 - Conteggio parametri stimato ≈ **80–100 k** (baseline `C=32`) — adatto a mini-batch su
   MPS e a runtime CPU Zero-Allocation.
 - `n_frame = ceil(n_sample / 128)` — coerente con `n_frame = ceil(duration_s × R_target)`
-  di F0-T2a §3.4.
+  di [F0-T2a §3.4](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#r-target).
 
 ### 3.1 Allineamento col contratto dati F0-T2a
-Le 4 teste si concatenano esattamente nel layout `flat-25` (`F0-T2a §3.3`): per il bus
+Le 4 teste si concatenano esattamente nel layout `flat-25` ([`F0-T2a §3.3`](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#target-tensor)): per il bus
 `b ∈ [0,7]` colonna `3b`=onset, `3b+1`=velocity, `3b+2`=microtiming; colonna `24`=hihat
 opening. Il data-loader fa già il reshape `cols 0:24 → [n_frame,8,3]` e `col 24 →
 [n_frame]`: il modello produce direttamente i tensori nello stesso ordine.
@@ -113,7 +115,7 @@ opening. Il data-loader fa già il reshape `cols 0:24 → [n_frame,8,3]` e `col 
 ## 4. Input agnostico — 8 slot canonici
 
 Il modello ha **larghezza d'ingresso fissa = 8** (requisito di grafo statico RTNeural).
-Le configurazioni microfoniche di F0-T2a §2.3 sono mappate su 8 slot canonici; gli slot
+Le configurazioni microfoniche di [F0-T2a §2.3](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#mic-config) sono mappate su 8 slot canonici; gli slot
 non usati sono **zero-fill**:
 
 | Slot | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
@@ -125,13 +127,13 @@ non usati sono **zero-fill**:
 | `multitrack_full` | kick | snare_top | snare_bot | tom | floor | oh_L | oh_R | room |
 
 L'**Input-Agnostic Projection** (Conv1D k=1) impara a estrarre la "verità" indipendentemente
-dalla densità informativa (`DOSSIER §2.1`). L'assegnazione dei mic reali agli slot in fase
+dalla densità informativa ([`DOSSIER §2.1`](DOSSIER_TECNICO.md#input-agnostic)). L'assegnazione dei mic reali agli slot in fase
 di plugin (UI) è materia di **F4**; qui si fissa solo il contratto del tensore.
 
 ## 5. Non-causalità / Look-ahead / PDC
 
 - Il trunk è **causale**: nessun receptive field futuro intrinseco.
-- Il **look-ahead ~100 ms** (`DOSSIER §2.3`, `MASTER_CHECKLIST §3` PDC) è realizzato come
+- Il **look-ahead ~100 ms** ([`DOSSIER §2.3`](DOSSIER_TECNICO.md#cymbals), [`MASTER_CHECKLIST §3`](../../MASTER_CHECKLIST.md#dsp) PDC) è realizzato come
   **ritardo d'ingresso pari al PDC**: l'intero plugin gira ~100 ms indietro, quindi la
   rete al frame `t` dispone dell'audio fino a `t + ~100 ms`. È la **stessa delay-line**
   del Chronos Engine già bloccato — nessuna superficie nuova.
@@ -143,13 +145,14 @@ di plugin (UI) è materia di **F4**; qui si fissa solo il contratto del tensore.
 
 | Testa | Loss | Note |
 | :-- | :-- | :-- |
-| onset | **Asymmetric Focal Loss** | falso-positivo pesato **3×** la nota mancata (`DOSSIER §6.2`); target Gaussian-smeared σ ↔ ±3 ms |
+| onset | **Asymmetric Focal Loss** | falso-positivo pesato **3×** la nota mancata ([`DOSSIER §6.2`](DOSSIER_TECNICO.md#loss)); target Gaussian-smeared σ ↔ ±3 ms |
 | velocity | **L1 mascherata** | supervisione solo sui frame con onset attivo nel ground truth |
 | microtiming | **L1 mascherata** | idem — solo sui frame con onset |
-| hihat_opening | **L1 / MSE densa** | su ogni frame (`DOSSIER §2.2`) |
+| hihat_opening | **L1 / MSE densa** | su ogni frame ([`DOSSIER §2.2`](DOSSIER_TECNICO.md#midi-output)) |
 
 Loss totale = somma pesata; i **pesi inter-testa** sono iperparametri di F0-T4b.
 
+<a id="l3-threshold"></a>
 ## 7. Soglia numerica Gate L3 — "metriche di onset significativamente non casuali"
 
 Criterio di superamento del Gate L3 (parte metrica; la parte round-trip RTNeural è in

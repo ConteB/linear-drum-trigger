@@ -1,3 +1,17 @@
+---
+id: LIN-DT-DESIGN-001
+title: Linear Design Guide — OP-NeuroTrigger
+type: standard
+status: LOCKED
+phase: F4
+domain: UX / UI
+version: 1.0.0
+updated: 2026-05-20
+tags: [ux, ui, design, standard]
+related: [LIN-DT-UXBP-001]
+supersedes: []
+---
+
 # LINEAR DESIGN GUIDE: OP-NEUROTRIGGER
 **Project:** Drum-Trigger (Fresh)
 **Aesthetic:** "Hybrid Studio-Bench" (Lab Precision meets 70s Studio Luxury)

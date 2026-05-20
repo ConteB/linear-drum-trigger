@@ -1,6 +1,19 @@
+---
+id: LIN-DT-REGAV-001
+title: Registro Avanzamento Commessa — Drum-Trigger
+type: registro
+status: ACTIVE
+phase: cross-cutting
+domain: Operations
+version: 1.0.0
+updated: 2026-05-20
+tags: [registro, tracking, milestones]
+related: [LIN-DT-MSCHED-001, LIN-DT-DIARY-001]
+supersedes: []
+---
+
 # REGISTRO AVANZAMENTO COMMESSA - DRUM-TRIGGER
 **Progetto:** drum-trigger-fresh
-**ID:** OP-260518-FRESH
 
 ## 📈 ROADMAP & MILESTONES
 - [x] **M0: Clean Slate Recovery** - Wipe GitHub e migrazione logica. (2026-05-18)
@@ -31,4 +44,5 @@
 | 2026-05-20 | F0-T1c | Ridisegno Validation Protocol (Holdout). Survey: E-GMD (CC-BY 4.0) idoneo; IDMT-SMT-Drums/STAR Drums/MDB Drums esclusi (NC/research). Verificato: le librerie a pagamento non concedono diritti ML (EULA) → CC-BY più sicuro del commerciale. Decision Lock CEO: Holdout reale = E-GMD, Stealth-Mix = Slakh2100, Ocular Proof invariato. Piano B (registrazioni proprietarie) scartato. `DOSSIER_TECNICO` §10.3 e `MASTER_CHECKLIST` §1 aggiornati. | COMPLETATO |
 | 2026-05-20 | F0-T9a | STRP-001 — Testing & QA Doctrine. Buco rilevato dal CEO: nessuna strategia di test oltre `audit_dsp_rigor.py` e l'Ocular Proof. Ricerca: pluginval = standard de-facto validazione plugin; mutation testing = rete di sicurezza per codice generato da AI (= delega a sub-agenti). Decision Lock CEO 5/5: dottrina a 4 layer (unit/property-based/fuzz/AI-Adversarial) + Layer-S statico; mutation kill-rate come gate anti-pigrizia (critici ≥ 90 %, core ≥ 85 %); il conteggio test e la coverage rifiutati come target; protocollo AI-Adversarial QA (sub-agente cieco sull'implementazione); pluginval ≥ 8 per il C++ (coarse, F4). Prodotto `04_INTELLIGENCE/TESTING_DOCTRINE.md`; aggiornati `SUB_AGENT_GOVERNANCE.md` §6, `MASTER_CHECKLIST` §3, `DOSSIER_TECNICO` §2.4, `MASTER_SCHEDULING` §6/§7. Creati F0-T9a/b; F0-T9b (harness) è gate test-first di F0-T2b/c/d. | COMPLETATO |
 | 2026-05-20 | F0-T4a | STRP-001 — topologia TCN concreta. Ricerca: RTNeural supporta Conv1D dilatato/strided ma non l'upsampling; WaveBeat = precedente OS (TCN su waveform raw). Rilevata e sanata un'incoerenza del Design Lock concettuale (Sentinella/Scalpello "11 kHz" + NN-Repeat: numeri pre-R_target e op non-nativa RTNeural). Decision Lock CEO 5/5: `R_target` ratificato `44100/128 ≈ 344.53 Hz`; topologia 4-stadi (Input-Agnostic Projection → Strided Encoder Stem stride-128 → Dilated Causal TCN Trunk 8 blocchi → 4 teste onset/velocity/microtiming/hihat); look-ahead ~100 ms come ritardo d'ingresso = PDC; abbandonato NN-Repeat (1 solo grafo RTNeural → de-risk L3); soglia L3 fissata (F-measure ≥ 0.80 @ ±20 ms + controllo negativo). Prodotto `docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md`; aggiornati `DOSSIER_TECNICO` §6.1, `MASTER_CHECKLIST` §1/§6, `F0-T2a` §3.4, `MASTER_SCHEDULING` §6/§7. Sblocca F0-T4b. | COMPLETATO |
-| 2026-05-20 | F0-T10 | STRP-001 — Documentation Linking Layer. Buco rilevato dal CEO: i riferimenti tra documenti erano in prosa e per numero di sezione, fragili — radice delle ~30 incoerenze dell'audit. Ricerca: GitHub non renderizza i wikilink `[[ ]]`; Foam e `lychee` come riferimenti OS. Decision Lock CEO 6/6: OP-NEUROTRIGGER Doc Standard — frontmatter YAML, ancore HTML stabili, cross-ref con link relativi standard, `docs/INDEX.md` generato, validatore `lychee` (warn→blocking). Prodotti `04_INTELLIGENCE/DOC_LINKING_STANDARD.md`, `tools/gen_docs_index.py`, `lychee.toml`; frontmatter retrofittato su 9 documenti; INDEX generato (9 indicizzati, 20 backlog). Creato F0-T10 (P2). Aperto: ancore + conversione riferimenti sul hot-set, retrofit dei 20 doc restanti. | IN CORSO |
+| 2026-05-20 | F0-T10 | STRP-001 — Documentation Linking Layer. Buco rilevato dal CEO: i riferimenti tra documenti erano in prosa e per numero di sezione, fragili — radice delle ~30 incoerenze dell'audit. Ricerca: GitHub non renderizza i wikilink `[[ ]]`; Foam e `lychee` come riferimenti OS. Decision Lock CEO 6/6: OP-NEUROTRIGGER Doc Standard — frontmatter YAML, ancore HTML stabili, cross-ref con link relativi standard, `docs/INDEX.md` generato, validatore `lychee` (warn→blocking). Prodotti `04_INTELLIGENCE/DOC_LINKING_STANDARD.md`, `tools/gen_docs_index.py`, `lychee.toml`; frontmatter retrofittato su 9 documenti; INDEX generato (9 indicizzati, 20 backlog). Creato F0-T10 (P2). Bootstrap dello standard; chiusura del corpo nella riga successiva. | COMPLETATO |
+| 2026-05-20 | F0-T10 (chiusura) | Corpo F0-T10 completato (Decision Lock CEO — retrofit completo + doc-fossili a puntatori + gate blocking). Frontmatter su **tutti i 33 documenti** di progetto (copertura INDEX 100 %, 0 backlog); ~45 ancore HTML stabili + ~65 riferimenti prosa→link convertiti sul hot-set; 3 doc-fossili era OP-X (`PROJECT_ROADMAP`, `SPRINT_BOARD`, `PROJECT_MASTER_INDEX`) archiviati a puntatori verso `MASTER_SCHEDULING`/`docs/INDEX.md`; `gen_docs_index.py` esteso ai doc root; `lychee.toml` corretto (`include_fragments = "anchor-only"`); gate `lychee` **BLOCKING** via git pre-commit hook (`tools/pre-commit` + `tools/install-hooks.sh`). Controllone finale: corretto content-rot (ENST-Drums→E-GMD in `MASTER_CHECKLIST`/`F0-T2a`, `PIPELINE_STATUS.json` morto, puntatori `SPRINT_BOARD`). `lychee --offline`: 109 link OK, 0 errori. | COMPLETATO |

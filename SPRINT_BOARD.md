@@ -1,26 +1,27 @@
-# 📋 SPRINT BOARD: OP-NEUROTRIGGER
-**Sprint Corrente:** S-001 "Data Foundation"
-**Status:** IN PROGRESS
-**Gate corrente:** L1 (Design Lock) — definizione gate in `MASTER_CHECKLIST.md` §6
-**Prossimo Gate:** L2 (Pipeline Dati Validata) — nessuna data fissata
-**Budget Spent:** €0 / €500
-## 📝 BACKLOG (To Do)
-- [ ] **Setup Azure Remote** (Blob Container + SAS Tokens).
-- [ ] **Inizializzazione DVC** nel repository (`dvc init`).
-- [ ] Setup ambiente `Sfizz` Headless per rendering batch.
-...
-- [ ] Download e mappatura kit `SM Drums` e `DrumGizmo` in formato SFZ.
-- [ ] Specifica Matematica "AI-Artifact Simulation" (Modellazione errori Demucs/Spleeter).
-- [ ] Specifica "Negative Sampling" (Integrazione non-drum stems).
-- [ ] Implementazione Bleed Fisico in `augmentation_engine.py`.
-- [ ] Script di generazione massiva con 3 scenari (Stem, AI-Isolates, Full Mix).
-
-## ✅ DONE
-- [x] Brand Identity: OP-NeuroTrigger.
-- [x] Lean-Guerrilla Strategy & Budget Calibration (€500).
-- [x] Technical Competitor Audit (SWOT/Matrix/Moats).
-- [x] Quantitative Market Analysis (TAM/SAM/SOM & Revenue).
-- [x] Audit di coerenza documentale (vedi `04_INTELLIGENCE/AUDIT_RESOLUTION_LOG.md`).
-
 ---
-*Aggiornato ogni 5 turni (ERM-002).*
+id: LIN-DT-SPRINT-001
+title: Sprint Board (ARCHIVIATO — era OP-X)
+type: reference
+status: ARCHIVED
+phase: cross-cutting
+domain: Operations
+version: 2.0.0
+updated: 2026-05-20
+tags: [archived, pointer, sprint]
+related: [LIN-DT-MSCHED-001]
+supersedes: []
+---
+
+# 📋 SPRINT BOARD — PUNTATORE (ARCHIVIATO)
+
+⚠️ Questo file è un **fossile dell'era "OP-X"**. È stato archiviato in F0-T10
+(2026-05-20) perché **stale**: indicava "Gate corrente L1" e un backlog che citava
+SM Drums (escluso da F0-T1). La board kanban a 5 turni non è più il meccanismo di
+tracking del progetto.
+
+Il tracking operativo **canonico** — stato di ogni task, dipendenze, gate — è il
+**Tracking Board** di:
+
+👉 [`04_INTELLIGENCE/MASTER_SCHEDULING.md`](04_INTELLIGENCE/MASTER_SCHEDULING.md)
+
+**Non aggiornare più questo file.**

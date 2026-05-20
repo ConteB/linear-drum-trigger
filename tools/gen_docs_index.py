@@ -13,7 +13,9 @@ from pathlib import Path
 
 # Radici scansionate per i documenti di progetto.
 ROOTS = ["04_INTELLIGENCE", "docs"]
-ROOT_FILES = ["MASTER_CHECKLIST.md"]
+# File `.md` alla root del repo esclusi dalla scansione: sono istruzioni harness,
+# non documenti di progetto (niente frontmatter del Doc Standard).
+ROOT_EXCLUDE = {"CLAUDE.md", "GEMINI.md"}
 OUTPUT = Path("docs/INDEX.md")
 LIST_FIELDS = {"tags", "related", "supersedes"}
 
@@ -47,7 +49,8 @@ def collect(repo: Path) -> tuple[list[dict], list[Path]]:
     md_files: list[Path] = []
     for root in ROOTS:
         md_files += sorted((repo / root).rglob("*.md"))
-    md_files += [repo / f for f in ROOT_FILES if (repo / f).exists()]
+    # Documenti `.md` alla root del repo (escluse le istruzioni harness).
+    md_files += sorted(p for p in repo.glob("*.md") if p.name not in ROOT_EXCLUDE)
 
     docs, no_fm = [], []
     for path in md_files:

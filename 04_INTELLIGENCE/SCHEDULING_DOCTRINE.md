@@ -35,7 +35,7 @@ Primitive dello scheduling:
 - **Fase (F0–F5):** raggruppamento di task con la stessa condizione di abilitazione.
 - **Priorità (P1>P2>P3):** rango di esecuzione *all'interno* di una fase.
 - **Relazione bloccante (⛔/→):** `⛔` = bloccato da; `→` = sblocca/alimenta.
-- **Gate (L1–L4):** livelli di maturità (MASTER_CHECKLIST §6).
+- **Gate (L1–L4):** livelli di maturità ([MASTER_CHECKLIST §6](../MASTER_CHECKLIST.md#gates)).
 
 ## 3. I Sette Criteri Concorrenti
 
@@ -85,7 +85,7 @@ consuma per intero (**G**), ma in ordine di rischio crescente:
   validata in locale), perché dipende dall'architettura specifica.
 - **Regola:** autorizza prima lo spend RENDER; autorizza lo spend TRAINING solo quando
   L3 è validato. Se L3 slitta, il credito si consuma comunque sul render (asset sicuro)
-  e su Tier 2/3 (vedi `MASTER_SCHEDULING.md` §4) — **mai lasciarlo scadere**.
+  e su Tier 2/3 (vedi [`MASTER_SCHEDULING.md` §4](MASTER_SCHEDULING.md#credit-scale)) — **mai lasciarlo scadere**.
 
 Ordinamento residuo: tra i task superstiti, ordina per **Critical Path (A)**.
 
@@ -94,10 +94,10 @@ Ordinamento residuo: tra i task superstiti, ordina per **Critical Path (A)**.
 Poiché il conflitto C-vs-G non è risolvibile a priori (non si sa quanto durerà la
 validazione), si introducono **checkpoint** lungo la finestra del credito. A ogni
 checkpoint si valuta *in quale scenario siamo* (GREEN/YELLOW/RED) e si ri-decide come
-desplegare il credito residuo. Date e regole concrete: `MASTER_SCHEDULING.md` §3–§4.
+desplegare il credito residuo. Date e regole concrete: [`MASTER_SCHEDULING.md` §3](MASTER_SCHEDULING.md#checkpoints)–[§4](MASTER_SCHEDULING.md#credit-scale).
 
 Principio: un checkpoint non è un report, è un **bivio decisionale**. Se a un checkpoint
-lo scenario non è GREEN, si scende sulla scala di deployment (§4 del Master Scheduling)
+lo scenario non è GREEN, si scende sulla scala di deployment ([§4 del Master Scheduling](MASTER_SCHEDULING.md#credit-scale))
 verso uno spend a rischio inferiore, in modo che il credito venga comunque consumato.
 
 ## 7. Output — Modello a Fasi
@@ -114,7 +114,7 @@ verso uno spend a rischio inferiore, in modo che il credito venga comunque consu
 ## 8. Procedura d'Uso
 
 1. A ogni sessione, identificare la fase aperta e consultare il tracking board in
-   `MASTER_SCHEDULING.md` §7.
+   [`MASTER_SCHEDULING.md` §7](MASTER_SCHEDULING.md#tracking-board).
 2. Eseguire i task in ordine di priorità, rispettando i `⛔`.
 3. Un task con criterio **D** si avvia sempre per primo, in parallelo.
 4. Una fase si chiude — e la successiva si apre — solo alla verifica **Ocular Proof**

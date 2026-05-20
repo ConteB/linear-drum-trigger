@@ -1,3 +1,17 @@
+---
+id: LIN-DT-TCAUDIT-001
+title: Audit Tecnico della Concorrenza (PM-Grade)
+type: reference
+status: ACTIVE
+phase: cross-cutting
+domain: Marketing / Strategy
+version: 1.0.0
+updated: 2026-05-18
+tags: [competitor, swot, strategy]
+related: [LIN-DT-COMPAN-001, LIN-DT-QMA-001]
+supersedes: []
+---
+
 # 📊 AUDIT TECNICO DELLA CONCORRENZA (PM-GRADE)
 **Progetto:** OP-NeuroTrigger
 **Responsabile:** Gianpiero Scappelloni (Strategic Advisor)

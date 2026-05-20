@@ -1,3 +1,17 @@
+---
+id: LIN-DT-UXBP-001
+title: UX Blueprint STRP-001 — Incertezza AI & UI Layout
+type: spec
+status: ACTIVE
+phase: F4
+domain: UX / UI
+version: 1.0.0
+updated: 2026-05-20
+tags: [ux, ui, blueprint, strp-001]
+related: [LIN-DT-DESIGN-001]
+supersedes: []
+---
+
 # TASK BLUEPRINT: STRP-001 (UX Incertezza AI & UI Layout)
 **Score ERM-005:** BASSO RISCHIO (Nessuna dipendenza esterna, implementazione puramente grafica in JUCE/C++).
 **Checklist TOP-002:** Approvazione architettura visiva (Split-Focus).

@@ -1,3 +1,17 @@
+---
+id: LIN-DT-HOLDOUT-F0T1c
+title: F0-T1c — Survey Holdout + Ridisegno Validation Protocol
+type: registro
+status: LOCKED
+phase: F0
+domain: Legal / Compliance
+version: 1.0.0
+updated: 2026-05-20
+tags: [compliance, holdout, validation, F0-T1c]
+related: [LIN-DT-DPL-001, LIN-DT-DOSSIER-001, LIN-DT-CHKLST-001]
+supersedes: []
+---
+
 # 🎯 F0-T1c — SURVEY HOLDOUT + RIDISEGNO VALIDATION PROTOCOL
 **Task:** F0-T1c · **Avviato:** 2026-05-20 · **Stato:** ☑ CHIUSO — Decision Lock CEO 2026-05-20
 **Origine:** esclusione di ENST-Drums e MedleyDB (dottrina §1.1) → Holdout reale e

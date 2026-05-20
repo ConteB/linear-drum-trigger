@@ -5,7 +5,7 @@ type: standard
 status: LOCKED
 phase: cross-cutting
 domain: Operations / Knowledge Management
-version: 1.0.0
+version: 1.1.0
 updated: 2026-05-20
 tags: [documentation, governance, standard, tooling]
 related: [LIN-DT-MSCHED-001, LIN-DT-SCHED-001, LIN-DT-TESTDOC-001]
@@ -119,21 +119,29 @@ i rename di file non lo toccano, così i `related` non si rompono.
 
 <a id="validator"></a>
 [`lychee`](https://github.com/lycheeverse/lychee) (link checker Rust, binario singolo)
-verifica link **e ancore** (`--include-fragments`). Config in `lychee.toml`.
-- **Fase warn** (rollout in corso): i link rotti sono segnalati, non bloccanti.
-- **Fase blocking** (a retrofit hot-set completato): un link/ancora rotto fallisce il gate.
+verifica link **e ancore** (`include_fragments = "anchor-only"` in `lychee.toml`).
+- **Gate BLOCKING — attivo (F0-T10, 2026-05-20).** Il pre-commit hook `tools/pre-commit`
+  esegue `lychee --offline` a ogni commit: un link o un'ancora rotti fanno fallire il
+  commit. Rigenera anche `docs/INDEX.md` e blocca se è disallineato dal frontmatter.
+- **Installazione del hook:** `sh tools/install-hooks.sh` (collega `.git/hooks/pre-commit`).
 
 ## 8. Rollout (Decision Lock — incrementale)
 
-| Stadio | Contenuto |
-| :-- | :-- |
-| **Ora** | Standard + `gen_docs_index.py` + `lychee.toml` (warn) + frontmatter sul hot-set |
-| **F0-T10 (corpo)** | Ancore stabili + conversione dei riferimenti in prosa → link, sul hot-set |
-| **Opportunistico** | Retrofit dei restanti documenti quando vengono editati |
-| **A regime** | `lychee` → blocking; frontmatter mandatorio per ogni doc nuovo |
+| Stadio | Contenuto | Stato |
+| :-- | :-- | :-- |
+| **Bootstrap** | Standard + `gen_docs_index.py` + `lychee.toml` + frontmatter sul hot-set | ☑ |
+| **F0-T10 (corpo)** | Ancore stabili + conversione riferimenti prosa → link sul hot-set | ☑ 2026-05-20 |
+| **Retrofit completo** | Frontmatter su **tutti** i documenti di progetto (33 indicizzati) | ☑ 2026-05-20 |
+| **A regime** | `lychee` → **blocking** (pre-commit hook); frontmatter mandatorio per ogni doc nuovo | ☑ 2026-05-20 |
 
-*Hot-set:* `MASTER_SCHEDULING`, `MASTER_CHECKLIST`, `DOSSIER_TECNICO`, le spec `F0-T*a`,
-le doctrine (`SCHEDULING`, `TESTING`), `SUB_AGENT_GOVERNANCE`, questo standard.
+> **F0-T10 chiuso (Decision Lock CEO 2026-05-20).** Il retrofit non è più "opportunistico":
+> tutti i documenti di progetto portano il frontmatter, l'INDEX li copre al 100 %, il gate
+> `lychee` è blocking. Da qui in avanti il rispetto dello standard è imposto dalla macchina,
+> non dalla disciplina manuale.
+
+*Hot-set (entry point di navigazione, ancore + cross-ref convertiti):* `MASTER_SCHEDULING`,
+`MASTER_CHECKLIST`, `DOSSIER_TECNICO`, le spec `F0-T*a`, le doctrine (`SCHEDULING`,
+`TESTING`), `SUB_AGENT_GOVERNANCE`, questo standard.
 
 ---
 

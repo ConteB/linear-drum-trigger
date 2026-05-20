@@ -1,3 +1,17 @@
+---
+id: LIN-DT-BLUEPRINT-001
+title: Task Blueprint — Avvio Fase F0 (SOP-016 / ERM-005)
+type: registro
+status: ARCHIVED
+phase: F0
+domain: Operations
+version: 1.0.0
+updated: 2026-05-20
+tags: [blueprint, F0, registro]
+related: [LIN-DT-MSCHED-001]
+supersedes: []
+---
+
 # TASK BLUEPRINT (SOP-016 / ERM-005)
 
 ## IDENTIFICAZIONE TASK (TOP-002)

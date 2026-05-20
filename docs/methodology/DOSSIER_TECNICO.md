@@ -13,7 +13,6 @@ supersedes: []
 ---
 
 # DOSSIER TECNICO: DRUM-TRIGGER (END-TO-END TRANSCRIPTION)
-**ID:** LIN-DT-DOC-002
 **Status:** ACTIVE - STRATEGIC PIVOT
 **Division:** Linear / OpenPhase
 **Target:** Mixing Engineers, Producers, Studio Post-Production.
@@ -23,9 +22,11 @@ Drum-Trigger non è un semplice "gate a soglia", ma un sistema di **Intelligent 
 
 ## 2. Pilastri Architetturali (New Doctrine)
 
+<a id="input-agnostic"></a>
 ### 2.1 Input Agnostico (Universal Channel Mapping)
 Il sistema accetta input variabili da 1 a 8 canali. Un layer di pre-processing mappa la configurazione (es. Solo Stereo, Glyn Johns, Multitraccia completo) in un tensore standardizzato. L'IA è addestrata a estrarre la "verità" (il MIDI) indipendentemente dalla densità informativa dell'input.
 
+<a id="midi-output"></a>
 ### 2.2 End-to-End MIDI Output
 L'output non è un timestamp, ma una **Matrice di Trascrizione Differenziabile (Piano Roll)** a 8 canali:
 - **Kick, Snare, Hi-Hat (con stati di apertura CC), Tom H/M, Floor Tom, Ride, Crash A, Crash B/Varie.**
@@ -33,6 +34,7 @@ L'output non è un timestamp, ma una **Matrice di Trascrizione Differenziabile (
 
 Il bus **Hi-Hat** espone, oltre alla matrice di onset, una **testa di regressione continua dedicata** che stima il grado di apertura del piatto frame-by-frame (0.0 = chiuso, 1.0 = aperto). Questo valore continuo è instradato in uscita secondo uno schema **selezionabile dall'utente**: **(a) CC continuo** (default — `CC#4`, Foot Controller; massima espressione, compatibile con Superior Drummer/EZdrummer) oppure **(b) Note discrete** (il valore continuo è quantizzato sulle articolazioni GM closed/pedal/open per la compatibilità universale). Il modello resta invariato in entrambi i casi: il toggle agisce solo sullo stadio MIDI d'uscita. La testa di apertura è addestrata con loss di regressione (L1/MSE), distinta dalla Asymmetric Focal Loss usata per gli onset (§6.2).
 
+<a id="cymbals"></a>
 ### 2.3 Gestione Integrale dei Piatti (Cymbals Mastery)
 A differenza dei trigger tradizionali, Drum-Trigger tratta i piatti come cittadini di serie A. L'architettura utilizza finestre di **Look-ahead (Non-causale)** per separare l'attacco della bacchetta dal "sustain wash" e identificare i colpi di piatto anche in presenza di saturazione spettrale.
 
@@ -45,17 +47,20 @@ Per garantire l'integrazione con DAW professionali e altri VST pesanti (es. Supe
   sicurezza numerica, PDC) non sono dichiarativi — sono verificati. Layer statico
   (`audit_dsp_rigor.py`) + test dinamici (override `new`/`malloc` su `processBlock`,
   null-test di determinismo, fuzz NaN/denormali, `pluginval` ≥ 8). Dottrina completa:
-  `04_INTELLIGENCE/TESTING_DOCTRINE.md` §5 (coarse, dettaglio a F4).
+  [`TESTING_DOCTRINE.md` §5](../../04_INTELLIGENCE/TESTING_DOCTRINE.md#dsp-tests) (coarse, dettaglio a F4).
 
+<a id="data-doctrine"></a>
 ## 3. Dottrina di Generazione Dati (Augmentation v2 & Lineage)
 Il dataset di addestramento deve simulare l'entropia del segnale reale, tracciando rigorosamente la provenienza di ogni trasformazione. **Il volume target è 1.5 Terabyte (450 ore di audio).**
 
+<a id="aug-prerender"></a>
 ### 3.1 Augmentation Pre-Rendering (Il "MIDI Jittering Engine")
 Prima di sintetizzare l'audio, i MIDI "perfetti" di Ground Truth subiscono una distorsione per forzare l'IA a gestire il caos:
 - **Time Jittering:** Spostamento casuale degli onset (±2ms a ±15ms) e creazione del 5% di "Flams" artificiali (doppi colpi) per allenare il look-ahead.
 - **Velocity Jittering:** Alterazione dinamica estrema (Ghost Note Masking e Global Gain Shift) per disaccoppiare il riconoscimento dal volume assoluto.
 - **Component Dropping:** Mute randomico del 10% di componenti (es. kick/toms) per rompere l'aspettativa di groove standard.
 
+<a id="aug-l1"></a>
 ### 3.2 Livello 1: Stem Isolate & Micro-Bleed (30% Dataset)
 - **Baseline:** Segnale generato tramite `Sfizz` (SM Drums, Salamander Drumkit) e `DrumGizmo` via CLI (kit multi-microfono). Motore di rendering ufficiale del progetto (Decision Lock 2026-05-20); FluidSynth/SF2 scartato perché privo di tracce multi-mic.
 - **Focus:** Precisione assoluta del transiente d'attacco e apprendimento del rientro microfonico reale.
@@ -68,6 +73,7 @@ Per simulare le azioni degli ingegneri del suono, l'audio pulito subisce alteraz
 - **Pitch Shifting:** Variazioni di accordatura (±3 semitoni).
 - **Stealth Mix Mode (Standard):** Iniezione di Basso e Chitarre (Slakh Dataset).
 
+<a id="aug-l3"></a>
 ### 3.4 Livello 3: Acoustic Environment & Transient Saboteurs (30% Dataset - Il Girone dell'Inferno)
 - **Acoustic Environment (Convolution Reverb):** Processamento tramite **Riverbero a Convoluzione** (`pedalboard`) usando Impulse Responses (OpenAIR Library) liberi da copyright.
 - **Stealth Mix Mode (The Transient Saboteurs):** L'augmentation usa una "Stealth Matrix Ponderata" per combattere i Falsi Positivi causati da strumenti impulsivi:
@@ -78,13 +84,15 @@ Per simulare le azioni degli ingegneri del suono, l'audio pulito subisce alteraz
     - *Voce / Parlato (Speech Rejection):* (LibriSpeech). Iniezione di voce parlata per insegnare alla rete a non interpretare consonanti plosive e transienti vocali come colpi di batteria.
 - **Focus:** L'Armatura Definitiva. Reiezione categorica dell'energia impulsiva non appartenente al core-set della batteria, risolvendo i casi limite e i mix impossibili.
 
+<a id="dna-trace"></a>
 ### 3.5 Protocollo "DNA-Trace" (Data Lineage & Hashing)
 Ogni tensore Gold finale (in pasto all'IA) possiede una "Carta d'Identità" per debug deterministico:
 - **DNA Barcode (Nome File):** Esempio `GMD042-V0T1-DGZ-R2-C1H0-SLK102.npy` traccia: Fonte MIDI (`GMD042`), Alterazione MIDI (`V0T1`), Motore Audio (`DGZ`), Ambiente Acustico/Riverbero (`R2`), Alterazione Audio (`C1H0`) e Disturbatore (`SLK102`).
 - **Libretto Sanitario (JSON):** Ogni batch o tensore critico è accompagnato da un file JSON con l'esatto quantitativo di time shift applicato, la percentuale di riverbero Wet/Dry o il ratio di mix, consentendo reverse-engineering totale.
 
-> Lo schema formale dei campi (barcode e JSON) è **bloccato** — vedi `docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md` §4 (Decision Lock 2026-05-20); ogni campione WebDataset porta il proprio `{key}.dna.json` (vedi §9.2).
+> Lo schema formale dei campi (barcode e JSON) è **bloccato** — vedi [`F0-T2a` §4 — DNA-Trace](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#dna-trace-format) (Decision Lock 2026-05-20); ogni campione WebDataset porta il proprio `{key}.dna.json` (vedi [§9.2](#medallion)).
 
+<a id="midi-matrix"></a>
 ## 4. Matrice di Output MIDI (Standard OpenPhase)
 1.  **CH 1:** Kick
 2.  **CH 2:** Snare (Center, Rim, Side-stick)
@@ -142,6 +150,7 @@ Per arginare le incompatibilità di routing interno di alcune DAW, l'architettur
 
 ## 6. Neural Architectures Candidates
 
+<a id="tcn"></a>
 ### 6.1 Strided-Context TCN (The "Comb-Filter" Hack)
 **Status:** HIGH ADHERENCE (Primary Architecture)
 **Motivazione:** Architettura "Industrial Grade" monolitica che garantisce la precisione della Multi-Risoluzione senza rompere la compatibilità con il framework di inferenza `RTNeural` in C++.
@@ -163,7 +172,7 @@ Per arginare le incompatibilità di routing interno di alcune DAW, l'architettur
   un solo grafo, 100% RTNeural-nativo. *(Il blocco "Sentinella/Scalpello" a 2 rate con
   `Nearest-Neighbor Repeat` è stato abbandonato a F0-T4a: introduceva un'operazione di
   upsampling non-nativa RTNeural, contraria allo scopo stesso del Comb-Filter Hack — vedi
-  `F0-T4a_TCN_TOPOLOGY_SPEC.md` §1.)*
+  [`F0-T4a` §1](F0-T4a_TCN_TOPOLOGY_SPEC.md#design-lock-fix).)*
 - **Latenza / Look-Ahead:** il trunk è causale; il look-ahead non-causale (~100 ms) è
   realizzato come **ritardo d'ingresso pari al PDC** (la rete gira ~100 ms indietro →
   vede il "futuro"). Coincide con la delay-line del Chronos Engine.
@@ -174,12 +183,14 @@ Per arginare le incompatibilità di routing interno di alcune DAW, l'architettur
 - **Compatibilità Totale:** RTNeural supporta nativamente le operazioni di `stride`, azzerando la necessità di scrivere codice inferenziale custom complesso in C++. ⚠️ **Asserzione da verificare empiricamente** (Decision Lock STRP-001 D4): l'esportabilità della topologia in RTNeural è certificata dal **Gate L3** (F0-T4b — export JSON + smoke-test C++ + match numerico), *prima* di qualsiasi spesa di compute.
 - **Zero Allocation:** Piena aderenza al mandato Linear. L'assenza di resampling garantisce buffer statici in memoria.
 
+<a id="loss"></a>
 ### 6.2 Neural Training Strategy (Loss & Ground Truth)
 Per risolvere il catastrofico sbilanciamento delle classi (99.9% di campioni audio sono silenzi o code, 0.1% sono attacchi di transienti), l'addestramento non utilizzerà metriche standard (es. MSE), ma seguirà questo protocollo:
 
 1. **Gaussian Target Smearing (Ground Truth):** L'engine di generazione dati (`ugt_generator.py`) non produrrà "spilli" digitali (un singolo 1 circondato da 0). Il timestamp dell'onset verrà "sfocato" creando una curva Gaussiana simmetrica di ±3ms. Questo fornisce un gradiente morbido alla rete neurale per correggere il timing durante la discesa dell'errore (backpropagation).
 2. **Asymmetric Focal Loss:** Per punire aspramente i "Falsi Positivi" (l'errore più detestato in studio di registrazione), si utilizzerà una Loss asimmetrica custom in PyTorch. Ispirata alla Computer Vision, forzerà la rete a ignorare i transienti "facili" e a concentrare tutto il compute power cognitivo sui transienti mascherati dal bleeding microfonico, pesando l'errore di falso positivo 3x rispetto alla nota mancata.
 
+<a id="dual-path"></a>
 ### 6.3 Dual-Path Network (Spectral + Temporal)
 **Status:** EVOLUTIONARY TARGET (v2.0)
 - **Concept:** Sistema a due vie per la risoluzione definitiva del "Cymbal Wash".
@@ -200,19 +211,22 @@ La pipeline di generazione dati automatizza la trasformazione di MIDI e librerie
 Per garantire la scalabilità e la tracciabilità "Industrial Grade", il progetto adotta:
 
 ### 9.1 Hybrid Cloud Data Lake
-- **Azure Blob Storage (LRS):** Utilizzato come **storage e compute scratch durante il Data Sprint**, coperto dal credito Azure di $200. Azure non è l'archivio permanente: alla fine del credito, i Gold tensor vengono spostati su HDD fisico (2 TB, ~€100–150). Piano di spesa per task: `STRATEGIC_INFRASTRUCTURE_AUDIT.md` §7.1.
+- **Azure Blob Storage (LRS):** Utilizzato come **storage e compute scratch durante il Data Sprint**, coperto dal credito Azure di $200. Azure non è l'archivio permanente: alla fine del credito, i Gold tensor vengono spostati su HDD fisico (2 TB, ~€100–150). Piano di spesa per task: [`STRATEGIC_INFRASTRUCTURE_AUDIT.md` §7.1](../../04_INTELLIGENCE/STRATEGIC_INFRASTRUCTURE_AUDIT.md#azure-spend-plan).
 - **HDD Fisico (2 TB):** Archivio permanente post-sprint. Contiene: Gold tensor FP16 (~1.5 TB) + recipes DNA-Trace. Silver e Bronze non vengono archiviati (Silver è rigenerabile; Bronze è re-scaricabile).
 - **DVC (Data Version Control):** Gestisce il puntamento ai dati dal repository Git, garantendo che ogni commit del codice sia legato a una specifica versione del dataset.
 
+<a id="medallion"></a>
 ### 9.2 Medallion Flow (Livelli del Dato)
 Il processamento del dato è strutturato a livelli incrementali di qualità gestiti via DVC:
 - **BRONZE LAYER (Raw):** Immutabile. Dataset originali (GMD, SM Drums, DrumGizmo, Noise/Stems per Negative Sampling).
 - **SILVER LAYER (Clean & Target):** Generato tramite `midi_renderer.py` e `ugt_generator.py`. Contiene i Clean Stems estratti dai MIDI e i Tensori MIDI Target (Piano Roll a 8 canali).
-- **GOLD LAYER (Augmented Tensors):** Gestito dall' `augmentation_engine.py`. Fonde i Clean Stems con Phase Chirping, Bleed e "Stealth Mix Mode" (Negative Sampling). Tensori quantizzati a 16-bit pronti per l'Inference Layer (TCN). **Impacchettamento:** WebDataset in tar-shard da ~1 GB (terna `audio.f16` / `target.f16` / `dna.json` per campione), tracciati da DVC come shard — non come micro-file (Decision Lock STRP-001 2026-05-20, D1). Layout di byte FP16 di `audio.f16` / `target.f16` (`[n_mic,n_sample]` e `[n_frame,25]` flat-25) e schema dello shard: `docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md` §3.
+- **GOLD LAYER (Augmented Tensors):** Gestito dall' `augmentation_engine.py`. Fonde i Clean Stems con Phase Chirping, Bleed e "Stealth Mix Mode" (Negative Sampling). Tensori quantizzati a 16-bit pronti per l'Inference Layer (TCN). **Impacchettamento:** WebDataset in tar-shard da ~1 GB (terna `audio.f16` / `target.f16` / `dna.json` per campione), tracciati da DVC come shard — non come micro-file (Decision Lock STRP-001 2026-05-20, D1). Layout di byte FP16 di `audio.f16` / `target.f16` (`[n_mic,n_sample]` e `[n_frame,25]` flat-25) e schema dello shard: [`F0-T2a` §3 — contratto dati](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract).
 
+<a id="validation"></a>
 ## 10. Validation & Holdout Protocol (The "Iron Gate")
 Per scongiurare l'overfitting e garantire la vendibilità Studio-Grade, il dataset e il testing seguono la Dottrina del Triplo Set:
 
+<a id="training-set"></a>
 ### 10.1 Training Set (80%) & The "Machine-Gun" Module
 Usato esclusivamente per aggiornare i pesi della TCN.
 - **Anti-Overfitting Ritmico:** Per impedire alla rete di imparare a memoria il "groove" musicale umano, il 5-10% del Training Set è generato stocasticamente. Il modulo **"Machine-Gun / Chaos"** inserisce blast-beat a 300 BPM, sovrapposizioni fisicamente impossibili (8 tamburi colpiti nello stesso frame) e note randomiche fuori griglia. Questo forza la rete a valutare l'evento acustico fisico, non il pattern musicale.
@@ -220,12 +234,14 @@ Usato esclusivamente per aggiornare i pesi della TCN.
 ### 10.2 Validation Set (10%)
 Usato per il monitoraggio "Early Stopping" durante il training su Azure. Contiene sessioni GMD e kit DrumGizmo volutamente esclusi dal Training Set.
 
+<a id="holdout"></a>
 ### 10.3 The Holdout Test Set (10% - La Prova del Mondo Reale)
 Questo set non viene mai processato in fase di training. È l'arbitro finale della qualità del prodotto:
 - **Holdout reale (E-GMD):** *(ridisegnato 2026-05-20, F0-T1c)* — E-GMD, Expanded Groove MIDI Dataset (CC-BY 4.0): 444 h di performance di batteria **umane reali**, 43 kit, con ground-truth MIDI di timing e velocity allineato ±2 ms. Sostituisce ENST-Drums (escluso — dottrina compliance §1.1 di `DATA_PROVENANCE_LOG.md`). ⚠️ Limite noto: E-GMD è registrato su modulo Roland TD-17 — performance umana vera, ma l'audio non cattura microfoni acustici in stanza né il bleed reale: i claim numerici a L4 vanno formulati di conseguenza.
 - **Test Stealth-Mix (Slakh-Mix via Slakh2100):** *(ridisegnato 2026-05-20, F0-T1c)* — su Slakh2100 (CC-BY 4.0) l'IA genera un MIDI dal full-mix che deve coincidere col MIDI ottenuto (thresholding standard) dallo stem batteria isolato dello stesso brano. Sostituisce il Franken-Mix/MedleyDB (escluso — clausola NonCommercial).
 - **L'Ultimo Miglio (Ocular Proof):** Il plugin pilota un suono percussivo estraneo (es. Woodblock) riprodotto in controfase sulla registrazione originale. Il test è superato solo se l'orecchio umano non percepisce "flam" (sdoppiamento temporale) sull'attacco dei transienti.
 
+<a id="licensing"></a>
 ## 11. Security & Licensing Architecture (Soft-DRM)
 In aderenza alla filosofia OpenPhase, il plugin ripudia l'uso di DRM invasivi (iLok, Hub Apps) che degradano l'esperienza dell'utente pagante. Adotta invece un approccio **Offline Asimmetrico (Modello Valhalla DSP)**.
 

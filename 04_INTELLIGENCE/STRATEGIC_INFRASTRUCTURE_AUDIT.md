@@ -1,3 +1,17 @@
+---
+id: LIN-DT-SIA-001
+title: Strategic Infrastructure Audit
+type: reference
+status: ACTIVE
+phase: cross-cutting
+domain: Infrastructure / Strategy
+version: 1.0.0
+updated: 2026-05-20
+tags: [infrastructure, azure, budget, strategy]
+related: [LIN-DT-MSCHED-001, LIN-DT-SCHED-001]
+supersedes: []
+---
+
 # 🛰️ STRATEGIC INFRASTRUCTURE AUDIT (OP-SIA-001)
 **Prodotto:** OP-NeuroTrigger
 **Responsabile:** Gianpiero Scappelloni (Strategic Advisor)
@@ -105,6 +119,7 @@ DVC ofusca la struttura dei file nel remote rinominandoli con hash MD5. Per scon
 - **Sviluppo & IP Protection:** €50 (domini, certificati).
 - **Marketing & Launch:** €330.
 
+<a id="azure-spend-plan"></a>
 ### 7.1 Piano di Spesa Azure ($200 Credit — Budget-Driven)
 
 Il credito è l'unità di misura primaria. La strategia è massimizzare il valore estratto prima di esaurirlo, indipendentemente dal tempo impiegato.

@@ -1,25 +1,22 @@
 # lychee.toml — validatore di link della documentazione
-# OP-NEUROTRIGGER Doc Standard (LIN-DT-DOCSTD-001 §7).
+# OP-NEUROTRIGGER Doc Standard (LIN-DT-DOCSTD-001, sezione "validator").
 #
 # Invocazione:
-#   lychee --offline .              # valida SOLO link e ancore interni (no rete)
-#   lychee .                        # valida anche le URL esterne
+#   lychee --offline .   # valida SOLO link e ancore interni (no rete)
+#   lychee .             # valida anche le URL esterne
 #
-# Rollout (Doc Standard §8):
-#   - Fase WARN     : i fallimenti sono segnalati ma non bloccano (exit code ignorato).
-#   - Fase BLOCKING : exit code != 0 fallisce il gate (a retrofit hot-set completato).
+# Gate BLOCKING: il pre-commit hook (tools/pre-commit) esegue lychee --offline —
+# un link o un'ancora rotti fanno fallire il commit.
 
-# Verifica le ancore/frammenti (#sezione), non solo i file.
-include_fragments = true
+# Verifica le ancore/frammenti (#sezione), non solo l'esistenza del file.
+# In lychee 0.24 il valore e' una stringa: anchor-only | text-only | full | none.
+include_fragments = "anchor-only"
 
 # Path esclusi dalla scansione.
 exclude_path = [
   ".git",
   "data",
 ]
-
-# L'INDEX è generato: i suoi link sono derivati, si validano comunque.
-# Niente esclusione.
 
 # URL esterne note-buone ma lente/instabili: si accettano questi status.
 accept = ["200", "429"]

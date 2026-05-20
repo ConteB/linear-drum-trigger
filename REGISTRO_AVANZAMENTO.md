@@ -1,5 +1,18 @@
+---
+id: LIN-DT-REC-001
+title: Registro Avanzamento root (ARCHIVIATO — puntatore)
+type: reference
+status: ARCHIVED
+phase: cross-cutting
+domain: Operations
+version: 1.0.0
+updated: 2026-05-20
+tags: [archived, pointer, registro]
+related: [LIN-DT-REGAV-001]
+supersedes: []
+---
+
 # REGISTRO AVANZAMENTO — PUNTATORE (ARCHIVIATO)
-**ID:** LIN-DT-REC-001
 
 ⚠️ Questo file è stato **consolidato** in audit (2026-05-20) per eliminare la duplicazione.
 

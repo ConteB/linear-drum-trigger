@@ -1,3 +1,17 @@
+---
+id: LIN-DT-HANDOVER-001
+title: Session Handover — rev. post F0-T4a / F0-T9a / F0-T10
+type: registro
+status: ACTIVE
+phase: F0
+domain: Operations
+version: 1.0.0
+updated: 2026-05-20
+tags: [handover, registro, F0]
+related: [LIN-DT-MSCHED-001, LIN-DT-REGAV-001]
+supersedes: []
+---
+
 # SESSION HANDOVER - 2026-05-20 (rev. post F0-T4a / F0-T9a / F0-T10)
 **Task Attivo:** Fase F0 — chiusi tre cicli STRP-001 (topologia TCN, Testing Doctrine, Doc Linking Layer).
 **Stato:** Fase esecutiva **F0 attiva**. Chiusi F0-T1, F0-T1b, F0-T1c, F0-T2a, F0-T4a, F0-T9a · F0-T10 in corso.

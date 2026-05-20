@@ -13,17 +13,18 @@ supersedes: []
 ---
 
 # 📐 F0-T2a — SPEC DI DETTAGLIO: RECIPE + CONTRATTO DATI
-**ID:** LIN-DT-SPEC-F0T2a · **Status:** LOCKED — Decision Lock 2026-05-20 (Executive Briefing F0-T2a)
-**Riferimenti:** `DOSSIER_TECNICO.md` §3.2/§3.5/§4/§9.2 · `MASTER_CHECKLIST.md` §1–§2 ·
-Decision Lock STRP-001 2026-05-20 (D1/D2/D2-bis) · `MASTER_SCHEDULING.md` §6 F0-T2a
+**Status:** LOCKED — Decision Lock 2026-05-20 (Executive Briefing F0-T2a)
+**Riferimenti:** [`DOSSIER_TECNICO.md`](DOSSIER_TECNICO.md) §[3.2](DOSSIER_TECNICO.md#aug-l1)/[3.5](DOSSIER_TECNICO.md#dna-trace)/[4](DOSSIER_TECNICO.md#midi-matrix)/[9.2](DOSSIER_TECNICO.md#medallion) · [`MASTER_CHECKLIST.md`](../../MASTER_CHECKLIST.md) §[1](../../MASTER_CHECKLIST.md#ai-neural)–[2](../../MASTER_CHECKLIST.md#data-infra) ·
+Decision Lock STRP-001 2026-05-20 (D1/D2/D2-bis) · [`MASTER_SCHEDULING.md` §6](../../04_INTELLIGENCE/MASTER_SCHEDULING.md#tasks) F0-T2a
 
 > Questo documento blocca il dettaglio implementativo di **recipe** e **contratto dati**.
 > La direzione macro è già locked (D1/D2/D2-bis); qui si fissano schemi, layout di byte e
 > formati che `F0-T2b/c/d` dovranno implementare alla lettera. Frame-rate e finestra del
-> target restano **parametrici**, ratificati a `F0-T4a` (vedi §3.4).
+> target restano **parametrici**, ratificati a [`F0-T4a`](F0-T4a_TCN_TOPOLOGY_SPEC.md) (vedi [§3.4](#r-target)).
 
 ---
 
+<a id="recipe"></a>
 ## 1. Recipe — schema dichiarativo
 
 Una **recipe** descrive uno scenario di render riproducibile: produce uno (o una famiglia
@@ -35,11 +36,11 @@ di) campione Gold. Formato proposto: **YAML** (autorabile a mano, diff-friendly,
 | :-- | :-- | :-- |
 | `recipe_id` | str | Univoco, kebab/maiuscolo. Es. `R-GMD042-DGZ-001`. |
 | `schema_version` | str | Versione di questo schema (`"1.0"`). |
-| `split` | enum | `train` \| `val`. *(Holdout = dati reali ENST/MedleyDB, non Gold renderizzato — §3.6.)* |
+| `split` | enum | `train` \| `val`. *(Holdout = dati reali E-GMD/Slakh2100, non Gold renderizzato — §3.6.)* |
 | `midi_source.dataset` | enum | `GMD` (Groove MIDI Dataset). |
 | `midi_source.file` | path | Path relativo al MIDI sorgente nel layer Bronze. |
 | `midi_source.bus_mapping` | ref | `midi_mapping_table.yaml@<ver>` — tabella GM→8-bus. |
-| `midi_jitter.time_jitter_ms` | [min,max] | Range uniforme spostamento onset (DOSSIER §3.1: 2–15 ms). |
+| `midi_jitter.time_jitter_ms` | [min,max] | Range uniforme spostamento onset ([DOSSIER §3.1](DOSSIER_TECNICO.md#aug-prerender): 2–15 ms). |
 | `midi_jitter.flam_probability` | float | Doppi colpi artificiali (default 0.05). |
 | `midi_jitter.velocity_jitter` | enum | `none` \| `ghost_mask` \| `gain_shift` \| `both`. |
 | `midi_jitter.component_drop_probability` | float | Mute randomico componenti (default 0.10). |
@@ -47,13 +48,13 @@ di) campione Gold. Formato proposto: **YAML** (autorabile a mano, diff-friendly,
 | `render.engine` | enum | `sfizz` \| `drumgizmo`. |
 | `render.kit` | str | ID kit/libreria (vedi §2). |
 | `render.kit_path` | path | Path al `.sfz` (Sfizz) o al kit `.xml` (DrumGizmo). |
-| `render.sample_rate` | int | Fisso **44100** (DOSSIER §6.1: nessun resampling). |
+| `render.sample_rate` | int | Fisso **44100** ([DOSSIER §6.1](DOSSIER_TECNICO.md#tcn): nessun resampling). |
 | `render.mic_config` | enum | `mono` \| `solo_stereo` \| `glyn_johns` \| `multitrack_full` (§2.2). |
-| `augmentation.level` | int | `1` Stem-Isolate · `2` Studio-Mutilation · `3` Inferno (DOSSIER §3.2–3.4). |
+| `augmentation.level` | int | `1` Stem-Isolate · `2` Studio-Mutilation · `3` Inferno ([DOSSIER §3.2–3.4](DOSSIER_TECNICO.md#aug-l1)). |
 | `augmentation.reverb_ir` | str\|null | ID Impulse Response (OpenAIR) o `null` = dry. |
 | `augmentation.mutilation` | map | Parametri clipping/phase/comp/EQ/pitch (livello ≥2). |
 | `augmentation.saboteur` | map\|null | Sorgente + ratio di mix Transient Saboteur (livello 3). |
-| `output.target_frame_rate_hz` | float | **RATIFICATO** `344.53125` Hz (F0-T4a, §3.4). |
+| `output.target_frame_rate_hz` | float | **RATIFICATO** `344.53125` Hz ([F0-T4a](F0-T4a_TCN_TOPOLOGY_SPEC.md#r-target-ratifica), [§3.4](#r-target)). |
 | `dna_trace.barcode` | str | Generato (non scritto a mano) — vedi §4. |
 
 ### 1.2 Esempio completo
@@ -89,6 +90,7 @@ output:
 
 ---
 
+<a id="render-engine"></a>
 ## 2. Render engine — schema recipe per Sfizz e DrumGizmo
 
 ### 2.1 Sfizz (librerie SFZ multi-layer)
@@ -97,13 +99,14 @@ output:
   layer e round-robin: la recipe non li espande, referenzia solo il `.sfz`.
 - Uscita: stem **pulito** stereo o mono — **nessun bleed** inter-strumento.
 - Ruolo: baseline Livello-1 (precisione del transiente) + sintesi percussioni accessorie
-  sincrone (DOSSIER §3.4) + kit Salamander/SM Drums.
+  sincrone ([DOSSIER §3.4](DOSSIER_TECNICO.md#aug-l3)) + kit Salamander/SM Drums.
 
 ### 2.2 DrumGizmo (kit multi-microfono)
 - Pilotato via CLI; il kit `.xml` espone N canali microfonici reali → **sorgente del bleed**.
 - È l'unico engine che produce il rientro microfonico (moat primario del prodotto).
 - Render multi-canale: ogni mic su un canale del file d'uscita.
 
+<a id="mic-config"></a>
 ### 2.3 Configurazioni microfoniche (`mic_config`) — Input Agnostico (DOSSIER §2.1)
 
 | `mic_config` | `n_mic` | `channel_labels` (ordine canonico) |
@@ -115,10 +118,11 @@ output:
 
 `n_mic` e `channel_labels` sono registrati nel `dna.json`. Il contratto ammette
 `n_mic ∈ [1,8]` arbitrario; la standardizzazione a tensore fisso avviene al data-loading
-(layer di pre-processing del modello, §2.1 DOSSIER), **non** in fase di scrittura Gold.
+(layer di pre-processing del modello, [§2.1 DOSSIER](DOSSIER_TECNICO.md#input-agnostic)), **non** in fase di scrittura Gold.
 
 ---
 
+<a id="data-contract"></a>
 ## 3. Contratto dati — Gold tensor FP16 + shard WebDataset
 
 ### 3.1 Struttura WebDataset (Decision Lock D1)
@@ -135,20 +139,22 @@ output:
 - Shape, `dtype`, `mic_config`, `channel_labels` → in `dna.json` (file raw senza header).
 - Ampiezza: campioni in `[-1.0, +1.0]`, **non normalizzati** (si preservano le dinamiche).
 
+<a id="target-tensor"></a>
 ### 3.3 `target.f16` — matrice di trascrizione
 - Buffer **raw float16 little-endian**, C-contiguous.
 - Shape logica flat: **`[n_frame, 25]`** — layout `flat-25`:
   - per il bus `b ∈ [0,7]`: colonna `3b` = **onset** (prob. Gaussian-smeared ∈ [0,1]),
     `3b+1` = **velocity** (∈ [0,1], normalizzata da 0–127), `3b+2` = **microtiming**
     (offset sub-frame ∈ [-1,1], §3.5).
-  - colonna `24` = **Hi-Hat opening** (testa continua ∈ [0,1], DOSSIER §2.2).
+  - colonna `24` = **Hi-Hat opening** (testa continua ∈ [0,1], [DOSSIER §2.2](DOSSIER_TECNICO.md#midi-output)).
 - Il data-loader fa reshape `cols 0:24 → [n_frame,8,3]`; `col 24 → [n_frame]`.
-- `onset` segue il **Gaussian Target Smearing** ±3 ms (DOSSIER §6.2): nessuno "spillo".
+- `onset` segue il **Gaussian Target Smearing** ±3 ms ([DOSSIER §6.2](DOSSIER_TECNICO.md#loss)): nessuno "spillo".
 
+<a id="r-target"></a>
 ### 3.4 Frame-rate del target — RATIFICATO a F0-T4a
 Il numero di frame dipende dal frame-rate d'uscita, una **decisione di topologia** (stride
 totale della TCN) — **ratificata da `F0-T4a`** (Decision Lock 2026-05-20,
-`docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md` §2).
+[`F0-T4a` §2](F0-T4a_TCN_TOPOLOGY_SPEC.md#r-target-ratifica)).
 - `n_frame = ceil(duration_s × R_target)` · `R_target` = frame-rate target (Hz).
 - **Valore RATIFICATO:** `R_target = 44100/128 = 344.53125 Hz` (periodo 2.902 ms —
   coerente con lo smear ±3 ms; stride totale 128 = 2⁷ dello Strided Encoder Stem F0-T4a).
@@ -168,9 +174,10 @@ totale della TCN) — **ratificata da `F0-T4a`** (Decision Lock 2026-05-20,
 
 ### 3.6 Split
 Gli shard Gold coprono **solo `train` e `val`** (materiale renderizzato/sintetico).
-Lo **Holdout** (DOSSIER §10.3) è dato reale (ENST-Drums / MedleyDB) e **non** transita
-per il packaging WebDataset Gold. Vincolato all'esito di F0-T1 (compliance).
+Lo **Holdout** ([DOSSIER §10.3](DOSSIER_TECNICO.md#holdout)) è dato reale (E-GMD / Slakh2100,
+ridisegno F0-T1c) e **non** transita per il packaging WebDataset Gold.
 
+<a id="fp16-integrity"></a>
 ### 3.7 Integrità FP16 (verifica per Gate L2 / DoD F0-T2d)
 Il writer Gold calcola e registra in `dna.json`: `sha256` dei buffer `audio` e `target`,
 `dtype`, `shape`, conteggio di `NaN/Inf` (deve essere 0). Il validatore L2 ricomputa gli
@@ -178,6 +185,7 @@ hash e verifica `0 NaN/Inf` — Ocular Proof.
 
 ---
 
+<a id="dna-trace-format"></a>
 ## 4. DNA-Trace — formato (DOSSIER §3.5)
 
 ### 4.1 Barcode (parte `key`, privo di punti)
@@ -249,7 +257,7 @@ Le 5 risoluzioni della Tech Matrix sono state **approvate dal CEO** (Executive B
 2. ✅ Target tensor **`flat-25`** in file unico `[n_frame,25]`.
 3. ✅ `R_target` **parametrico** — provvisorio `44100/128 ≈ 344.5 Hz`. ✔ **RATIFICATO da F0-T4a (2026-05-20)** a `344.53125 Hz` — vedi §3.4.
 4. ✅ Velocity storata **normalizzata [0,1]** FP16.
-5. ✅ Articolazioni intra-bus **collassate in v1.0**; classificazione per-articolazione rinviata a v2.0 (Dual-Path Network, DOSSIER §6.3).
+5. ✅ Articolazioni intra-bus **collassate in v1.0**; classificazione per-articolazione rinviata a v2.0 (Dual-Path Network, [DOSSIER §6.3](DOSSIER_TECNICO.md#dual-path)).
 
 ---
 *Spec F0-T2a — STRP-001 (snello). **LOCKED 2026-05-20.** Vincolante per F0-T2b/c/d.*

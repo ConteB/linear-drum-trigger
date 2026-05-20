@@ -1,3 +1,17 @@
+---
+id: LIN-DT-DPL-001
+title: Registro Provenienza Dati & Compliance
+type: registro
+status: ACTIVE
+phase: cross-cutting
+domain: Legal / Compliance
+version: 1.0.0
+updated: 2026-05-20
+tags: [compliance, provenance, licensing, legal]
+related: [LIN-DT-LICVER-F0T1, LIN-DT-ROSTER-F0T1b, LIN-DT-HOLDOUT-F0T1c]
+supersedes: []
+---
+
 # 🛡️ REGISTRO PROVENIENZA DATI & COMPLIANCE (DPL)
 **Prodotto:** OP-NeuroTrigger
 **Responsabile:** Strategic Advisor (Gianpiero Scappelloni)

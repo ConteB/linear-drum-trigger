@@ -1,3 +1,17 @@
+---
+id: LIN-DT-MKTSTRAT-001
+title: Strategia di Marketing & Posizionamento (Lean-Guerrilla)
+type: reference
+status: ACTIVE
+phase: cross-cutting
+domain: Marketing
+version: 1.0.0
+updated: 2026-05-20
+tags: [marketing, strategy, positioning]
+related: [LIN-DT-MKTOCULAR-001, LIN-DT-QMA-001, LIN-DT-COMPAN-001]
+supersedes: []
+---
+
 # 🎯 STRATEGIA DI MARKETING & POSIZIONAMENTO (LEAN-GUERRILLA)
 **Brand:** Linear (An OpenPhase Company)
 **Prodotto:** OP-NeuroTrigger

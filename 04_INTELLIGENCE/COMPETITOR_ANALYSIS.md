@@ -1,3 +1,17 @@
+---
+id: LIN-DT-COMPAN-001
+title: Analisi della Concorrenza — OP-NeuroTrigger
+type: reference
+status: ACTIVE
+phase: cross-cutting
+domain: Marketing / Strategy
+version: 1.0.0
+updated: 2026-05-18
+tags: [marketing, competitor, strategy]
+related: [LIN-DT-TCAUDIT-001, LIN-DT-QMA-001, LIN-DT-MKTSTRAT-001]
+supersedes: []
+---
+
 # 🔍 ANALISI DELLA CONCORRENZA (COMPETITOR ANALYSIS)
 **Data:** 2026-05-18
 **Progetto:** OP-NeuroTrigger

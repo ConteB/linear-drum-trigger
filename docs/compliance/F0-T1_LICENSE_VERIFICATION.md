@@ -1,3 +1,17 @@
+---
+id: LIN-DT-LICVER-F0T1
+title: F0-T1 — Verifica Licenze (Working Artifact)
+type: registro
+status: ACTIVE
+phase: F0
+domain: Legal / Compliance
+version: 1.0.0
+updated: 2026-05-20
+tags: [compliance, licensing, F0-T1]
+related: [LIN-DT-DPL-001, LIN-DT-ROSTER-F0T1b]
+supersedes: []
+---
+
 # 🔍 F0-T1 — VERIFICA LICENZE (Working Artifact)
 **Task:** F0-T1 Compliance licenze · **Avviato:** 2026-05-20 · **Stato:** ◐ IN CORSO
 **Riferimento:** `MASTER_SCHEDULING.md` §6 F0-T1 · `DATA_PROVENANCE_LOG.md`

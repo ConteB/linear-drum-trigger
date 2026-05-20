@@ -1,5 +1,18 @@
+---
+id: LIN-DT-CHRONOS-001
+title: Chronos Engine — MIDI Timing Specifications
+type: spec
+status: LOCKED
+phase: F4
+domain: DSP / MIDI
+version: 1.0.0
+updated: 2026-05-20
+tags: [midi, chronos, timing, dsp, pdc]
+related: [LIN-DT-DOSSIER-001, LIN-DT-SPEC-F0T4a]
+supersedes: []
+---
+
 # ⏱️ CHRONOS ENGINE: MIDI TIMING SPECIFICATIONS
-**ID:** LIN-DSP-CHRONOS
 **Status:** DESIGN LOCKED
 
 ## 1. OBIETTIVO

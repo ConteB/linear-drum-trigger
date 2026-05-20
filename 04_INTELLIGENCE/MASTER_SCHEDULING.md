@@ -6,7 +6,7 @@ status: ACTIVE
 phase: cross-cutting
 domain: Operations / Project Execution
 version: 1.0.0
-updated: 2026-05-20
+updated: 2026-05-21
 tags: [scheduling, execution, governance, tracking]
 related: [LIN-DT-SCHED-001, LIN-DT-CHKLST-001, LIN-DT-DOCSTD-001]
 supersedes: []
@@ -28,6 +28,11 @@ supersedes: []
 | **`MASTER_SCHEDULING.md`** (questo) | *Cosa fare, in che ordine, con che stato.* |
 
 Stato task: `☐` TODO · `◐` IN CORSO · `☑` FATTO · `⊘` BLOCCATO · `⏸` PARCHEGGIATO.
+
+**Mapping documentale.** Ogni task aperto espone il campo **`📚 Letture`** — i documenti
+(con ancora stabile) da leggere *prima* di iniziarlo. Nessun agente esegue un task in
+stato di ignoranza normativa; i link sono verificati in continuo dal gate `lychee`
+([`DOC_LINKING_STANDARD`](DOC_LINKING_STANDARD.md)). Vincolante per ogni task nuovo.
 
 ## 1. Vincoli Temporali
 
@@ -192,29 +197,34 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - → F0-T2b, F0-T2c, F0-T2d.
 
 **F0-T2b · Render engine Sfizz · `[F]` `P1`**
+- *📚 Letture:* [`F0-T2a §2 — render engine`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#render-engine) · [`midi_mapping_table.yaml`](../docs/specs/midi_mapping_table.yaml) · [`DOSSIER §3.2`](../docs/methodology/DOSSIER_TECNICO.md#aug-l1) · [`TESTING_DOCTRINE §6`](TESTING_DOCTRINE.md#f0-test-plan) · [`ENGINEERING_STANDARDS §6`](ENGINEERING_STANDARDS.md#execution-robustness).
 - *Azioni:* riscrivere `MidiRenderer` per pilotare **Sfizz** via CLI (librerie SFZ
   multi-layer) al posto di FluidSynth.
 - *DoD:* render di prova SFZ multi-layer corretto (log).
 - ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)*.
 
 **F0-T2c · Integrazione DrumGizmo · `[F]` `P1`**
+- *📚 Letture:* [`F0-T2a §2.4 — mic config`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#mic-config) · [`DOSSIER §3.2`](../docs/methodology/DOSSIER_TECNICO.md#aug-l1) · [`TESTING_DOCTRINE §6`](TESTING_DOCTRINE.md#f0-test-plan) · [`ENGINEERING_STANDARDS §6`](ENGINEERING_STANDARDS.md#execution-robustness).
 - *Azioni:* integrare **DrumGizmo** via CLI; kit multi-microfono per il bleed reale.
 - *DoD:* render multi-mic con bleed presente e verificabile (log).
 - ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)*.
 
 **F0-T2d · Writer Gold-tensor + DNA-Trace · `[F]` `P1`**
+- *📚 Letture:* [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`F0-T2a — DNA-Trace`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#dna-trace-format) · [`DOSSIER §9.2`](../docs/methodology/DOSSIER_TECNICO.md#medallion) · [`TESTING_DOCTRINE §6`](TESTING_DOCTRINE.md#f0-test-plan) · [`ENGINEERING_STANDARDS §1`](ENGINEERING_STANDARDS.md#determinism).
 - *Azioni:* implementare il writer del Gold tensor (FP16 multi-mic + matrice 8-target)
   e il generatore DNA-Trace, secondo la spec bloccata in F0-T2a.
 - *DoD:* un tensore Gold scritto su disco; integrità FP16 e DNA-Trace verificate.
 - ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)*.
 
 **F0-T2e · Mini-batch end-to-end · `[F]` `P1`**
+- *📚 Letture:* [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`DOSSIER §9.2`](../docs/methodology/DOSSIER_TECNICO.md#medallion) · [`ENGINEERING_STANDARDS §6`](ENGINEERING_STANDARDS.md#execution-robustness).
 - *Azioni:* orchestrare la pipeline (recipe → Sfizz/DrumGizmo → writer Gold tensor) e
   generare un mini-batch (~10–20 scenari).
 - *DoD:* log stdout che mostra N campioni Gold generati senza errori.
 - ⛔ F0-T2b, F0-T2c, F0-T2d. → F0-T3.
 
 **F0-T3 · Gate L2 (validazione recipe) · `[C]` `P1`**
+- *📚 Letture:* [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`DOSSIER §4 — matrice MIDI`](../docs/methodology/DOSSIER_TECNICO.md#midi-matrix) · [`MASTER_CHECKLIST §6 — Gate`](../MASTER_CHECKLIST.md#gates) · [`ENGINEERING_STANDARDS §6`](ENGINEERING_STANDARDS.md#execution-robustness).
 - *Obiettivo:* validare che il mini-dataset è corretto.
 - *Azioni:* ispezione manuale di ≥2 campioni (waveform multi-mic coerente, bleed
   presente, piano-roll 8-target allineato ±3 ms — schema [`DOSSIER_TECNICO` §4](../docs/methodology/DOSSIER_TECNICO.md#midi-matrix));
@@ -249,6 +259,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - → F0-T4b.
 
 **F0-T4b · Mini-prototipo + round-trip RTNeural · `[C]` `P1`**
+- *📚 Letture:* [`F0-T4a — spec TCN + soglia L3`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md#l3-threshold) · [`DOSSIER §6.1 — TCN`](../docs/methodology/DOSSIER_TECNICO.md#tcn) · [`DOSSIER §6.2 — loss`](../docs/methodology/DOSSIER_TECNICO.md#loss) · [`MASTER_CHECKLIST §6 — Gate`](../MASTER_CHECKLIST.md#gates) · [`ENGINEERING_STANDARDS §2 — bit-exactness`](ENGINEERING_STANDARDS.md#bit-exactness) · [`§5 — validazione statistica`](ENGINEERING_STANDARDS.md#statistical-validation).
 - *Obiettivo:* provare che la TCN apprende **e** che è esportabile nel motore di
   inferenza del plugin.
 - *Azioni:* implementare la TCN secondo la spec di F0-T4a; training sul mini-batch Gold
@@ -260,12 +271,14 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - ⛔ F0-T3, F0-T4a. **Sblocca lo spend TRAINING (F2-T3).**
 
 **F0-T5 · DVC + struttura Medallion · `[F]` `P2`**
+- *📚 Letture:* [`DOSSIER §9.2 — Medallion`](../docs/methodology/DOSSIER_TECNICO.md#medallion) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract).
 - *Azioni:* `dvc init` nel repo; definire la struttura **Medallion** Bronze/Silver/Gold
   ([`DOSSIER_TECNICO` §9.2](../docs/methodology/DOSSIER_TECNICO.md#medallion)) e la strategia di **sharding WebDataset** del layer Gold
   (shard ~1 GB tracciati da DVC, non micro-file); senza remote.
 - *DoD:* `dvc status` pulito, struttura committata.
 
 **F0-T6 · `audit_dsp_rigor.py` (predisposizione) · `[C]` `P2`**
+- *📚 Letture:* [`MASTER_CHECKLIST §3 — DSP`](../MASTER_CHECKLIST.md#dsp) · [`ENGINEERING_STANDARDS §3 — codifica`](ENGINEERING_STANDARDS.md#coding-standards) · [`TESTING_DOCTRINE §5 — test DSP`](TESTING_DOCTRINE.md#dsp-tests).
 - *Nota di fase:* in F0 non esiste codice C++ (parte in F4). Qui si **predispone** solo
   lo strumento; il **gate operativo** si applica in F4 su ogni commit del core DSP.
 - *Azioni:* implementare lo script che fa grep dei pattern proibiti nel thread audio
@@ -273,10 +286,12 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *DoD:* lo script gira su un file di prova ed emette un report.
 
 **F0-T7 · Track parallelo opzionale (non bloccante) · `[F]` `P3`**
+- *📚 Letture:* [`LINEAR_DESIGN_GUIDE`](UX_UI/LINEAR_DESIGN_GUIDE.md) · [`UX_BLUEPRINT`](UX_UI/UX_BLUEPRINT_STRP-001.md) · [`ENGINEERING_STANDARDS §3 — codifica`](ENGINEERING_STANDARDS.md#coding-standards).
 - Classi JUCE custom (Edgewise Meter, Nixie Display, Bakelite Knobs PBR) + mapping
   parametri DSP (Sensitivity, Discrim, Dynamics) ai controlli Master.
 
 **F0-T8 · Model Artifact — spec di export & trasporto · `[C]` `P3`**
+- *📚 Letture:* [`F0-T4a — spec TCN`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md) · [`DOSSIER §11 — licensing`](../docs/methodology/DOSSIER_TECNICO.md#licensing) · [`ENGINEERING_STANDARDS §2 — bit-exactness`](ENGINEERING_STANDARDS.md#bit-exactness).
 - *Direzione bloccata* (Executive Briefing STRP-001, D3): pesi come **blob binario
   cifrato** embedded via JUCE `BinaryData`; header metadati `{model_id, version,
   latency_samples, n_channel, sr}` per il badge PDC; exporter PyTorch→RTNeural JSON.
@@ -297,6 +312,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - → F0-T9b.
 
 **F0-T9b · F0 Pipeline Test Harness · `[F]` `P1`**
+- *📚 Letture:* [`TESTING_DOCTRINE §6 — piano test F0`](TESTING_DOCTRINE.md#f0-test-plan) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`ENGINEERING_STANDARDS §3 — codifica`](ENGINEERING_STANDARDS.md#coding-standards).
 - *Azioni:* scaffolding `pytest`/`Hypothesis`/`mutmut`/`coverage`/`Atheris`; scrivere i
   test-oracolo derivati dal contratto F0-T2a (writer Gold-tensor, DNA-Trace, parser
   recipe, standardizzazione mic) **prima** del codice di pipeline. Dettaglio in
@@ -364,17 +380,33 @@ stop compute + push HDD · **$10** → chiudi tutto.
   `F0-T1`/`F0-T1b`/`F0-T1c`/`DATA_PROVENANCE_LOG`. `TASK_BLUEPRINT.md` (ARCHIVED) e i
   record storici lasciati intatti come fossili. Decoupling chiuso.
 
+**F0-T14 · Mapping documentale dei task · `[F]` `P2`**
+- *Origine:* domanda di controllo del CEO (2026-05-21) — un agente che prende in carico
+  un task non aveva un riferimento strutturato ai documenti necessari per eseguirlo: i
+  cross-link erano sparsi nella prosa, e i task di implementazione (F0-T2b…e) quasi nudi.
+- *Azioni:* aggiungere a ogni task aperto il campo `📚 Letture` — lista ancorata dei
+  documenti da leggere *prima* di iniziare; sfruttare il linking layer di F0-T10 (ancore
+  stabili + link relativi + gate `lychee`); definire la regola nello schema §0.
+- *DoD:* ogni task aperto di F0/F1/F2 espone il campo `Letture`; schema §0 aggiornato;
+  `lychee` verde.
+- ☑ **FATTO (2026-05-21):** 17 task aperti annotati (F0-T2b…T9b + F1 + F2); regola del
+  campo `📚 Letture` documentata nello schema §0. È l'equivalente NeuroTrigger-nativo del
+  mapping documentale OP-X (TOP-002), costruito sul linking layer del progetto invece che
+  su una matrice separata soggetta a drift.
+
 > **Gate d'uscita F0:** L2 superato (~05-28) **e** L3 superato (~06-02).
 
 ### Fase F1 — Provisioning Azure · gate d'ingresso: L2 superato
 
 **F1-T1 · Setup Azure · `[A]` `P1`**
+- *📚 Letture:* [`STRATEGIC_INFRASTRUCTURE_AUDIT §7.1`](STRATEGIC_INFRASTRUCTURE_AUDIT.md#azure-spend-plan) · [`§4 — Scala del credito`](#credit-scale).
 - *Azioni:* Resource Group; Blob Container (LRS); SAS token scoped; Soft Delete + WORM
   su tier Bronze; alert di spesa a $100 e $160.
 - *DoD:* portale Azure mostra risorse attive + alert configurati.
 - ⛔ F0-T3.
 
 **F1-T2 · dvc remote Azure · `[A]` `P1`**
+- *📚 Letture:* [`STRATEGIC_INFRASTRUCTURE_AUDIT §7.1`](STRATEGIC_INFRASTRUCTURE_AUDIT.md#azure-spend-plan) · [`DOSSIER §9.2 — Medallion`](../docs/methodology/DOSSIER_TECNICO.md#medallion).
 - *Azioni:* configurare il remote `dvc` sul Blob Container.
 - *DoD:* `dvc push` di prova riuscito (log).
 - ⛔ F1-T1.
@@ -382,24 +414,28 @@ stop compute + push HDD · **$10** → chiudi tutto.
 ### Fase F2 — Burn Compute · gate d'ingresso: F1 completa
 
 **F2-T1 · Render Gold 1.5 TB · `[G]` `P1` — spend BASSO RISCHIO (gate L2)**
+- *📚 Letture:* [`F0-T2a §2 — render engine`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#render-engine) · [`ENGINEERING_STANDARDS §6 — robustezza`](ENGINEERING_STANDARDS.md#execution-robustness) · [`§4 — Scala del credito`](#credit-scale).
 - *Azioni:* render del dataset Gold su Azure (Sfizz/DrumGizmo, multi-mic, multi-scenario);
   upload Blob; tracciamento DVC.
 - *DoD:* 1.5 TB renderizzati e versionati; log di completamento.
 - ⛔ F1-T1.
 
 **F2-T2 · Augmentation + Demucs · `[G]` `P1`**
+- *📚 Letture:* [`DOSSIER §3.2 — bleed`](../docs/methodology/DOSSIER_TECNICO.md#aug-l1) · [`DOSSIER §3.4 — augmentation`](../docs/methodology/DOSSIER_TECNICO.md#aug-l3) · [`ENGINEERING_STANDARDS §1 — determinismo`](ENGINEERING_STANDARDS.md#determinism).
 - *Azioni:* augmentation Python (convoluzione IR `pedalboard`, Machine-Gun Chaos,
   Studio Mutilation, Transient Saboteurs); Demucs AI-Isolation.
 - *DoD:* dataset aumentato versionato.
 - ⛔ F2-T1 (può procedere in streaming sul renderizzato).
 
 **F2-T3 · Training "Gold" A100 → Gate L4 · `[G]` `P1` — spend A RISCHIO (gate L3)**
+- *📚 Letture:* [`F0-T4a — spec TCN`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md) · [`DOSSIER §10 — training set`](../docs/methodology/DOSSIER_TECNICO.md#training-set) · [`DOSSIER §10 — validation`](../docs/methodology/DOSSIER_TECNICO.md#validation) · [`MASTER_CHECKLIST §6 — Gate`](../MASTER_CHECKLIST.md#gates) · [`ENGINEERING_STANDARDS §5 — validazione statistica`](ENGINEERING_STANDARDS.md#statistical-validation).
 - *Azioni:* training "Gold" della TCN su A100 Spot; validazione Holdout reale
   (E-GMD) + Slakh-Mix (Slakh2100) + Ocular Proof.
 - *DoD:* il modello supera l'Holdout reale → **Gate L4** (sblocca i claim pubblici).
 - ⛔ F2-T1 **e** F0-T4b (L3).
 
 **F2-T4 · Credit-soak · `[G]` `P2`**
+- *📚 Letture:* [`§4 — Scala del credito`](#credit-scale) · [`§3 — Checkpoint`](#checkpoints).
 - *Azioni:* desplegare il credito residuo sulla scala §4 (Tier 2/3) secondo lo scenario
   fissato a CP-3.
 - *DoD:* saldo credito → ~$0 consumato utilmente.
@@ -443,6 +479,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T11 | Content-rot audit (roster F0-T1b) | F0 | ☑ | — | — |
 | F0-T12 | Audit OpenPhase — standard ingegneristici | F0 | ☑ | — | — |
 | F0-T13 | De-referenziazione OP-X (chiusura decoupling) | F0 | ☑ | — | — |
+| F0-T14 | Mapping documentale dei task (campo Letture) | F0 | ☑ | — | — |
 | F1-T1 | Setup Azure | F1 | ⊘ | F0-T3 | — |
 | F1-T2 | dvc remote Azure | F1 | ⊘ | F1-T1 | — |
 | F2-T1 | Render Gold 1.5 TB | F2 | ⊘ | F1-T1 | — |
@@ -458,6 +495,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 · ☑ F0-T11 (content-rot audit — SM Drums riallineato al roster F0-T1b)
 · ☑ F0-T12 (audit OpenPhase — `ENGINEERING_STANDARDS.md` internalizzato)
 · ☑ F0-T13 (de-referenziazione OP-X — decoupling dall'archivio chiuso)
+· ☑ F0-T14 (mapping documentale — campo `📚 Letture` su 17 task aperti)
 (Decision Lock 2026-05-20) · Sbloccati: **F0-T9b** (harness test-first, via sub-agente —
 ora gate di F0-T2b/c/d) e **F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) ·
 Scenario credito: *da fissare a CP-1* · Prossimo checkpoint: **CP-1 / 2026-05-30**.

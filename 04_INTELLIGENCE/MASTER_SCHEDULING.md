@@ -116,45 +116,126 @@ stop compute + push HDD · **$10** → chiudi tutto.
   con `DATA_PROVENANCE_LOG.md` §2.B); per SM Drums verificare la licenza commerciale di
   redistribuzione dell'**output renderizzato**; inviare le richieste/email dove serve.
 - *DoD:* conferma scritta archiviata in `DATA_PROVENANCE_LOG.md`.
+- *Fallback (criterio di decadenza):*
+  - **SM Drums** (Classe A, serve al render): se nessuna conferma scritta entro
+    **CP-1 / 2026-05-30**, escluderlo dalle recipe e renderizzare solo con asset
+    CC-BY/CC0 (DrumGizmo, Salamander).
+  - **ENST-Drums / MedleyDB** (Classe B, servono al validation L4): se i termini non
+    consentono la valutazione interna a supporto di un prodotto commerciale entro
+    **CP-2 / 2026-06-09**, attivare il piano B di `DATA_PROVENANCE_LOG.md` §39
+    (registrazioni proprietarie annotate) o ridurre il Validation Protocol a
+    Franken-Mix + Ocular Proof. Decisione registrata al checkpoint.
 - *Avvio immediato, in parallelo* — lead time esterno.
 
-**F0-T2 · batch_generator + render recipes · `[F]` `P1`**
-- *Obiettivo:* pipeline locale che produce un mini-batch Gold corretto end-to-end.
-- *Azioni:* verificare `BatchGenerator.run_scenario`; integrare Sfizz e DrumGizmo via
-  CLI; definire le recipe (SFZ multi-layer; kit multi-microfono DrumGizmo per il bleed
-  reale); generare un mini-batch (~10–20 scenari) di Gold tensor — waveform FP16 grezzo
-  44.1 kHz multi-mic + matrice 8-target.
-- *DoD:* log stdout che mostra N campioni generati senza errori.
-- → F0-T3.
+**F0-T2 · Pipeline di rendering Gold — *riscrittura* · `[F]` `P1`**
+> ⚠️ **Non è una verifica.** Gli script in `src/data_engineering/`
+> (`midi_renderer.py`, `batch_generator.py`) sono prototipi **FluidSynth/SF2** — motore
+> **scartato** dal Design Lock (`MASTER_CHECKLIST` §2, `DOSSIER_TECNICO` §3.2). Vanno
+> riscritti, non riusati. Spacchettato in 5 sotto-task; T2a passa per **STRP-001**
+> (6 fasi + Executive Briefing) prima di scrivere codice.
+- *Obiettivo macro:* pipeline locale che produce un mini-batch Gold corretto end-to-end.
+
+**F0-T2a · Recipe + contratto dati — spec di dettaglio · `[F]` `P1`**
+- *Obiettivo:* bloccare recipe e contratto dati nel dettaglio implementativo.
+- *Direzione già bloccata* (Executive Briefing STRP-001, 2026-05-20 — D1/D2/D2-bis):
+  dataset **WebDataset** tar-shard ~1 GB (terna `audio.f16` / `target.f16` / `dna.json`
+  per campione); target `[frame, 8, 3]` (onset/vel/microtiming) + testa HH continua;
+  **MIDI Mapping Table** `GM↔8-bus` bidirezionale + toggle d'uscita HH (CC continuo /
+  Note discrete).
+- *Azioni:* dettagliare (i) schema recipe SFZ multi-layer + kit multi-mic DrumGizmo
+  (`DOSSIER_TECNICO` §3.2); (ii) layout esatto del Gold tensor FP16 e dello shard
+  WebDataset (`DOSSIER_TECNICO` §9.2); (iii) formato DNA-Trace (`DOSSIER_TECNICO` §3.5);
+  (iv) la MIDI Mapping Table come artefatto versionato; survey delle articolazioni HH
+  delle librerie.
+- *DoD:* spec archiviata; MIDI Mapping Table committata; checklist aggiornata.
+- → F0-T2b, F0-T2c, F0-T2d.
+
+**F0-T2b · Render engine Sfizz · `[F]` `P1`**
+- *Azioni:* riscrivere `MidiRenderer` per pilotare **Sfizz** via CLI (librerie SFZ
+  multi-layer) al posto di FluidSynth.
+- *DoD:* render di prova SFZ multi-layer corretto (log).
+- ⛔ F0-T2a.
+
+**F0-T2c · Integrazione DrumGizmo · `[F]` `P1`**
+- *Azioni:* integrare **DrumGizmo** via CLI; kit multi-microfono per il bleed reale.
+- *DoD:* render multi-mic con bleed presente e verificabile (log).
+- ⛔ F0-T2a.
+
+**F0-T2d · Writer Gold-tensor + DNA-Trace · `[F]` `P1`**
+- *Azioni:* implementare il writer del Gold tensor (FP16 multi-mic + matrice 8-target)
+  e il generatore DNA-Trace, secondo la spec bloccata in F0-T2a.
+- *DoD:* un tensore Gold scritto su disco; integrità FP16 e DNA-Trace verificate.
+- ⛔ F0-T2a.
+
+**F0-T2e · Mini-batch end-to-end · `[F]` `P1`**
+- *Azioni:* orchestrare la pipeline (recipe → Sfizz/DrumGizmo → writer Gold tensor) e
+  generare un mini-batch (~10–20 scenari).
+- *DoD:* log stdout che mostra N campioni Gold generati senza errori.
+- ⛔ F0-T2b, F0-T2c, F0-T2d. → F0-T3.
 
 **F0-T3 · Gate L2 (validazione recipe) · `[C]` `P1`**
 - *Obiettivo:* validare che il mini-dataset è corretto.
 - *Azioni:* ispezione manuale di ≥2 campioni (waveform multi-mic coerente, bleed
-  presente, piano-roll 8-target allineato ±3 ms); verifica integrità FP16; check
-  DNA-Trace lineage.
+  presente, piano-roll 8-target allineato ±3 ms — schema `DOSSIER_TECNICO` §4);
+  verifica integrità FP16; check DNA-Trace lineage (`DOSSIER_TECNICO` §3.5).
 - *DoD:* **Ocular Proof** — checklist L2 firmata nel `REGISTRO_AVANZAMENTO.md`.
-- ⛔ F0-T2. **Sblocca lo spend RENDER (F1 + F2-T1).**
+- ⛔ F0-T2e. **Sblocca lo spend RENDER (F1 + F2-T1).**
 
 **F0-T4 · TCN mini-prototipo → Gate L3 · `[C]` `P1`**
-- *Obiettivo:* provare che la TCN Strided-Context apprende.
-- *Azioni:* implementare la TCN (topologia MASTER_CHECKLIST §1); training su mini-batch
-  Mac M5/MPS, mixed-precision; misurare le metriche di onset.
-- *DoD:* metriche di onset **significativamente non casuali** su mini-holdout (Ocular
-  Proof — log delle metriche).
-- ⛔ F0-T3. **Sblocca lo spend TRAINING (F2-T3).**
+> ⚠️ La "topologia `MASTER_CHECKLIST` §1" è un Design Lock concettuale (Strided-Context
+> TCN, Comb-Filter Hack, look-ahead ~100ms), **non** una spec implementabile: mancano
+> numero di layer, kernel, dilatazioni e receptive field. Spacchettato in 2 sotto-task;
+> T4a passa per **STRP-001** (6 fasi + Executive Briefing) prima di scrivere codice.
+> **Gate L3 ridefinito** (Executive Briefing STRP-001, D4): L3 certifica non solo che
+> la rete *apprende*, ma anche che la topologia *si esporta* in RTNeural — il rischio
+> architetturale più grave de-rischiato a F0, prima del burn del credito.
 
-**F0-T5 · `dvc init` · `[F]` `P2`**
-- *Azioni:* `dvc init` nel repo; struttura Bronze/Silver/Gold (senza remote).
-- *DoD:* `dvc status` pulito, committato.
+**F0-T4a · Topologia TCN concreta — Decision Lock (STRP-001) · `[C]` `P1`**
+- *Obiettivo:* tradurre il Design Lock concettuale in una spec di rete implementabile.
+- *Azioni:* applicare STRP-001; fissare numero di layer, kernel size, dilatazioni,
+  receptive field (coerente col look-ahead ~100ms), shape del tensore di input e teste
+  di output — matrice 8-target + testa di regressione apertura Hi-Hat
+  (`DOSSIER_TECNICO` §2.2, §4) — e la loss (Asymmetric Focal + Gaussian smearing,
+  `MASTER_CHECKLIST` §1, `DOSSIER_TECNICO` §6.2). Fissare la **soglia numerica** che
+  qualifica le metriche di onset come "significativamente non casuali".
+- *DoD:* Executive Briefing approvato dal CEO; spec e soglia archiviate.
+- → F0-T4b.
 
-**F0-T6 · `audit_dsp_rigor.py` · `[C]` `P2`**
+**F0-T4b · Mini-prototipo + round-trip RTNeural · `[C]` `P1`**
+- *Obiettivo:* provare che la TCN apprende **e** che è esportabile nel motore di
+  inferenza del plugin.
+- *Azioni:* implementare la TCN secondo la spec di F0-T4a; training sul mini-batch Gold
+  (F0-T2e) su Mac M5/MPS, mixed-precision; misurare le metriche di onset; esportare i
+  pesi in **RTNeural JSON**, caricarli in uno smoke-test **C++ RTNeural** e verificare
+  il **match numerico** con l'output PyTorch entro tolleranza.
+- *DoD (Gate L3 ridefinito):* (a) metriche di onset oltre la soglia di F0-T4a su
+  mini-holdout; (b) round-trip RTNeural verificato. Ocular Proof — log.
+- ⛔ F0-T3, F0-T4a. **Sblocca lo spend TRAINING (F2-T3).**
+
+**F0-T5 · DVC + struttura Medallion · `[F]` `P2`**
+- *Azioni:* `dvc init` nel repo; definire la struttura **Medallion** Bronze/Silver/Gold
+  (`DOSSIER_TECNICO` §9.2) e la strategia di **sharding WebDataset** del layer Gold
+  (shard ~1 GB tracciati da DVC, non micro-file); senza remote.
+- *DoD:* `dvc status` pulito, struttura committata.
+
+**F0-T6 · `audit_dsp_rigor.py` (predisposizione) · `[C]` `P2`**
+- *Nota di fase:* in F0 non esiste codice C++ (parte in F4). Qui si **predispone** solo
+  lo strumento; il **gate operativo** si applica in F4 su ogni commit del core DSP.
 - *Azioni:* implementare lo script che fa grep dei pattern proibiti nel thread audio
   (`new`, `malloc`, resizing `std::vector`, manipolazione stringhe) — gate manuale.
-- *DoD:* lo script gira ed emette un report.
+- *DoD:* lo script gira su un file di prova ed emette un report.
 
 **F0-T7 · Track parallelo opzionale (non bloccante) · `[F]` `P3`**
 - Classi JUCE custom (Edgewise Meter, Nixie Display, Bakelite Knobs PBR) + mapping
   parametri DSP (Sensitivity, Discrim, Dynamics) ai controlli Master.
+
+**F0-T8 · Model Artifact — spec di export & trasporto · `[C]` `P3`**
+- *Direzione bloccata* (Executive Briefing STRP-001, D3): pesi come **blob binario
+  cifrato** embedded via JUCE `BinaryData`; header metadati `{model_id, version,
+  latency_samples, n_channel, sr}` per il badge PDC; exporter PyTorch→RTNeural JSON.
+- *Azioni:* dettagliare la spec dell'exporter (riuso del round-trip di F0-T4b) e dello
+  schema di cifratura/header. Implementazione in **F4**.
+- *DoD:* spec archiviata. Decisione di design, eseguibile in parallelo.
 
 > **Gate d'uscita F0:** L2 superato (~05-28) **e** L3 superato (~06-02).
 
@@ -189,7 +270,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Azioni:* training "Gold" della TCN su A100 Spot; validazione Holdout reale
   (ENST-Drums) + Franken-Mix (MedleyDB) + Ocular Proof.
 - *DoD:* il modello supera l'Holdout reale → **Gate L4** (sblocca i claim pubblici).
-- ⛔ F2-T1 **e** F0-T4 (L3).
+- ⛔ F2-T1 **e** F0-T4b (L3).
 
 **F2-T4 · Credit-soak · `[G]` `P2`**
 - *Azioni:* desplegare il credito residuo sulla scala §4 (Tier 2/3) secondo lo scenario
@@ -202,7 +283,10 @@ stop compute + push HDD · **$10** → chiudi tutto.
   push Gold tensor + recipes su HDD; teardown risorse Azure.
 - **F4 · Sviluppo Plugin C++/JUCE:** core DSP + integrazione RTNeural; Chronos Engine
   (MIDI delay-line); UI JUCE (componenti custom, render V26); licensing Soft-DRM
-  (`juce::RSAKey`, Poisoned DSP); PDC. *Sotto-fasi da dettagliare post-L4.*
+  (`juce::RSAKey`, Poisoned DSP); PDC. Implementazione del **Model Artifact** (spec
+  F0-T8): exporter PyTorch→RTNeural, blob pesi cifrato, header metadati.
+  `audit_dsp_rigor.py` (predisposto in F0-T6) applicato come gate Zero-Allocation su
+  ogni commit del core DSP. *Sotto-fasi da dettagliare post-L4.*
 - **F5 · Release v1.0 EA:** QA conforme agli standard interni; build VST3 + AU;
   pubblicazione Early-Access $99.
 
@@ -211,17 +295,23 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | ID | Task | Fase | Stato | ⛔ Bloccato da | Gate |
 | :-- | :-- | :-- | :-- | :-- | :-- |
 | F0-T1 | Compliance licenze | F0 | ☐ | — | — |
-| F0-T2 | batch_generator + recipes | F0 | ☐ | — | — |
-| F0-T3 | Validazione Gate L2 | F0 | ☐ | F0-T2 | **L2** |
-| F0-T4 | TCN mini-prototipo | F0 | ☐ | F0-T3 | **L3** |
-| F0-T5 | dvc init | F0 | ☐ | — | — |
-| F0-T6 | audit_dsp_rigor.py | F0 | ☐ | — | — |
+| F0-T2a | Recipe + contratto dati (STRP-001) | F0 | ☐ | — | — |
+| F0-T2b | Render engine Sfizz | F0 | ☐ | F0-T2a | — |
+| F0-T2c | Integrazione DrumGizmo | F0 | ☐ | F0-T2a | — |
+| F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☐ | F0-T2a | — |
+| F0-T2e | Mini-batch end-to-end | F0 | ☐ | F0-T2b, F0-T2c, F0-T2d | — |
+| F0-T3 | Validazione Gate L2 | F0 | ☐ | F0-T2e | **L2** |
+| F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☐ | — | — |
+| F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☐ | F0-T3, F0-T4a | **L3** |
+| F0-T5 | DVC + struttura Medallion | F0 | ☐ | — | — |
+| F0-T6 | audit_dsp_rigor.py (predisp.) | F0 | ☐ | — | — |
 | F0-T7 | Classi JUCE (opz.) | F0 | ☐ | — | — |
+| F0-T8 | Model Artifact — spec export | F0 | ☐ | — | — |
 | F1-T1 | Setup Azure | F1 | ⊘ | F0-T3 | — |
 | F1-T2 | dvc remote Azure | F1 | ⊘ | F1-T1 | — |
 | F2-T1 | Render Gold 1.5 TB | F2 | ⊘ | F1-T1 | — |
 | F2-T2 | Augmentation + Demucs | F2 | ⊘ | F2-T1 | — |
-| F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1, F0-T4 | **L4** |
+| F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1, F0-T4b | **L4** |
 | F2-T4 | Credit-soak | F2 | ⊘ | CP-3 | — |
 | F3 | Consolidamento HDD | F3 | ⏸ | F2 | — |
 | F4 | Sviluppo Plugin | F4 | ⏸ | L4 | — |

@@ -27,13 +27,14 @@ Questa è la checklist operativa globale che copre tutti i domini necessari al l
 - [x] **Validation Protocol:** Holdout Set Reale (ENST-Drums) e Franken-Mix (MedleyDB) — entrambi asset **Evaluation-Only** (mai usati per il training, mai ridistribuiti; vedi `DATA_PROVENANCE_LOG.md` §2.B) — più Ocular Proof. Nessun test su dati sintetici.
 
 ## 2. 🗄️ DATA INFRASTRUCTURE & DATA ENGINEERING
-- [x] **Infrastruttura & Size:** Azure Blob (LRS) + DVC. Target Definitivo: **1.5 Terabyte (450 ore)**. Pianificazione basata sul **credito Azure di $200** (budget-driven, non time-driven); piano di spesa per task in `STRATEGIC_INFRASTRUCTURE_AUDIT.md` §7.1. Archivio permanente post-Azure: HDD fisico 2 TB (~€100–150).
+- [x] **Infrastruttura & Size:** Azure Blob (LRS) + DVC. Target Definitivo: **1.5 Terabyte (450 ore)**. Pianificazione basata sul **credito Azure di $200** (budget-driven, non time-driven); piano di spesa per task in `STRATEGIC_INFRASTRUCTURE_AUDIT.md` §7.1. Archivio permanente post-Azure: HDD fisico 2 TB (~€100–150). Formato del layer Gold: **WebDataset** tar-shard (`DOSSIER_TECNICO` §9.2).
 - [x] **Sovereignty:** Protocollo Escape Hatch (Dual Remote + Backup tar.zst in chiaro). `ONBOARDING_HUMAN.md` completato.
 - [x] **Pipeline Rendering (Python):** Motore ufficiale **Sfizz** (librerie SFZ multi-layer) + **DrumGizmo** (CLI, kit multi-microfono per il bleed reale). FluidSynth/SF2 scartato: i SoundFont non espongono tracce multi-mic e non possono generare il bleed, moat primario del prodotto.
 - [x] **Data Mutilation & Saboteurs:** Approvato modulo "Studio Mutilation". Approvata iniezione "Transient Saboteurs" (Sintetici via Sfizz + Dataset Esterni).
 - [x] **Machine-Gun Chaos:** Implementazione generazione stocastica di MIDI impossibili (Blast beats, multi-hits) per prevenire l'overfitting ritmico.
 - [x] **Acoustic Reverb:** Implementazione Convoluzione via `pedalboard` usando IRs (OpenAIR).
 - [x] **Augmentation & Lineage:** MIDI Jittering (Pre-render) e Protocollo DNA-Trace approvati.
+- [x] **[STRP-001] Contratto Dati & Output MIDI:** Risolto (Executive Briefing 2026-05-20). Formato Gold tensor + packaging WebDataset; **MIDI Mapping Table** `GM↔8-bus` bidirezionale; Hi-Hat con testa di apertura **continua** e uscita selezionabile **CC-continuo / Note-discrete**. Artefatto modello: blob pesi cifrato + header metadati, export PyTorch→RTNeural. Esportabilità RTNeural certificata dal Gate L3. Dettaglio in `04_INTELLIGENCE/MASTER_SCHEDULING.md` §6 (F0-T2a, F0-T4b, F0-T8).
 
 ## 3. 🖥️ SOFTWARE ENGINEERING & DSP (C++ / JUCE)
 - [x] **Framework Inference:** RTNeural (Scelto per via del trucco Strided-Context compatibile).

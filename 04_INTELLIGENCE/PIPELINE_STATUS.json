@@ -3,7 +3,7 @@
   "pipeline_status": "STANDBY",
   "current_task_id": null,
   "last_audit": "2026-05-20",
-  "erm_score": 0.0,
+  "erm_score": 5.5,
   "active_gates": ["L1"],
-  "compliance_check": "REVIEW_PENDING"
+  "compliance_check": "CLEARED"
 }

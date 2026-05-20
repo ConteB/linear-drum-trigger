@@ -122,10 +122,41 @@ stop compute + push HDD · **$10** → chiudi tutto.
     CC-BY/CC0 (DrumGizmo, Salamander).
   - **ENST-Drums / MedleyDB** (Classe B, servono al validation L4): se i termini non
     consentono la valutazione interna a supporto di un prodotto commerciale entro
-    **CP-2 / 2026-06-09**, attivare il piano B di `DATA_PROVENANCE_LOG.md` §39
+    **CP-2 / 2026-06-09**, attivare il piano B di `DATA_PROVENANCE_LOG.md` §2.B
     (registrazioni proprietarie annotate) o ridurre il Validation Protocol a
     Franken-Mix + Ocular Proof. Decisione registrata al checkpoint.
 - *Avvio immediato, in parallelo* — lead time esterno.
+- ✅ **AGGIORNAMENTO (2026-05-20) — dottrina "Self-Evident Commercial License":** per
+  Decision Lock del CEO si usano solo asset la cui licenza pubblicata concede di per sé
+  l'uso commerciale (CC0/CC-BY). **Outreach annullato** — niente email, niente
+  divulgazione del progetto. Conseguenze per pura lettura della licenza: **ENST-Drums**
+  (research-only) e **MedleyDB** (CC-BY-NC) → **ESCLUSI**; **SM Drums** → escluso (nessuna
+  licenza formale). La diversità di kit è ricostruita da **F0-T1b**. Lo **Holdout reale**
+  va ridisegnato (task a sé). Dettaglio: `docs/compliance/DATA_PROVENANCE_LOG.md` §1.1.
+
+**F0-T1b · Survey & selezione kit — roster di training · `[D]` `P1`**
+- *Origine:* osservazione del CEO (2026-05-20) — SM Drums è un solo kit; serve diversità
+  timbrica per chiudere il generalization gap (train su pochi timbri → la rete impara il
+  timbro, non l'evento fisico).
+- *Dottrina:* "Self-Evident Commercial License" (vedi F0-T1 aggiornamento).
+- *Azioni:* survey dei kit liberi; matrice licenze verificate alla fonte; proporre un
+  roster-target. Esito in `docs/compliance/F0-T1b_KIT_ROSTER_SURVEY.md`.
+- *DoD:* roster approvato dal CEO; `DATA_PROVENANCE_LOG.md` §2.A aggiornato.
+- ☑ **FATTO (2026-05-20):** roster di 11 voci CC0/CC-BY approvato dal CEO e inserito in
+  `DATA_PROVENANCE_LOG.md` §2.A. Esito in `docs/compliance/F0-T1b_KIT_ROSTER_SURVEY.md`.
+
+**F0-T1c · Ridisegno Validation Protocol / Holdout reale · `[C]` `P1`**
+- *Origine:* l'esclusione di ENST-Drums e MedleyDB (dottrina §1.1) ha rimosso lo Holdout
+  reale e il Franken-Mix (`DOSSIER_TECNICO` §10.3, `MASTER_CHECKLIST` §1).
+- *Azioni:* survey di fonti di registrazioni reali di batteria con ground-truth a licenza
+  commerciale chiara (CC0/CC-BY); ridisegnare il Validation Protocol; se nessuna fonte
+  idonea → Piano B (registrazioni proprietarie annotate). Decisione critica — tocca il
+  Gate L4 e i claim pubblici di accuratezza.
+- *DoD:* Validation Protocol ridisegnato e approvato dal CEO; `DOSSIER_TECNICO` §10 e
+  `MASTER_CHECKLIST` §1 aggiornati.
+- ☑ **FATTO (2026-05-20):** Decision Lock CEO. Holdout reale = E-GMD (CC-BY 4.0),
+  Stealth-Mix = Slakh2100, Ocular Proof invariato. Piano B (registrazioni proprietarie)
+  scartato dal CEO. Esito in `docs/compliance/F0-T1c_HOLDOUT_SURVEY.md`.
 
 **F0-T2 · Pipeline di rendering Gold — *riscrittura* · `[F]` `P1`**
 > ⚠️ **Non è una verifica.** Gli script in `src/data_engineering/`
@@ -148,6 +179,9 @@ stop compute + push HDD · **$10** → chiudi tutto.
   (iv) la MIDI Mapping Table come artefatto versionato; survey delle articolazioni HH
   delle librerie.
 - *DoD:* spec archiviata; MIDI Mapping Table committata; checklist aggiornata.
+- ✅ **FATTO (2026-05-20)** — Decision Lock approvato. Spec in
+  `docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md`; Mapping Table versionata in
+  `docs/specs/midi_mapping_table.yaml`. Sblocca F0-T2b/c/d.
 - → F0-T2b, F0-T2c, F0-T2d.
 
 **F0-T2b · Render engine Sfizz · `[F]` `P1`**
@@ -268,7 +302,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 
 **F2-T3 · Training "Gold" A100 → Gate L4 · `[G]` `P1` — spend A RISCHIO (gate L3)**
 - *Azioni:* training "Gold" della TCN su A100 Spot; validazione Holdout reale
-  (ENST-Drums) + Franken-Mix (MedleyDB) + Ocular Proof.
+  (E-GMD) + Slakh-Mix (Slakh2100) + Ocular Proof.
 - *DoD:* il modello supera l'Holdout reale → **Gate L4** (sblocca i claim pubblici).
 - ⛔ F2-T1 **e** F0-T4b (L3).
 
@@ -294,8 +328,10 @@ stop compute + push HDD · **$10** → chiudi tutto.
 
 | ID | Task | Fase | Stato | ⛔ Bloccato da | Gate |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| F0-T1 | Compliance licenze | F0 | ☐ | — | — |
-| F0-T2a | Recipe + contratto dati (STRP-001) | F0 | ☐ | — | — |
+| F0-T1 | Compliance licenze | F0 | ☑ | — | — |
+| F0-T1b | Survey & selezione kit (roster) | F0 | ☑ | — | — |
+| F0-T1c | Ridisegno Validation Protocol/Holdout | F0 | ☑ | — | — |
+| F0-T2a | Recipe + contratto dati (STRP-001) | F0 | ☑ | — | — |
 | F0-T2b | Render engine Sfizz | F0 | ☐ | F0-T2a | — |
 | F0-T2c | Integrazione DrumGizmo | F0 | ☐ | F0-T2a | — |
 | F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☐ | F0-T2a | — |
@@ -317,7 +353,9 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F4 | Sviluppo Plugin | F4 | ⏸ | L4 | — |
 | F5 | Release v1.0 EA | F5 | ⏸ | F4 | — |
 
-**Stato globale:** Fase attiva **F0** · Scenario credito: *da fissare a CP-1* ·
+**Stato globale:** Fase attiva **F0** · ☑ F0-T1 · ☑ F0-T1b · ☑ F0-T1c · ☑ F0-T2a
+(Decision Lock 2026-05-20) · Sbloccati: **F0-T2b/c/d** (codice, via sub-agenti) e **F0-T4a**
+(STRP-001 topologia TCN) · Scenario credito: *da fissare a CP-1* ·
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---

@@ -235,3 +235,65 @@ di $200 scade 30 giorni dopo la creazione account, già avvenuta — finestra
 - **Stato finale:** documentazione a Gate L1; Fase esecutiva F0 attiva, nessun task ancora avviato.
 - **KRM (Principio della Cicatrice):** la lezione tattica della sessione — "L2 e L3 sono validabili in locale a €0; provisionare Azure prima di L3 brucerebbe il credito su un'architettura non provata" — è formalizzata in `MASTER_SCHEDULING.md` §6.1 e nella Lente 3 della doctrine.
 - Mandato per il successore rigenerato in `SESSION_HANDOVER_REVISION.md`. Sessione certificata e conclusa.
+
+---
+
+## SESSIONE: 2026-05-20 - AVVIO FASE F0
+**Partecipanti:** CEO, Gianpiero Scappelloni (AI)
+
+### CONTESTO
+Task Lock del CEO: "avvia le attività". Pre-Flight Check SOP-010 completato; Gate Zero
+soddisfatto (`TASK_BLUEPRINT.md` rigenerato per lo startup F0, ERM-005 = 5.5, rischio BASSO).
+
+### DECISIONI STRATEGICHE (DECISION LOCK)
+- **F0-T1 avviato.** Ricerca compliance su fonti primarie: SM Drums royalty-free dichiarato
+  ma senza licenza formale; ENST-Drums research-only / no-commercial; MedleyDB CC BY-NC-SA
+  4.0 (NC). Lettura del Advisor: ENST-Drums e MedleyDB sono in tensione strutturale con un
+  prodotto commerciale anche solo come Evaluation-Only — il Piano B (registrazioni
+  proprietarie annotate / Validation ridotto) va trattato come scenario realistico.
+- **F0-T2a — Decision Lock completo (Executive Briefing, STRP-001 snello).** 5 risoluzioni
+  approvate: (1) recipe in YAML; (2) `target.f16` layout `flat-25` `[n_frame,25]`;
+  (3) `R_target` parametrico, provvisorio 344.5 Hz, ratifica a F0-T4a; (4) velocity
+  normalizzata [0,1] FP16; (5) articolazioni intra-bus collassate in v1.0, classificazione
+  per-articolazione rinviata a v2.0 (Dual-Path).
+- **Disaccoppiamento sample-accuracy / frame-rate:** il canale microtiming codifica
+  l'offset residuo → F0-T2b/c/d possono partire senza attendere F0-T4a.
+
+### NOTE DEL CEO
+- Sul punto 5 (articolazioni): "non ho capito bene io il problema in generale, mi sono
+  perso" → chiarito con esempio cross-stick/rim; scelta confermata su collasso v1.0.
+
+### STATO DOCUMENTALE
+- Prodotti: `docs/compliance/F0-T1_LICENSE_VERIFICATION.md`,
+  `docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md`, `docs/specs/midi_mapping_table.yaml`.
+- Aggiornati: `DATA_PROVENANCE_LOG.md`, `MASTER_SCHEDULING.md` (Tracking Board: F0-T2a ☑,
+  F0-T1 ◐), `MASTER_CHECKLIST.md` §2, `DOSSIER_TECNICO.md` §3.5/§9.2, `PIPELINE_STATUS.json`.
+- Corretto riferimento errato `DATA_PROVENANCE_LOG.md §39` → §2.B in `MASTER_SCHEDULING.md`.
+- **Prossimo step (in giornata):** F0-T1b e F0-T1c — vedi aggiornamento sotto.
+
+### AGGIORNAMENTO — F0-T1b / F0-T1c (stessa sessione)
+- **Dottrina compliance "Self-Evident Commercial License"** (Decision Lock CEO): si usano
+  solo asset la cui licenza **già pubblicata** concede di per sé l'uso commerciale
+  (CC0/CC-BY). **Zero corrispondenza** con i creatori, **zero divulgazione** del progetto.
+- **F0-T1b — roster kit:** da ~2 timbri nominati a **11 voci CC0/CC-BY** (6 kit DrumGizmo
+  CC-BY-4.0 multi-mic, 3 Karoryfer CC0, Frankensnare CC0, Salamander CC-BY-3.0, VSCO-2 CE
+  CC0). SM Drums escluso. Origine: intuizione del CEO sulla diversità timbrica.
+- **F0-T1c — Validation Protocol ridisegnato:** Holdout reale = **E-GMD** (CC-BY 4.0),
+  Stealth-Mix = **Slakh2100**, Ocular Proof invariato. ENST-Drums e MedleyDB esclusi.
+  Verificato che le librerie a pagamento **non** concedono diritti ML → CC-BY è più sicuro
+  del commerciale. Piano B (registrazioni proprietarie) scartato dal CEO.
+
+### NOTE DEL CEO (agg.)
+- "SM Drums è solo un kit?" → intuizione che ha innescato F0-T1b e l'irrobustimento del
+  dataset di training.
+- "Non voglio scrivere ai creatori, non voglio divulgare nulla" → dottrina §1.1.
+
+### CHIUSURA SESSIONE (SOP-013)
+- **Stato finale:** Fase F0 — chiusi **F0-T1, F0-T1b, F0-T1c, F0-T2a**. Domini compliance
+  e contratto dati completamente bloccati. Sbloccati **F0-T2b/c/d** (codice, via
+  sub-agenti) e **F0-T4a** (STRP-001 topologia TCN).
+- **KRM (Principio della Cicatrice):** "una licenza CC-BY/CC0 gratuita è *legalmente più
+  sicura* di una libreria a pagamento — la EULA commerciale restringe i diritti ML, la
+  licenza CC li concede in anticipo e per iscritto." Formalizzato in
+  `DATA_PROVENANCE_LOG.md` §1.1 e `F0-T1c_HOLDOUT_SURVEY.md` §2bis.
+- Mandato per il successore rigenerato in `SESSION_HANDOVER_REVISION.md`. Sessione conclusa.

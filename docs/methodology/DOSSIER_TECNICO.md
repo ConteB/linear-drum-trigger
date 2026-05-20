@@ -64,7 +64,7 @@ Ogni tensore Gold finale (in pasto all'IA) possiede una "Carta d'Identità" per 
 - **DNA Barcode (Nome File):** Esempio `GMD042-V0T1-DGZ-R2-C1H0-SLK102.npy` traccia: Fonte MIDI (`GMD042`), Alterazione MIDI (`V0T1`), Motore Audio (`DGZ`), Ambiente Acustico/Riverbero (`R2`), Alterazione Audio (`C1H0`) e Disturbatore (`SLK102`).
 - **Libretto Sanitario (JSON):** Ogni batch o tensore critico è accompagnato da un file JSON con l'esatto quantitativo di time shift applicato, la percentuale di riverbero Wet/Dry o il ratio di mix, consentendo reverse-engineering totale.
 
-> Lo schema formale dei campi (barcode e JSON) è bloccato in F0-T2a; ogni campione WebDataset porta il proprio `{key}.dna.json` (vedi §9.2).
+> Lo schema formale dei campi (barcode e JSON) è **bloccato** — vedi `docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md` §4 (Decision Lock 2026-05-20); ogni campione WebDataset porta il proprio `{key}.dna.json` (vedi §9.2).
 
 ## 4. Matrice di Output MIDI (Standard OpenPhase)
 1.  **CH 1:** Kick
@@ -173,7 +173,7 @@ Per garantire la scalabilità e la tracciabilità "Industrial Grade", il progett
 Il processamento del dato è strutturato a livelli incrementali di qualità gestiti via DVC:
 - **BRONZE LAYER (Raw):** Immutabile. Dataset originali (GMD, SM Drums, DrumGizmo, Noise/Stems per Negative Sampling).
 - **SILVER LAYER (Clean & Target):** Generato tramite `midi_renderer.py` e `ugt_generator.py`. Contiene i Clean Stems estratti dai MIDI e i Tensori MIDI Target (Piano Roll a 8 canali).
-- **GOLD LAYER (Augmented Tensors):** Gestito dall' `augmentation_engine.py`. Fonde i Clean Stems con Phase Chirping, Bleed e "Stealth Mix Mode" (Negative Sampling). Tensori quantizzati a 16-bit pronti per l'Inference Layer (TCN). **Impacchettamento:** WebDataset in tar-shard da ~1 GB (terna `audio.f16` / `target.f16` / `dna.json` per campione), tracciati da DVC come shard — non come micro-file (Decision Lock STRP-001 2026-05-20, D1).
+- **GOLD LAYER (Augmented Tensors):** Gestito dall' `augmentation_engine.py`. Fonde i Clean Stems con Phase Chirping, Bleed e "Stealth Mix Mode" (Negative Sampling). Tensori quantizzati a 16-bit pronti per l'Inference Layer (TCN). **Impacchettamento:** WebDataset in tar-shard da ~1 GB (terna `audio.f16` / `target.f16` / `dna.json` per campione), tracciati da DVC come shard — non come micro-file (Decision Lock STRP-001 2026-05-20, D1). Layout di byte FP16 di `audio.f16` / `target.f16` (`[n_mic,n_sample]` e `[n_frame,25]` flat-25) e schema dello shard: `docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md` §3.
 
 ## 10. Validation & Holdout Protocol (The "Iron Gate")
 Per scongiurare l'overfitting e garantire la vendibilità Studio-Grade, il dataset e il testing seguono la Dottrina del Triplo Set:
@@ -187,8 +187,8 @@ Usato per il monitoraggio "Early Stopping" durante il training su Azure. Contien
 
 ### 10.3 The Holdout Test Set (10% - La Prova del Mondo Reale)
 Questo set non viene mai processato in fase di training. È l'arbitro finale della qualità del prodotto:
-- **Missing Ground Truth Solution 1 (ENST-Drums):** Utilizzo di registrazioni umane non sintetiche. La verità MIDI è fornita dalle annotazioni accademiche manuali dei ricercatori.
-- **Missing Ground Truth Solution 2 (Franken-Mix via MedleyDB):** Per testare lo Stealth Mix Mode reale, l'IA deve generare un MIDI da un multitraccia reale intero che coincida col MIDI generato (tramite thresholding standard) sul solo stem isolato della cassa di quel brano.
+- **Holdout reale (E-GMD):** *(ridisegnato 2026-05-20, F0-T1c)* — E-GMD, Expanded Groove MIDI Dataset (CC-BY 4.0): 444 h di performance di batteria **umane reali**, 43 kit, con ground-truth MIDI di timing e velocity allineato ±2 ms. Sostituisce ENST-Drums (escluso — dottrina compliance §1.1 di `DATA_PROVENANCE_LOG.md`). ⚠️ Limite noto: E-GMD è registrato su modulo Roland TD-17 — performance umana vera, ma l'audio non cattura microfoni acustici in stanza né il bleed reale: i claim numerici a L4 vanno formulati di conseguenza.
+- **Test Stealth-Mix (Slakh-Mix via Slakh2100):** *(ridisegnato 2026-05-20, F0-T1c)* — su Slakh2100 (CC-BY 4.0) l'IA genera un MIDI dal full-mix che deve coincidere col MIDI ottenuto (thresholding standard) dallo stem batteria isolato dello stesso brano. Sostituisce il Franken-Mix/MedleyDB (escluso — clausola NonCommercial).
 - **L'Ultimo Miglio (Ocular Proof):** Il plugin pilota un suono percussivo estraneo (es. Woodblock) riprodotto in controfase sulla registrazione originale. Il test è superato solo se l'orecchio umano non percepisce "flam" (sdoppiamento temporale) sull'attacco dei transienti.
 
 ## 11. Security & Licensing Architecture (Soft-DRM)

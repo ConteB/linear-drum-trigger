@@ -1,0 +1,213 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #111;
+    --bg-plugin: #1a1a1a;
+    --bg-panel: #0a0a0a;
+    --bg-matrix: #161616;
+    --border-color: #333;
+    --border-light: #555;
+    --text-dim: #777;
+    --text-bright: #ccc;
+    --accent: #fff;
+    --ghost: rgba(255, 255, 255, 0.4);
+    --active-bg: #2a2a2a;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-bright);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h2 {
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 14px;
+    margin-top: 40px;
+    margin-bottom: 10px;
+    width: 900px;
+  }
+  .desc {
+    color: #555;
+    font-size: 12px;
+    width: 900px;
+    margin-bottom: 20px;
+  }
+  
+  /* BASE PLUGIN WINDOW (Classic 60/40 Split) */
+  .plugin-window {
+    background-color: var(--bg-plugin);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    width: 900px;
+    height: 550px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .oscilloscope {
+    background-color: var(--bg-panel);
+    position: relative;
+    width: 100%;
+    height: 330px; /* 60% */
+    border-bottom: 1px solid var(--border-color);
+  }
+  .waveform-line { position: absolute; top: 50%; width: 100%; border-top: 1px solid #2a2a2a; }
+  .threshold-line { position: absolute; top: 40%; width: 100%; border-top: 1px dashed #555; }
+  .marker-solid { position: absolute; height: 100%; width: 2px; background-color: var(--accent); box-shadow: 0 0 5px rgba(255,255,255,0.3); }
+  .marker-ghost { position: absolute; height: 100%; width: 1px; background-color: var(--ghost); }
+
+  .matrix {
+    background-color: var(--bg-matrix);
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    width: 100%;
+    height: 220px; /* 40% */
+    padding: 10px 0;
+  }
+
+  /* BASE CHANNEL STRIP */
+  .channel-strip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 90px;
+    height: 100%;
+    padding-top: 10px;
+    border-right: 1px solid #222;
+    position: relative;
+  }
+  .channel-strip:last-child { border-right: none; }
+  
+  .ch-label { font-size: 11px; color: var(--text-dim); font-weight: bold; letter-spacing: 1px; margin-bottom: 15px; }
+  
+  .trigger-led { width: 8px; height: 8px; border-radius: 50%; background-color: #222; position: absolute; bottom: 20px; }
+  .trigger-on { background-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
+
+  /* METER STYLES */
+  .meter-bg { background-color: #000; position: relative; overflow: hidden; border-radius: 2px; border: 1px solid #333; }
+  .meter-led { background-color: #aaa; position: absolute; bottom: 0; left: 0; width: 100%; }
+
+  /* =========================================
+     VARIANTE 2.1: FADER LATERALE
+     ========================================= */
+  .v1 .meter-container { display: flex; gap: 8px; height: 110px; }
+  .v1 .meter-bg { width: 12px; height: 100%; }
+  .v1 .fader-track { width: 4px; height: 100%; background: #111; border: 1px solid #222; position: relative; }
+  .v1 .fader-cap { width: 12px; height: 4px; background: #fff; position: absolute; left: -5px; }
+
+  /* =========================================
+     VARIANTE 2.2: INLINE THRESHOLD
+     ========================================= */
+  .v2 .meter-bg { width: 24px; height: 110px; }
+  .v2 .inline-threshold { position: absolute; width: 100%; height: 2px; background: #fff; z-index: 10; box-shadow: 0 0 4px #000; }
+
+  /* =========================================
+     VARIANTE 2.3: ACTIVE STATE FOCUS
+     ========================================= */
+  .v3 .meter-bg { width: 16px; height: 110px; }
+  .v3 .inline-threshold { position: absolute; width: 100%; height: 1px; background: #fff; z-index: 10; }
+  .v3 .channel-strip.active { background-color: var(--active-bg); border: 1px solid #555; border-radius: 4px; box-shadow: inset 0 0 15px rgba(0,0,0,0.5); }
+  .v3 .channel-strip.active .ch-label { color: #fff; }
+
+</style>
+</head>
+<body>
+  
+  <h2>Var 2.1: Classic + Fader Laterale</h2>
+  <div class="desc">La Threshold è un fader fisico separato di fianco al meter della Confidence. Visivamente molto "Console".</div>
+  <div class="plugin-window v1">
+    <div class="oscilloscope">
+      <div class="waveform-line"></div><div class="threshold-line" style="top: 40%"></div>
+      <div class="marker-solid" style="left: 20%;"></div><div class="marker-ghost" style="left: 35%;"></div>
+    </div>
+    <div class="matrix" id="m1"></div>
+  </div>
+
+  <h2>Var 2.2: Classic + Inline Threshold (Wide Meter)</h2>
+  <div class="desc">Meter più largo. La Threshold è una riga bianca sovrapposta al LED. Molto compatto, stile iZotope.</div>
+  <div class="plugin-window v2">
+    <div class="oscilloscope">
+      <div class="waveform-line"></div><div class="threshold-line" style="top: 50%"></div>
+      <div class="marker-solid" style="left: 15%;"></div><div class="marker-ghost" style="left: 80%;"></div>
+    </div>
+    <div class="matrix" id="m2"></div>
+  </div>
+
+  <h2>Var 2.3: Classic + Stato "Active" Selezionato</h2>
+  <div class="desc">Mostra come l'utente capisce quale canale sta guardando nell'oscilloscopio. Il canale (es. SNR) è "acceso" e incassato.</div>
+  <div class="plugin-window v3">
+    <div class="oscilloscope">
+      <div class="waveform-line"></div><div class="threshold-line" style="top: 60%"></div>
+      <div class="marker-ghost" style="left: 40%;"></div><div class="marker-solid" style="left: 60%;"></div>
+      <div style="position: absolute; top: 10px; left: 10px; color: #555; font-size: 10px; font-weight: bold;">VIEWING: SNR</div>
+    </div>
+    <div class="matrix" id="m3"></div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNR', 'TOM1', 'TOM2', 'HHAT', 'RIDE', 'CRSH', 'SPLS'];
+    
+    // Genera V1 (Fader)
+    let html1 = '';
+    for(let i=0; i<8; i++) {
+      const val = Math.random() * 100; const thr = Math.random() * 40 + 30;
+      html1 += `
+        <div class="channel-strip">
+          <div class="ch-label">${labels[i]}</div>
+          <div class="meter-container">
+            <div class="meter-bg"><div class="meter-led" style="height: ${val}%;"></div></div>
+            <div class="fader-track"><div class="fader-cap" style="bottom: ${thr}%;"></div></div>
+          </div>
+          <div class="trigger-led ${val > thr ? 'trigger-on' : ''}"></div>
+        </div>`;
+    }
+    document.getElementById('m1').innerHTML = html1;
+
+    // Genera V2 (Inline)
+    let html2 = '';
+    for(let i=0; i<8; i++) {
+      const val = Math.random() * 100; const thr = Math.random() * 40 + 30;
+      html2 += `
+        <div class="channel-strip">
+          <div class="ch-label">${labels[i]}</div>
+          <div class="meter-bg">
+            <div class="inline-threshold" style="bottom: ${thr}%;"></div>
+            <div class="meter-led" style="height: ${val}%;"></div>
+          </div>
+          <div class="trigger-led ${val > thr ? 'trigger-on' : ''}"></div>
+        </div>`;
+    }
+    document.getElementById('m2').innerHTML = html2;
+
+    // Genera V3 (Active)
+    let html3 = '';
+    for(let i=0; i<8; i++) {
+      const val = Math.random() * 100; const thr = 60;
+      const isActive = i === 1; // Forza lo snare come attivo
+      html3 += `
+        <div class="channel-strip ${isActive ? 'active' : ''}">
+          <div class="ch-label">${labels[i]}</div>
+          <div class="meter-bg">
+            <div class="inline-threshold" style="bottom: ${thr}%;"></div>
+            <div class="meter-led" style="height: ${val}%;"></div>
+          </div>
+          <div class="trigger-led ${val > thr ? 'trigger-on' : ''}"></div>
+        </div>`;
+    }
+    document.getElementById('m3').innerHTML = html3;
+
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OP-NEUROTRIGGER V26 // INDUSTRIAL MASTERPIECE</title>
+    <style>
+        body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: 'Helvetica', sans-serif; }
+        #overlay { position: absolute; bottom: 30px; width: 100%; text-align: center; color: #444; font-size: 9px; letter-spacing: 5px; text-transform: uppercase; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="overlay">Linear Division // OP-NeuroTrigger // V26 Ultimate Fidelity Prototype</div>
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a1a);
+        
+        const camera = new THREE.PerspectiveCamera(24, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(5, 4, 16);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // --- PROCEDURAL MAPS FOR PHOTOREALISM ---
+        function createBrushedMetalMap() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#888';
+            ctx.fillRect(0, 0, 512, 512);
+            for(let i=0; i<5000; i++) {
+                ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.1})`;
+                ctx.fillRect(0, Math.random() * 512, 512, 1);
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        }
+        const brushedMap = createBrushedMetalMap();
+
+        // --- MATERIALS ---
+        const darkMetalMat = new THREE.MeshPhysicalMaterial({ 
+            color: 0x111111, metalness: 0.9, roughness: 0.3, roughnessMap: brushedMap, clearcoat: 0.1
+        });
+        const walnutMat = new THREE.MeshPhysicalMaterial({ 
+            color: 0x3d2212, roughness: 0.15, metalness: 0, clearcoat: 1.0, clearcoatRoughness: 0.05
+        });
+        const displayMat = new THREE.MeshPhysicalMaterial({ 
+            color: 0x000000, roughness: 0.05, metalness: 0.2, emissive: 0x33ff33, emissiveIntensity: 0.02
+        });
+        const screwMat = new THREE.MeshPhysicalMaterial({ 
+            color: 0x444444, metalness: 1.0, roughness: 0.2
+        });
+
+        const unit = new THREE.Group();
+
+        // 1. CHASSIS (Deep Bevel)
+        const chassis = new THREE.Mesh(new RoundedBoxGeometry(8, 5.5, 0.6, 10, 0.05), darkMetalMat);
+        chassis.castShadow = true;
+        unit.add(chassis);
+
+        // Wood Cheeks (V13.1 High Quality)
+        const cheekGeo = new THREE.CapsuleGeometry(0.38, 5.5, 64, 64);
+        const cl = new THREE.Mesh(cheekGeo, walnutMat); cl.position.set(-4.1, 0, 0); cl.castShadow = true; unit.add(cl);
+        const cr = new THREE.Mesh(cheekGeo, walnutMat); cr.position.set(4.1, 0, 0); cr.castShadow = true; unit.add(cr);
+
+        // 2. LEFT BLOCK: ANALYSIS (Asymmetric V19)
+        const leftPlate = new THREE.Mesh(new RoundedBoxGeometry(4.7, 5.2, 0.1, 5, 0.02), darkMetalMat);
+        leftPlate.position.set(-1.4, 0, 0.35); unit.add(leftPlate);
+
+        // CRT Screen with Bezel
+        const bezel = new THREE.Mesh(new RoundedBoxGeometry(4.3, 2.9, 0.05, 5, 0.02), darkMetalMat);
+        bezel.position.set(-1.4, 1.0, 0.4); unit.add(bezel);
+        const screen = new THREE.Mesh(new THREE.PlaneGeometry(4.1, 2.7), displayMat);
+        screen.position.set(-1.4, 1.0, 0.44); unit.add(screen);
+
+        // Matrix (8 detailed strips)
+        for(let i=0; i<8; i++) {
+            const s = new THREE.Mesh(new RoundedBoxGeometry(0.48, 1.9, 0.05, 2, 0.01), darkMetalMat);
+            s.position.set(-3.08 + (i * 0.48), -1.5, 0.4); unit.add(s);
+            // LED
+            const led = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 16), new THREE.MeshBasicMaterial({color: (i===1)?0xffffff:0x111111}));
+            led.position.set(-3.08 + (i * 0.48), -2.2, 0.45); unit.add(led);
+        }
+
+        // 3. RIGHT BLOCK: TRIPLE STACK
+        const rightPlate = new THREE.Mesh(new RoundedBoxGeometry(2.4, 5.2, 0.1, 5, 0.02), darkMetalMat);
+        rightPlate.position.set(2.4, 0, 0.35); unit.add(rightPlate);
+
+        // Master Knobs (Hardware-level)
+        function createProKnob(x, y) {
+            const k = new THREE.Group();
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.32, 0.2, 64), darkMetalMat);
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.05, 64), new THREE.MeshPhysicalMaterial({color:0x000000, roughness:0.1, metalness:0.8}));
+            cap.position.y = 0.12;
+            const indicator = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.15), new THREE.MeshBasicMaterial({color:0xffffff}));
+            indicator.position.set(0, 0.15, -0.15);
+            k.add(base); k.add(cap); k.add(indicator);
+            k.rotation.x = Math.PI/2; k.position.set(x, y, 0.48);
+            return k;
+        }
+        unit.add(createProKnob(1.9, 1.3)); unit.add(createProKnob(2.9, 1.3));
+
+        // Edgewise Meter (Top Right)
+        const meterBox = new THREE.Mesh(new RoundedBoxGeometry(2.0, 0.5, 0.05, 2, 0.01), new THREE.MeshStandardMaterial({color:0x000000}));
+        meterBox.position.set(2.4, 2.1, 0.41); unit.add(meterBox);
+        const needle = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.4, 0.01), new THREE.MeshBasicMaterial({color:0xff0000}));
+        needle.position.set(2.8, 2.1, 0.46); unit.add(needle);
+
+        // Neural Slot (Nixie)
+        const slot = new THREE.Mesh(new RoundedBoxGeometry(2.1, 0.8, 0.05, 2, 0.01), new THREE.MeshStandardMaterial({color:0x000000, emissive:0xff7700, emissiveIntensity:0.5}));
+        slot.position.set(2.4, -0.6, 0.41); unit.add(slot);
+
+        // Screws (Flathead)
+        function createScrew(x, y) {
+            const s = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.02, 32), screwMat);
+            const cut = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.01, 0.01), new THREE.MeshBasicMaterial({color:0x000000}));
+            cut.position.y = 0.01; s.add(cut);
+            s.rotation.x = Math.PI/2; s.position.set(x, y, 0.41);
+            return s;
+        }
+        unit.add(createScrew(3.4, 2.4)); unit.add(createScrew(3.4, -2.4));
+        unit.add(createScrew(1.4, 2.4)); unit.add(createScrew(1.4, -2.4));
+
+        scene.add(unit);
+
+        // --- ADVANCED STUDIO LIGHTING ---
+        const ambient = new THREE.AmbientLight(0xffffff, 0.2); scene.add(ambient);
+
+        const softbox1 = new THREE.RectAreaLight(0xffffff, 10, 20, 20);
+        softbox1.position.set(10, 5, 10); softbox1.lookAt(0,0,0); scene.add(softbox1);
+
+        const softbox2 = new THREE.RectAreaLight(0x4488ff, 2, 10, 10);
+        softbox2.position.set(-10, 0, 5); softbox2.lookAt(0,0,0); scene.add(softbox2);
+
+        const rim = new THREE.PointLight(0xffffff, 50); rim.position.set(0, 10, -5); scene.add(rim);
+
+        // Cyclorama Floor
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.2}));
+        floor.rotation.x = -Math.PI/2; floor.position.y = -5; floor.receiveShadow = true;
+        scene.add(floor);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

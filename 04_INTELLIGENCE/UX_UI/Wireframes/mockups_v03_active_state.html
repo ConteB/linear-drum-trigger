@@ -1,0 +1,211 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #111;
+    --bg-plugin: #1a1a1a;
+    --bg-panel: #0a0a0a;
+    --bg-matrix: #161616;
+    --border-color: #333;
+    --border-light: #555;
+    --text-dim: #777;
+    --text-bright: #ccc;
+    --accent: #fff;
+    --ghost: rgba(255, 255, 255, 0.4);
+    --active-bg: #222;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-bright);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h2 {
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 14px;
+    margin-top: 40px;
+    margin-bottom: 10px;
+    width: 900px;
+  }
+  .desc {
+    color: #666;
+    font-size: 12px;
+    width: 900px;
+    margin-bottom: 20px;
+    line-height: 1.4;
+  }
+  
+  /* BASE PLUGIN WINDOW */
+  .plugin-window {
+    background-color: var(--bg-plugin);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    width: 900px;
+    height: 550px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .oscilloscope {
+    background-color: var(--bg-panel);
+    position: relative;
+    width: 100%;
+    height: 330px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .waveform-line { position: absolute; top: 50%; width: 100%; border-top: 1px solid #2a2a2a; }
+  .marker-solid { position: absolute; height: 100%; width: 2px; background-color: var(--accent); box-shadow: 0 0 5px rgba(255,255,255,0.3); }
+  .marker-ghost { position: absolute; height: 100%; width: 1px; background-color: var(--ghost); }
+
+  .matrix {
+    background-color: var(--bg-matrix);
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    width: 100%;
+    height: 220px;
+    padding: 10px 0;
+  }
+
+  .channel-strip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 90px;
+    height: 100%;
+    padding-top: 10px;
+    border-right: 1px solid #222;
+    position: relative;
+    transition: all 0.2s ease;
+  }
+  .channel-strip:last-child { border-right: none; }
+  .ch-label { font-size: 11px; color: var(--text-dim); font-weight: bold; letter-spacing: 1px; margin-bottom: 15px; }
+  .trigger-led { width: 8px; height: 8px; border-radius: 50%; background-color: #222; position: absolute; bottom: 20px; }
+  .trigger-on { background-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
+  .meter-bg { background-color: #000; position: relative; overflow: hidden; border-radius: 2px; border: 1px solid #333; width: 20px; height: 110px; }
+  .meter-led { background-color: #aaa; position: absolute; bottom: 0; left: 0; width: 100%; }
+  .inline-threshold { position: absolute; width: 100%; height: 2px; background: #fff; z-index: 10; box-shadow: 0 0 4px #000; }
+
+  /* =========================================
+     VARIANTE 3.1: FOCUS BY DIMMING
+     ========================================= */
+  .v1 .channel-strip { opacity: 0.3; } /* Inactive channels dimmed */
+  .v1 .channel-strip.active { 
+    opacity: 1; 
+    background-color: transparent; /* No ugly boxes */
+  }
+  .v1 .channel-strip.active .ch-label { color: #fff; }
+  .v1 .threshold-line { position: absolute; top: 40%; width: 100%; border-top: 1px dashed #666; }
+  .v1 .scope-title { position: absolute; top: 15px; left: 15px; color: #fff; font-size: 12px; font-weight: bold; letter-spacing: 2px; }
+
+  /* =========================================
+     VARIANTE 3.2: LED ACCENT & PEAK HOLD
+     ========================================= */
+  .v2 .channel-strip.active { 
+    background-color: var(--active-bg); 
+    border-top: 2px solid #fff; /* Top accent line */
+  }
+  .v2 .channel-strip.active .ch-label { color: #fff; }
+  /* Peak hold dot */
+  .peak-dot { position: absolute; width: 100%; height: 2px; background: #fff; z-index: 5; opacity: 0.7;}
+  .v2 .threshold-line { position: absolute; top: 50%; width: 100%; border-top: 1px solid #444; }
+  .v2 .scope-title { position: absolute; bottom: 15px; right: 15px; color: #555; font-size: 40px; font-weight: bold; opacity: 0.3; letter-spacing: 5px; margin: 0; }
+
+  /* =========================================
+     VARIANTE 3.3: ADVANCED SCOPE (Handles)
+     ========================================= */
+  .v3 .channel-strip.active { 
+    background-color: #1a1a1a; 
+    box-shadow: inset 0 0 20px rgba(0,0,0,1);
+  }
+  .v3 .channel-strip.active .meter-bg { border-color: #666; }
+  .v3 .threshold-line { position: absolute; top: 35%; width: 100%; border-top: 1px dashed #888; }
+  /* Drag handle for threshold in scope */
+  .v3 .thr-handle { position: absolute; top: calc(35% - 10px); left: 0; background: #222; border: 1px solid #666; color: #aaa; font-size: 9px; padding: 4px 8px; border-radius: 0 4px 4px 0; cursor: pointer;}
+  
+</style>
+</head>
+<body>
+  
+  <h2>Var 3.1: Focus by Dimming (Subtractive UI)</h2>
+  <div class="desc">L'incasso attivo della V2.3 può risultare "pesante". Qui il canale attivo è l'unico luminoso. Tutti gli altri 7 canali vengono "spenti" (dimmed al 30% di opacità). Massimo focus con zero aggiunte grafiche. L'oscilloscopio mostra chiaramente il canale in alto a sinistra.</div>
+  <div class="plugin-window v1">
+    <div class="oscilloscope">
+      <div class="scope-title">TARGET: SNR (SNARE)</div>
+      <div class="waveform-line"></div><div class="threshold-line" style="top: 40%"></div>
+      <div class="marker-solid" style="left: 20%;"></div><div class="marker-ghost" style="left: 35%; height: 70%; top: 30%;"></div>
+    </div>
+    <div class="matrix" id="m1"></div>
+  </div>
+
+  <h2>Var 3.2: Focus by Top-LED & Peak Hold</h2>
+  <div class="desc">Approccio "Hardware Rack". Il canale attivo è illuminato da una barra LED superiore. I meter introducono un "Peak Hold" (un puntino che resta sospeso sul picco massimo) per aiutare a posizionare la Threshold. Il nome del canale in background enorme nell'oscilloscopio.</div>
+  <div class="plugin-window v2">
+    <div class="oscilloscope">
+      <div class="scope-title">SNARE</div>
+      <div class="waveform-line"></div><div class="threshold-line" style="top: 50%"></div>
+      <div class="marker-solid" style="left: 45%;"></div><div class="marker-ghost" style="left: 80%; height: 40%; top: 60%;"></div>
+    </div>
+    <div class="matrix" id="m2"></div>
+  </div>
+
+  <h2>Var 3.3: Advanced Scope & Depth Active</h2>
+  <div class="desc">Il canale attivo è "scavato" (ombra interna profonda). Nell'oscilloscopio, la Threshold line ha una "maniglia" (Drag Handle) a sinistra: permette all'utente di regolare la soglia trascinandola direttamente sul grafico, non solo dal piccolo meter in basso.</div>
+  <div class="plugin-window v3">
+    <div class="oscilloscope">
+      <div class="waveform-line"></div>
+      <div class="threshold-line" style="top: 35%"></div>
+      <div class="thr-handle">THR -12dB</div>
+      <div class="marker-solid" style="left: 30%;"></div><div class="marker-solid" style="left: 55%;"></div>
+    </div>
+    <div class="matrix" id="m3"></div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNR', 'TOM1', 'TOM2', 'HHAT', 'RIDE', 'CRSH', 'SPLS'];
+    
+    // Funzione helper per generare la matrix
+    function generateMatrix(containerId, activeIndex, addPeakHold) {
+      let html = '';
+      for(let i=0; i<8; i++) {
+        const val = Math.random() * 80 + 10; 
+        const thr = 60; // Fissa per coerenza visiva
+        const isActive = i === activeIndex;
+        
+        let peakHtml = '';
+        if(addPeakHold) {
+            const peak = val + (Math.random() * 10 + 5);
+            peakHtml = `<div class="peak-dot" style="bottom: ${peak > 98 ? 98 : peak}%;"></div>`;
+        }
+
+        html += `
+          <div class="channel-strip ${isActive ? 'active' : ''}">
+            <div class="ch-label">${labels[i]}</div>
+            <div class="meter-bg">
+              <div class="inline-threshold" style="bottom: ${thr}%;"></div>
+              ${peakHtml}
+              <div class="meter-led" style="height: ${val}%; background-color: ${isActive ? '#fff' : '#888'}"></div>
+            </div>
+            <div class="trigger-led ${val > thr ? 'trigger-on' : ''}"></div>
+          </div>`;
+      }
+      document.getElementById(containerId).innerHTML = html;
+    }
+
+    generateMatrix('m1', 1, false); // V1: Snare attivo
+    generateMatrix('m2', 1, true);  // V2: Snare attivo + Peak Hold
+    generateMatrix('m3', 1, false); // V3: Snare attivo
+
+  </script>
+
+</body>
+</html>

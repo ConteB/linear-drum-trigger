@@ -1,0 +1,253 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #0a0a0a;
+    --bg-plugin: #141414;
+    --bg-panel: #050505;
+    --bg-matrix: #111111;
+    --border-color: #2a2a2a;
+    --text-dim: #444;
+    --text-bright: #aaa;
+    --accent: #eee;
+    --warning: #aa2222;
+    --pcb-green: #0d120d;
+    --serigraph: #1d2d1d;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-bright);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  h2 {
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 11px;
+    margin-top: 50px;
+    margin-bottom: 10px;
+    width: 900px;
+  }
+
+  .plugin-window {
+    background-color: var(--bg-plugin);
+    border: 1px solid var(--border-color);
+    width: 900px;
+    height: 550px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+  }
+
+  .oscilloscope {
+    background-color: var(--bg-panel);
+    position: relative;
+    width: 100%;
+    height: 330px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .bottom-area {
+    display: flex;
+    width: 100%;
+    height: 220px;
+  }
+
+  .matrix {
+    background-color: var(--bg-matrix);
+    display: flex;
+    flex-grow: 1;
+    height: 100%;
+  }
+
+  /* CHANNEL STRIP */
+  .channel-strip {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-right: 1px solid #1a1a1a;
+    padding: 15px 0;
+  }
+  .ch-label { font-size: 10px; color: var(--text-dim); font-weight: 800; letter-spacing: 1px; margin-bottom: 20px; }
+  .meter-bg { background-color: #000; width: 22px; height: 110px; border: 1px solid #222; position: relative; }
+  .meter-fill { position: absolute; bottom: 0; width: 100%; background: #888; height: 40%; }
+  .trigger-led { width: 6px; height: 6px; border-radius: 50%; background-color: #1a1a1a; margin-top: 15px; }
+
+  /* MAINTENANCE AREA (280px Fixed) */
+  .maint-area {
+    width: 280px;
+    height: 100%;
+    position: relative;
+    border-left: 1px solid var(--border-color);
+    background-color: #181818;
+  }
+
+  /* --- COVER STATE (EXTERIOR) --- */
+  .maint-cover {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+  }
+  .screw {
+    width: 16px; height: 16px; border-radius: 50%; background: #222; border: 1px solid #111; position: absolute;
+  }
+  .screw-tl { top: 12px; left: 12px; } .screw-tr { top: 12px; right: 12px; }
+  .screw-bl { bottom: 12px; left: 12px; } .screw-br { bottom: 12px; right: 12px; }
+
+  /* Exterior Serigraphy */
+  .ext-serigraphy {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-left: 2px solid #222;
+    padding-left: 15px;
+  }
+  .ext-owner { font-size: 11px; color: #555; font-weight: bold; letter-spacing: 1px; }
+  .ext-watermark { font-size: 9px; color: #333; font-style: italic; }
+
+  /* Exterior Model Selector (ZONA DI SELEZIONE ESTERNA) */
+  .model-selector-ext {
+    margin-top: auto;
+    margin-bottom: 20px;
+    width: 100%;
+    padding: 10px;
+    background: #111;
+    border: 1px solid #222;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .sel-label { font-size: 8px; color: #444; }
+  .sel-display { font-size: 10px; color: #888; font-family: monospace; }
+
+  /* --- PCB STATE (INTERIOR) --- */
+  .maint-pcb {
+    position: absolute;
+    inset: 0;
+    background-color: var(--pcb-green);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+  }
+  .pcb-board {
+    border: 1px solid #1a251a;
+    flex-grow: 1;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .trimmer-row { display: flex; justify-content: space-between; align-items: center; }
+  .trim-label { font-size: 8px; color: #3a4a3a; }
+  .trim-pot { width: 20px; height: 20px; border-radius: 50%; background: #666; border: 2px solid #333; position: relative; }
+  .trim-pot::after { content: ''; position: absolute; width: 100%; height: 2px; background: #222; top: 8px; transform: rotate(45deg); }
+
+  /* Interior Serigraphy (Rich & Detailed) */
+  .pcb-serigraphy {
+    margin-top: auto;
+    border-top: 1px solid #1a251a;
+    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .serigraph-line { font-size: 8px; color: var(--serigraph); font-weight: bold; }
+  .serigraph-sub { font-size: 7px; color: #162216; }
+
+</style>
+</head>
+<body>
+
+  <h2>V7.1: Exterior (Watermark, Owner, Selection Space)</h2>
+  <div class="plugin-window">
+    <div class="oscilloscope"></div>
+    <div class="bottom-area">
+      <div class="matrix" id="m1"></div>
+      <div class="maint-area">
+        <div class="maint-cover">
+          <div class="screw screw-tl"></div><div class="screw screw-tr"></div>
+          <div class="screw screw-bl"></div><div class="screw screw-br"></div>
+          
+          <div class="ext-serigraphy">
+            <div class="ext-owner">OWNER: MARCO ROSSI</div>
+            <div class="ext-watermark">LINEAR DIGITAL ASSET #9928</div>
+          </div>
+
+          <!-- Spazio per selezione modello esterno -->
+          <div class="model-selector-ext">
+            <div class="sel-label">CORE_MODEL_ACTIVE</div>
+            <div class="sel-display">[ TCN_GEN2_HYBRID ]</div>
+            <div style="display: flex; gap: 4px; margin-top: 4px;">
+                <div style="width: 10px; height: 4px; background: #333;"></div>
+                <div style="width: 10px; height: 4px; background: #333;"></div>
+                <div style="width: 10px; height: 4px; background: #888;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>V7.2: Interior (PCB with Version, App & Model details)</h2>
+  <div class="plugin-window">
+    <div class="oscilloscope"></div>
+    <div class="bottom-area">
+      <div class="matrix" id="m2"></div>
+      <div class="maint-area">
+        <div class="maint-pcb">
+          <div class="pcb-board">
+            <div class="trimmer-row">
+              <div class="trim-label">BIAS_UNIT_01</div>
+              <div class="trim-pot"></div>
+            </div>
+            <div class="trimmer-row">
+              <div class="trim-label">SENS_SCALE</div>
+              <div class="trim-pot" style="transform: rotate(-30deg)"></div>
+            </div>
+
+            <!-- Serigrafia Interna Replicata + Tecnica -->
+            <div class="pcb-serigraphy">
+              <div class="serigraph-line">AUTHORIZED USER: MARCO ROSSI</div>
+              <div class="serigraph-line">ASSET_WATERMARK: LN-9928-OP-X</div>
+              <div style="height: 5px;"></div>
+              <div class="serigraph-sub">MODEL: TCN_NEURAL_ENGINE_V2.1</div>
+              <div class="serigraph-sub">APP_VER: 1.0.4-RELEASE_C</div>
+              <div class="serigraph-sub">BUILD_REF: 2026.05.20-HQ</div>
+              <div class="serigraph-line" style="margin-top: 5px; opacity: 0.5;">(C) LINEAR AUDIO DIVISION</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNARE', 'TOM 1', 'TOM 2', 'H-HAT', 'RIDE', 'CRASH', 'SPLASH'];
+    function populate(id) {
+      const container = document.getElementById(id);
+      let html = '';
+      labels.forEach((l, i) => {
+        html += `<div class="channel-strip"><div class="ch-label">${l}</div><div class="meter-bg"><div class="meter-fill" style="height: 30%;"></div></div><div class="trigger-led"></div></div>`;
+      });
+      container.innerHTML = html;
+    }
+    populate('m1'); populate('m2');
+  </script>
+
+</body>
+</html>

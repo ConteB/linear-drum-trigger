@@ -1,0 +1,184 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #0c0c0b; 
+    --bg-plugin: #2a2a28;
+    --bg-panel: #050505;
+    --wood: #4a2c1a;
+    --wood-light: #633d26;
+    --crt-green: #33ff33;
+    --crt-glow: rgba(51, 255, 51, 0.4);
+    --hit-white: #ffffff;
+    --ghost-alpha: rgba(255, 255, 255, 0.2);
+    --nixie: #ff7700;
+  }
+
+  body { background: var(--bg-main); color: #b0ae9d; font-family: 'Helvetica', sans-serif; padding: 40px; display: flex; flex-direction: column; align-items: center; }
+  
+  .chassis { display: flex; box-shadow: 0 80px 160px rgba(0,0,0,1); border-radius: 12px; overflow: hidden; position: relative; }
+  
+  /* SEZIONE 13.1: Rounded Walnut */
+  .cheek { 
+    width: 30px; height: 740px; 
+    background: linear-gradient(90deg, #2a180d, var(--wood), #2a180d);
+    border-radius: 15px 0 0 15px;
+    box-shadow: inset -5px 0 15px rgba(0,0,0,0.5);
+  }
+  .cheek-right { border-radius: 0 15px 15px 0; box-shadow: inset 5px 0 15px rgba(0,0,0,0.5); }
+
+  .window { background: var(--bg-plugin); width: 1000px; height: 740px; display: flex; flex-direction: column; border: 1px solid #1a1a18; }
+
+  /* LAYOUT GRID */
+  .top-row { display: flex; height: 460px; padding: 30px 30px 0 30px; gap: 25px; }
+  .bottom-row { display: flex; height: 280px; padding: 15px 30px 30px 30px; gap: 25px; }
+  
+  .col-large { width: 680px; }
+  .col-small { width: 320px; }
+
+  /* SEZIONE B: OSCILLOSCOPE (SATURATED) */
+  .scope { 
+    background: var(--bg-panel); border: 6px solid #151514; border-radius: 10px; height: 100%; position: relative; overflow: hidden;
+    box-shadow: inset 0 0 100px #000;
+  }
+  .grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(51,255,51,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(51,255,51,0.03) 1px, transparent 1px); background-size: 40px 40px; }
+  
+  /* WAVEFORM & HITS */
+  .wave { position: absolute; top: 50%; left: 0; width: 100%; height: 100px; transform: translateY(-50%); opacity: 0.1; }
+  .hit-solid { position: absolute; top: 10%; bottom: 10%; width: 2px; background: var(--hit-white); box-shadow: 0 0 15px var(--hit-white); }
+  .hit-ghost { position: absolute; top: 30%; bottom: 30%; width: 1px; background: var(--hit-white); opacity: 0.3; border-left: 1px dashed #fff; }
+  .prob-line { position: absolute; top: 60%; width: 100%; height: 2px; background: var(--crt-green); box-shadow: 0 0 10px var(--crt-glow); }
+
+  /* SEZIONE C: MASTER PANEL */
+  .master { background: #222220; border: 1px solid #1a1a18; border-radius: 4px; height: 100%; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; }
+  .label-hw { font-size: 9px; font-weight: bold; letter-spacing: 3px; color: #444; border-bottom: 1px solid #1a1a18; padding-bottom: 8px; margin-bottom: 20px; }
+  
+  .knob-large { width: 80px; height: 80px; background: radial-gradient(circle, #333, #111); border-radius: 50%; border: 3px solid #000; margin: 0 auto 10px; position: relative; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+  .knob-large::after { content: ''; position: absolute; top: 10px; left: 38px; width: 4px; height: 20px; background: #fff; border-radius: 2px; }
+
+  .nixie-box { background: #000; padding: 10px; border: 2px solid #151514; border-radius: 4px; text-align: center; margin-top: auto; }
+  .nixie-text { font-family: 'Courier New', monospace; color: var(--nixie); font-size: 20px; font-weight: bold; text-shadow: 0 0 15px var(--nixie); }
+
+  /* SEZIONE A: MATRIX (SATURATED) */
+  .matrix { background: #181816; border: 2px solid #1a1a18; height: 100%; display: flex; box-shadow: inset 0 0 40px #000; }
+  .strip { flex: 1; border-right: 1px solid #000; display: flex; flex-direction: column; align-items: center; padding: 15px 0; position: relative; }
+  .strip.active { background: rgba(51, 255, 51, 0.02); }
+  .strip-label { font-size: 10px; font-weight: 900; color: #333; margin-bottom: 20px; letter-spacing: 1px; }
+  
+  .meter-bg { width: 14px; height: 120px; background: #000; border: 1px solid #222; position: relative; }
+  .meter-fill { position: absolute; bottom: 0; width: 100%; background: #666; transition: height 0.05s; }
+  .meter-fill.firing { background: #fff; box-shadow: 0 0 10px #fff; }
+  .thresh-line { position: absolute; left: -5px; width: 24px; height: 2px; background: #ff4444; z-index: 10; }
+
+  /* SEZIONE D: MAINTENANCE (CLOSED) */
+  .maint { background: #1e1e1c; border: 1px solid #1a1a18; height: 100%; position: relative; overflow: hidden; }
+  .cover { position: absolute; inset: 0; background: #1e1e1c; z-index: 50; padding: 25px; display: flex; flex-direction: column; }
+  .screw { width: 14px; height: 14px; background: #333; border-radius: 50%; position: absolute; border: 1px solid #000; }
+  .sc-1 { top: 10px; left: 10px; } .sc-2 { top: 10px; right: 10px; }
+  .sc-3 { bottom: 10px; left: 10px; } .sc-4 { bottom: 10px; right: 10px; }
+  
+  .serigraphy { margin-top: 40px; color: #111; font-weight: bold; text-transform: uppercase; }
+  .id-badge { margin-top: auto; background: #0a0a0a; padding: 10px; text-align: center; border: 1px solid #1a1a18; }
+
+</style>
+</head>
+<body>
+
+  <h2 style="font-size:10px; letter-spacing:8px; color:#444; margin-bottom:30px;">AUDIT V14: SYSTEM SATURATION STATE (60FPS SIMULATION)</h2>
+
+  <div class="chassis">
+    <div class="cheek"></div>
+    <div class="window">
+      
+      <!-- TOP: ANALYSIS & MASTER -->
+      <div class="top-row">
+        <div class="scope col-large">
+          <div class="grid"></div>
+          <div style="position:absolute; top:20px; left:30px; font-size:9px; color:var(--crt-green); opacity:0.5;">CH: SNARE | MODE: REAL-TIME_TCN</div>
+          
+          <!-- SATURATED HITS -->
+          <div class="hit-solid" style="left:20%;"></div>
+          <div class="hit-ghost" style="left:35%;"></div>
+          <div class="hit-solid" style="left:55%;"></div>
+          <div class="hit-ghost" style="left:70%;"></div>
+          <div class="hit-solid" style="left:85%;"></div>
+          
+          <div class="prob-line" style="top:70%; height:40px; opacity:0.3; background:linear-gradient(transparent, var(--crt-green));"></div>
+          <div style="position:absolute; bottom:20px; right:30px; font-size:12px; color:var(--hit-white);">TRIGGER_CONFIRMED</div>
+        </div>
+
+        <div class="master col-small">
+          <div class="label-hw">SYSTEM BIAS</div>
+          <div class="knob-large"></div>
+          <div style="text-align:center; font-size:10px; color:#555; margin-bottom:20px;">SENSITIVITY</div>
+
+          <div class="label-hw">OUTPUT SYNC</div>
+          <div style="display:flex; justify-content:space-between; font-size:9px; color:#555;">
+            <span>MIDI_OUT</span> <span style="color:var(--crt-green)">ACTIVE</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:9px; color:#555; margin-top:5px;">
+            <span>DAW_PDC</span> <span style="color:var(--crt-green)">SYNCED</span>
+          </div>
+
+          <div class="nixie-box">
+            <div style="font-size:8px; color:#444; margin-bottom:5px;">LOOK-AHEAD DELAY</div>
+            <div class="nixie-text">100.00 MS</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM: MATRIX & MAINTENANCE -->
+      <div class="bottom-row">
+        <div class="matrix col-large" id="matrix-container">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="maint col-small">
+          <div class="cover">
+            <div class="screw sc-1"></div><div class="screw sc-2"></div>
+            <div class="screw sc-3"></div><div class="screw sc-4"></div>
+            
+            <div class="serigraphy">
+              <div style="font-size:14px; opacity:0.8;">OWNER: MARCO ROSSI</div>
+              <div style="font-size:9px; margin-top:5px;">REF: OPX-LINEAR-9928</div>
+            </div>
+
+            <div class="id-badge">
+              <div style="font-size:9px; letter-spacing:2px; color:#333;">FACTORY SEALED UNIT</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="cheek cheek-right"></div>
+  </div>
+
+  <script>
+    const channels = [
+      { n: 'KICK', v: 85, t: 40, f: true },
+      { n: 'SNARE', v: 95, t: 50, f: true },
+      { n: 'TOM 1', v: 15, t: 30, f: false },
+      { n: 'TOM 2', v: 10, t: 30, f: false },
+      { n: 'H-HAT', v: 70, t: 20, f: true },
+      { n: 'RIDE', v: 40, t: 45, f: false },
+      { n: 'CRASH', v: 60, t: 30, f: true },
+      { n: 'SPLASH', v: 5, t: 35, f: false }
+    ];
+
+    const container = document.getElementById('matrix-container');
+    channels.forEach(c => {
+      container.innerHTML += `
+        <div class="strip ${c.n === 'SNARE' ? 'active' : ''}">
+          <div class="strip-label">${c.n}</div>
+          <div class="meter-bg">
+            <div class="meter-fill ${c.f ? 'firing' : ''}" style="height: ${c.v}%;"></div>
+            <div class="thresh-line" style="bottom: ${c.t}%;"></div>
+          </div>
+          <div style="width:6px; height:6px; border-radius:50%; background:${c.f ? '#fff' : '#111'}; margin-top:20px; box-shadow: ${c.f ? '0 0 10px #fff' : 'none'}; border:1px solid #000;"></div>
+        </div>`;
+    });
+  </script>
+
+</body>
+</html>

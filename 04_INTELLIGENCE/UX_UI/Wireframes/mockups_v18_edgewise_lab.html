@@ -1,0 +1,176 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #050504; 
+    --bg-plugin: #1a1a18;
+    --panel-dark: #121211;
+    --wood: #361e0f;
+    --nixie: #ff7700;
+    --nixie-dim: #442200;
+    --crt: #33ff33;
+    --label: #444;
+    --metal-edge: #0a0a0a;
+  }
+
+  body { background: var(--bg-main); color: #888; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; display: flex; flex-direction: column; align-items: center; }
+  
+  .chassis { display: flex; box-shadow: 0 120px 240px rgba(0,0,0,1); border-radius: 18px; overflow: hidden; border: 1px solid #000; }
+  
+  .cheek { 
+    width: 42px; height: 840px; 
+    background: linear-gradient(90deg, #120a05, var(--wood) 50%, #120a05);
+    border-radius: 18px 0 0 18px;
+    box-shadow: inset -10px 0 30px rgba(0,0,0,0.8);
+  }
+  .cheek-right { border-radius: 0 18px 18px 0; box-shadow: inset 10px 0 30px rgba(0,0,0,0.8); }
+
+  .window { background: #222220; width: 1140px; height: 840px; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; }
+
+  /* TOP ROW: SCOPE & MASTER PLATE */
+  .top-row { display: flex; height: 540px; padding: 20px; gap: 20px; }
+  
+  .scope-box { flex: 2; background: #000; border: 8px solid #111; border-radius: 12px; position: relative; overflow: hidden; box-shadow: inset 0 0 100px #000; }
+  .scope-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(51,255,51,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(51,255,51,0.015) 1px, transparent 1px); background-size: 40px 40px; }
+
+  /* MASTER PLATE (THE RIGID CONSOLE) */
+  .master-plate { flex: 1.2; background: var(--panel-dark); border: 1px solid #000; border-radius: 6px; padding: 30px; display: flex; flex-direction: column; position: relative; box-shadow: inset 0 2px 10px rgba(0,0,0,0.8); }
+  
+  /* NEW EDGE-WISE METER (The "Anti-Ugly" Solution) */
+  .edgewise-meter { height: 60px; background: #080808; border: 2px solid #1a1a18; border-radius: 3px; position: relative; margin-bottom: 40px; overflow: hidden; box-shadow: inset 0 5px 15px rgba(0,0,0,0.5); }
+  .meter-scale { position: absolute; inset: 0; background-image: repeating-linear-gradient(90deg, #222, #222 1px, transparent 1px, transparent 10%); background-size: 10% 100%; }
+  .meter-pointer { position: absolute; left: 75%; top: 0; bottom: 0; width: 3px; background: #ff4444; box-shadow: 0 0 15px #ff4444; z-index: 10; }
+  .meter-label { position: absolute; top: -20px; font-size: 7px; font-weight: bold; letter-spacing: 2px; color: #333; text-transform: uppercase; }
+
+  .knob-unit { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .knob-real { 
+    width: 65px; height: 65px; border-radius: 50%; background: radial-gradient(circle, #222, #000); 
+    border: 2px solid #000; position: relative; box-shadow: 0 10px 20px rgba(0,0,0,0.8); 
+  }
+  .knob-real::after { content: ''; position: absolute; width: 4px; height: 16px; background: #eee; top: 6px; left: 30px; }
+
+  .nixie-rack { background: #050505; border: 1px solid #111; padding: 15px; border-radius: 4px; display: flex; flex-direction: column; gap: 12px; box-shadow: inset 0 5px 20px #000; margin-top: auto; }
+  .nixie-line { display: flex; justify-content: space-between; align-items: center; }
+  .tube-val { font-family: 'Courier New', monospace; font-size: 18px; color: var(--nixie); text-shadow: 0 0 12px var(--nixie); }
+  .tube-label { font-size: 7px; color: #222; font-weight: bold; letter-spacing: 2px; }
+
+  /* THE NEURAL SLOT (Look-ahead & Model) */
+  .neural-slot { height: 60px; background: #151514; border: 1px solid #000; margin: 0 20px; border-radius: 4px; display: flex; align-items: center; padding: 0 20px; gap: 40px; box-shadow: inset 0 2px 10px #000; }
+  
+  /* BOTTOM ROW: MATRIX & THE FUTURE BOX */
+  .bottom-row { display: flex; height: 320px; padding: 20px; gap: 20px; }
+  .matrix-box { flex: 2; background: #121211; border: 4px solid #1a1a19; border-radius: 10px; display: flex; overflow: hidden; box-shadow: inset 0 0 40px #000; }
+  
+  .future-box { 
+    flex: 1.2; background: #1e1e1c; border: 1px solid #111; border-radius: 6px; padding: 25px; 
+    position: relative; box-shadow: inset 0 1px 1px rgba(255,255,255,0.05);
+    display: flex; flex-direction: column;
+  }
+  /* TOP SPACE FOR "MADNESS" */
+  .scribble-area { flex-grow: 1; border: 1px dashed rgba(255,255,255,0.02); position: relative; }
+  .scribble-area::after { content: 'FUTURE_STORAGE / NOTES_AREA'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 7px; color: #111; letter-spacing: 2px; }
+
+  .owner-plate { 
+    margin-top: auto; background: #111; padding: 15px; border-radius: 3px; border: 1px solid #000;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .owner-text { font-size: 14px; font-weight: 900; color: #000; opacity: 0.8; letter-spacing: 1px; }
+
+  .strip { flex: 1; border-right: 1px solid #000; display: flex; flex-direction: column; align-items: center; padding: 25px 0; }
+  .strip.on { background: rgba(51, 255, 51, 0.02); }
+  .strip-l { font-size: 10px; font-weight: 900; color: #222; margin-bottom: 25px; }
+  .m-track { width: 14px; height: 130px; background: #000; border: 1px solid #1a1a19; position: relative; }
+  .m-fill { position: absolute; bottom: 0; width: 100%; background: #444; }
+  .m-fill.active { background: #fff; box-shadow: 0 0 15px #fff; }
+
+  .screw { width: 12px; height: 12px; background: #333; border-radius: 50%; position: absolute; border: 1px solid #000; }
+  .screw::after { content: ''; position: absolute; width: 8px; height: 1px; background: #000; top: 5px; left: 2px; }
+
+</style>
+</head>
+<body>
+
+  <h2 style="font-size:10px; letter-spacing:10px; color:#222; margin-bottom:30px; text-transform:uppercase;">OP-NEUROTRIGGER // V18 // LABORATORY EDGE-WISE UNIT</h2>
+
+  <div class="chassis">
+    <div class="cheek"></div>
+    <div class="window">
+      
+      <!-- TOP: SCOPE & MASTER PLATE -->
+      <div class="top-row">
+        <div class="scope-box">
+          <div class="scope-grid"></div>
+          <div style="position:absolute; top:25px; left:30px; font-size:9px; color:var(--crt); opacity:0.6; letter-spacing:1px;">ANALYSIS_V2 // CH: SNARE</div>
+          
+          <div style="position:absolute; left:20%; top:10%; bottom:10%; width:2px; background:#fff; box-shadow:0 0 20px #fff;"></div>
+          <div style="position:absolute; left:50%; top:10%; bottom:10%; width:2px; background:#fff; box-shadow:0 0 20px #fff;"></div>
+        </div>
+
+        <div class="master-plate">
+          <div class="meter-label">NEURAL_CONFIDENCE</div>
+          <div class="edgewise-meter">
+            <div class="meter-scale"></div>
+            <div class="meter-pointer"></div>
+          </div>
+
+          <div style="display:flex; justify-content:space-around; margin-bottom:30px;">
+            <div class="knob-unit"><div class="knob-real"></div><div style="font-size:8px; font-weight:bold; color:var(--label);">SENSITIVITY</div></div>
+            <div class="knob-unit"><div class="knob-real" style="transform: rotate(45deg);"></div><div style="font-size:8px; font-weight:bold; color:var(--label);">DISCRIM.</div></div>
+          </div>
+
+          <div class="nixie-rack">
+            <div class="nixie-line"><span class="tube-label">MIDI_NOTE</span><span class="tube-val">38</span></div>
+            <div class="nixie-line"><span class="tube-label">VELO_GAIN</span><span class="tube-val">1.15</span></div>
+            <div class="nixie-line"><span class="tube-label">GATE_TIME</span><span class="tube-val">15ms</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- THE NEURAL SLOT (Model & Look-ahead) -->
+      <div class="neural-slot">
+         <div style="display:flex; gap:15px; align-items:center;">
+           <span style="font-size:8px; color:#333; font-weight:bold; letter-spacing:2px;">MODEL_SELECT:</span>
+           <span style="font-family:monospace; color:var(--nixie); font-size:14px; text-shadow:0 0 8px var(--nixie);">TCN_GEN_II</span>
+         </div>
+         <div style="display:flex; gap:15px; align-items:center; margin-left:auto;">
+           <span style="font-size:8px; color:#333; font-weight:bold; letter-spacing:2px;">LOOK-AHEAD:</span>
+           <span style="font-family:monospace; color:var(--nixie); font-size:14px; text-shadow:0 0 8px var(--nixie);">100.00ms</span>
+         </div>
+      </div>
+
+      <!-- BOTTOM ROW: MATRIX & FUTURE BOX -->
+      <div class="bottom-row">
+        <div class="matrix-box" id="matrix-container"></div>
+
+        <div class="future-box">
+          <div class="screw" style="top:8px; left:8px;"></div><div class="screw" style="top:8px; right:8px;"></div>
+          <div class="screw" style="bottom:8px; left:8px;"></div><div class="screw" style="bottom:8px; right:8px;"></div>
+          
+          <div class="scribble-area"></div>
+
+          <div class="owner-plate">
+             <div class="owner-text">MARCO ROSSI</div>
+             <div style="font-size:9px; color:#000; font-weight:bold; opacity:0.6;">UNIT_ID: OPX-LINEAR-74</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="cheek cheek-right"></div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNARE', 'TOM 1', 'TOM 2', 'H-HAT', 'RIDE', 'CRASH', 'SPLASH'];
+    const container = document.getElementById('matrix-container');
+    labels.forEach(l => {
+      const active = (l === 'SNARE');
+      container.innerHTML += '<div class="strip ' + (active ? 'on' : '') + '">' +
+        '<div class="strip-l">' + l + '</div>' +
+        '<div class="m-track"><div class="m-fill ' + (active ? 'active' : '') + '" style="height: ' + (active ? '85' : '12') + '%;"></div></div>' +
+        '<div style="width:8px; height:8px; border-radius:50%; background:' + (active ? '#fff' : '#0a0a0a') + '; margin-top:25px; border:1px solid #000; box-shadow:' + (active ? '0 0 15px #fff' : 'none') + ';"></div>' +
+        '</div>';
+    });
+  </script>
+
+</body>
+</html>

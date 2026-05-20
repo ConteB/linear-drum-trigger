@@ -1,0 +1,334 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #141412; 
+    --bg-plugin: #222220;
+    --bg-panel: #050705;
+    --bg-matrix: #11110f;
+    --wood: #4d2d18;
+    --wood-light: #5d3d28;
+    --text-dim: #44413a;
+    --text-mid: #66635a;
+    --text-bright: #b0ae9d;
+    --crt-green: #33ff33;
+    --border-color: #33312c;
+    --pcb-green: #0d120d;
+    --warning: #aa2222;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-bright);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  h2 { color: #333; text-transform: uppercase; letter-spacing: 4px; font-size: 11px; margin-bottom: 20px; width: 955px; text-align: left; }
+
+  .plugin-chassis { 
+    display: flex; 
+    box-shadow: 0 50px 100px rgba(0,0,0,0.9); 
+    border-radius: 4px; 
+    overflow: hidden; 
+    width: 955px;
+  }
+
+  .wood-cheek {
+    width: 20px;
+    height: 680px;
+    background: linear-gradient(90deg, var(--wood), var(--wood-light), var(--wood));
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+  }
+
+  .plugin-window {
+    background-color: var(--bg-plugin);
+    width: 915px;
+    height: 680px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* --- TOP SECTION (60% Height approx) --- */
+  .top-section {
+    display: flex;
+    height: 420px;
+    padding: 20px 25px 0 25px;
+    gap: 15px;
+    box-sizing: border-box;
+  }
+
+  /* CRT OSCILLOSCOPE - PERFECTLY ALIGNED WITH MATRIX */
+  .oscilloscope {
+    width: 600px; /* Fixed width to match matrix below */
+    height: 100%;
+    background-color: var(--bg-panel);
+    border: 3px solid #181816;
+    border-radius: 4px;
+    box-shadow: inset 0 0 40px rgba(0,0,0,1);
+    position: relative;
+    overflow: hidden;
+  }
+  .oscilloscope::after {
+    content: ''; position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(51,255,51,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(51,255,51,0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+
+  /* MASTER COMMANDS SECTION (Top Right) */
+  .master-commands {
+    flex-grow: 1; /* Occupies the rest (280px approx) */
+    background-color: #1a1a18;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.4);
+  }
+  
+  .section-label { font-size: 8px; color: #555; font-weight: bold; letter-spacing: 2px; border-bottom: 1px solid #222; padding-bottom: 5px; margin-bottom: 5px; }
+
+  .cmd-row { display: flex; justify-content: space-between; align-items: center; }
+  .cmd-label { font-size: 8px; color: #444; text-transform: uppercase; }
+  
+  .knob-mini { width: 20px; height: 20px; border-radius: 50%; background: #333; border: 1px solid #444; position: relative; }
+  .knob-mini::after { content: ''; position: absolute; width: 2px; height: 6px; background: #888; top: 2px; left: 9px; }
+  
+  .digital-val { font-size: 10px; color: var(--crt-green); background: #000; padding: 2px 6px; border: 1px solid #111; min-width: 45px; text-align: right; }
+
+  /* MIDI SPECIFIC CONTROLS */
+  .midi-control-box {
+    background: #111;
+    padding: 8px;
+    border: 1px solid #222;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .midi-btn-group { display: flex; gap: 5px; }
+  .midi-btn { font-size: 7px; background: #222; color: #666; border: 1px solid #333; padding: 3px 6px; cursor: pointer; }
+  .midi-btn.active { color: #fff; border-color: #555; background: #2a2a2a; }
+
+  /* --- BOTTOM SECTION (40% Height approx) --- */
+  .bottom-section {
+    display: flex;
+    height: 240px;
+    padding: 15px 25px 20px 25px;
+    gap: 15px;
+    box-sizing: border-box;
+  }
+
+  /* MATRIX - PERFECTLY ALIGNED WITH CRT */
+  .matrix {
+    width: 600px; /* Fixed width to match CRT */
+    background-color: var(--bg-matrix);
+    border: 1px solid var(--border-color);
+    display: flex;
+    box-sizing: border-box;
+  }
+
+  .channel-strip {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-right: 1px solid #1a1a1a;
+    padding: 15px 0;
+  }
+  .channel-strip:last-child { border-right: none; }
+  .ch-label { font-size: 9px; color: var(--text-dim); font-weight: bold; margin-bottom: 12px; }
+  .meter-v { width: 14px; height: 120px; background: #000; border: 1px solid #222; position: relative; }
+  .meter-fill { position: absolute; bottom: 0; width: 100%; background: #999; }
+  .trigger-led { width: 4px; height: 4px; border-radius: 50%; background: #000; margin-top: 15px; }
+
+  /* MAINTENANCE PANEL (Aligned with Master Section) */
+  .maint-area {
+    flex-grow: 1; /* Matches Master Command Section width */
+    height: 100%;
+    position: relative;
+    border: 1px solid var(--border-color);
+  }
+
+  /* PANEL EXTERIOR */
+  .maint-cover {
+    position: absolute; inset: 0;
+    background-color: #222220;
+    z-index: 50;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  .screw { width: 14px; height: 14px; border-radius: 50%; background: #333; position: absolute; border: 1px solid #111; }
+  .screw-tl { top: 10px; left: 10px; } .screw-tr { top: 10px; right: 10px; }
+  .screw-bl { bottom: 10px; left: 10px; } .screw-br { bottom: 10px; right: 10px; }
+  .screw::after { content: ''; position: absolute; width: 10px; height: 2px; background: #111; top: 5px; left: 1px; }
+  
+  .maint-info-ext { margin-top: 15px; border-left: 2px solid #1a1a18; padding-left: 15px; }
+  .maint-owner { font-size: 11px; font-weight: bold; color: #555; }
+  .maint-asset { font-size: 8px; color: #3a3a38; font-family: monospace; }
+  .model-select-display { margin-top: auto; background: #0a0a0a; padding: 10px; border: 1px solid #2a2a28; color: #444; font-size: 8px; text-align: center; }
+
+  /* PANEL INTERIOR (PCB) */
+  .maint-pcb {
+    position: absolute; inset: 0;
+    background-color: var(--pcb-green);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+  }
+  .pcb-board { border: 1px solid #1a2a1a; flex-grow: 1; padding: 15px; display: flex; flex-direction: column; }
+  .pcb-serigraphy { margin-top: auto; border-top: 1px solid #1a2a1a; padding-top: 10px; }
+  .seri-line { font-size: 7px; color: #1a2a1a; font-family: monospace; margin-bottom: 2px; }
+
+</style>
+</head>
+<body>
+
+  <h2>V11.1: System & Pro MIDI Integration (Closed)</h2>
+  
+  <div class="plugin-chassis">
+    <div class="wood-cheek"></div>
+    <div class="plugin-window">
+      
+      <div class="top-section">
+        <!-- CRT ALIGNED WITH MATRIX -->
+        <div class="oscilloscope"></div>
+
+        <!-- MASTER COMMANDS (PROFESSIONAL MIDI & SYSTEM) -->
+        <div class="master-commands">
+          
+          <div class="cmd-group">
+            <div class="section-label">GLOBAL ENGINE</div>
+            <div class="cmd-row">
+              <span class="cmd-label">SENSITIVITY</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="knob-mini" style="transform: rotate(-30deg)"></div>
+                <div class="digital-val">0.92</div>
+              </div>
+            </div>
+            <div class="cmd-row">
+              <span class="cmd-label">NEURAL MIX</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="knob-mini" style="transform: rotate(90deg)"></div>
+                <div class="digital-val">100%</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cmd-group">
+            <div class="section-label">PRO MIDI WORKFLOW</div>
+            <div class="midi-control-box">
+               <div class="cmd-row">
+                  <span class="cmd-label">VELO CURVE</span>
+                  <div class="midi-btn-group">
+                    <div class="midi-btn">LIN</div><div class="midi-btn active">EXP</div><div class="midi-btn">LOG</div>
+                  </div>
+               </div>
+               <div class="cmd-row">
+                  <span class="cmd-label">MIDI CH</span>
+                  <div class="digital-val">ALL</div>
+               </div>
+               <div class="cmd-row">
+                  <span class="cmd-label">NOTE MAP</span>
+                  <div class="midi-btn">GM_DRUMS</div>
+               </div>
+            </div>
+          </div>
+
+          <div class="cmd-group" style="margin-top: auto;">
+            <div class="section-label">DAW SYNC / STATUS</div>
+            <div class="cmd-row">
+              <span class="cmd-label">PDC_OFFSET</span>
+              <div class="digital-val">100ms</div>
+            </div>
+            <div style="font-size:7px; color:#333; margin-top:5px;">STATUS: PHASE_ALIGNED_READY</div>
+          </div>
+
+        </div>
+      </div>
+      
+      <div class="bottom-section">
+        <!-- MATRIX ALIGNED WITH CRT -->
+        <div class="matrix" id="m1"></div>
+        
+        <!-- MAINTENANCE PANEL (CLOSED) -->
+        <div class="maint-area">
+          <div class="maint-cover">
+            <div class="screw screw-tl"></div><div class="screw screw-tr"></div>
+            <div class="screw screw-bl"></div><div class="screw screw-br"></div>
+            
+            <div class="maint-info-ext">
+              <div class="maint-owner">MARCO ROSSI</div>
+              <div class="maint-asset">ASSET #9928-OPX</div>
+            </div>
+
+            <div class="model-select-display">
+              ACTIVE_CORE: [ TCN_HYBRID_V2.1 ]
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="wood-cheek"></div>
+  </div>
+
+  <h2 style="margin-top: 80px;">V11.2: Internal View (PCB Reveal)</h2>
+  
+  <div class="plugin-chassis">
+    <div class="wood-cheek"></div>
+    <div class="plugin-window">
+      <div class="top-section">
+        <div class="oscilloscope"></div>
+        <div class="master-commands">
+            <!-- Simplified master for view -->
+            <div class="section-label">SYSTEM_LOCKED</div>
+        </div>
+      </div>
+      
+      <div class="bottom-section">
+        <div class="matrix" id="m2"></div>
+        <div class="maint-area">
+          <!-- PCB REVEAL -->
+          <div class="maint-pcb">
+            <div class="pcb-board">
+              <div style="font-size:8px; color:#223322;">INTERNAL_BIAS_TRIM</div>
+              <div style="display:flex; gap:10px; margin-top:10px;">
+                <div class="knob-mini" style="background:#555;"></div>
+                <div class="knob-mini" style="background:#555;"></div>
+              </div>
+
+              <div class="pcb-serigraphy">
+                <div class="seri-line">AUTHORIZED: MARCO ROSSI</div>
+                <div class="seri-line">CORE: TCN_NEURAL_V2.1</div>
+                <div class="seri-line">BUILD: 2026.05.20_REF_A</div>
+                <div class="seri-line">APP_V: 1.0.4C</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="wood-cheek"></div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNARE', 'TOM 1', 'TOM 2', 'H-HAT', 'RIDE', 'CRASH', 'SPLASH'];
+    function populate(id) {
+      const container = document.getElementById(id);
+      labels.forEach((l) => {
+        container.innerHTML += `<div class="channel-strip"><div class="ch-label">${l}</div><div class="meter-v"><div class="meter-fill" style="height: 45%;"></div></div><div class="trigger-led"></div></div>`;
+      });
+    }
+    populate('m1'); populate('m2');
+  </script>
+
+</body>
+</html>

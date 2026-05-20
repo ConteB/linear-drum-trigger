@@ -1,0 +1,347 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #0a0a0a;
+    --bg-plugin: #141414;
+    --bg-panel: #050505;
+    --bg-matrix: #111111;
+    --border-color: #2a2a2a;
+    --border-light: #444;
+    --text-dim: #555;
+    --text-bright: #aaa;
+    --accent: #eee;
+    --ghost: rgba(255, 255, 255, 0.3);
+    --active-bg: #1a1a1a;
+    --warning: #aa2222;
+    --pcb-green: #0d120d;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-bright);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  h2 {
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 12px;
+    margin-top: 50px;
+    margin-bottom: 15px;
+    width: 900px;
+    text-align: left;
+  }
+
+  /* MAIN CONTAINER */
+  .plugin-window {
+    background-color: var(--bg-plugin);
+    border: 1px solid var(--border-color);
+    width: 900px;
+    height: 550px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+  }
+
+  /* OSCILLOSCOPE (60%) */
+  .oscilloscope {
+    background-color: var(--bg-panel);
+    position: relative;
+    width: 100%;
+    height: 330px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .waveform-axis { position: absolute; top: 50%; width: 100%; border-top: 1px solid #1a1a1a; }
+  .threshold-line { position: absolute; top: 35%; width: 100%; border-top: 1px dashed #444; }
+  .marker-solid { position: absolute; height: 100%; width: 1px; background-color: var(--accent); box-shadow: 0 0 8px rgba(255,255,255,0.4); }
+
+  /* BOTTOM AREA (40%) */
+  .bottom-area {
+    display: flex;
+    width: 100%;
+    height: 220px;
+  }
+
+  /* MATRIX (Fixed width based on channels) */
+  .matrix {
+    background-color: var(--bg-matrix);
+    display: flex;
+    flex-grow: 1;
+    height: 100%;
+  }
+
+  /* CHANNEL STRIP REDESIGN */
+  .channel-strip {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-right: 1px solid #1a1a1a;
+    padding: 12px 0;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .channel-strip.active { background-color: var(--active-bg); box-shadow: inset 0 0 30px rgba(0,0,0,0.5); }
+  
+  .ch-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+  }
+  .channel-strip.active .ch-label { color: #fff; }
+
+  /* Meter with scale ticks */
+  .meter-container {
+    position: relative;
+    width: 34px; /* Wider meter */
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .meter-bg {
+    background-color: #000;
+    width: 24px;
+    height: 100%;
+    border: 1px solid #222;
+    position: relative;
+    overflow: hidden;
+  }
+  .meter-fill {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: linear-gradient(to top, #666, #aaa);
+    transition: height 0.1s;
+  }
+  .meter-threshold {
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    background: #fff;
+    z-index: 10;
+    box-shadow: 0 0 5px rgba(255,255,255,0.8);
+  }
+  /* Scale ticks */
+  .meter-scale {
+    position: absolute;
+    left: -8px;
+    height: 100%;
+    width: 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .tick { height: 1px; width: 100%; background: #222; }
+  .tick.major { background: #444; width: 150%; }
+
+  .trigger-led {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #1a1a1a;
+    border: 1px solid #000;
+    margin-top: 15px;
+  }
+  .trigger-on { background-color: #fff; box-shadow: 0 0 10px #fff; border-color: #fff; }
+
+  /* MAINTENANCE PANEL (FIXED WIDTH) */
+  .maint-area {
+    width: 280px; /* Fixed width as requested */
+    height: 100%;
+    position: relative;
+    border-left: 1px solid var(--border-color);
+  }
+
+  /* Closed State (Cover) */
+  .maint-cover {
+    position: absolute;
+    inset: 0;
+    background-color: #181818;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 2px 0 10px rgba(0,0,0,0.5);
+  }
+  .screw {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #333 0%, #222 100%);
+    border: 1px solid #111;
+    position: absolute;
+    cursor: pointer;
+  }
+  .screw::after { content: ''; position: absolute; top: 7px; left: 2px; width: 12px; height: 2px; background: #111; transform: rotate(45deg); }
+  .screw::before { content: ''; position: absolute; top: 2px; left: 7px; width: 2px; height: 12px; background: #111; transform: rotate(45deg); }
+  .screw-tl { top: 15px; left: 15px; }
+  .screw-tr { top: 15px; right: 15px; }
+  .screw-bl { bottom: 15px; left: 15px; }
+  .screw-br { bottom: 15px; right: 15px; }
+
+  .maint-seal-label {
+    writing-mode: vertical-rl;
+    color: #333;
+    font-size: 10px;
+    letter-spacing: 5px;
+    font-weight: bold;
+    opacity: 0.8;
+  }
+
+  /* Open State (PCB) */
+  .maint-pcb {
+    position: absolute;
+    inset: 0;
+    background-color: var(--pcb-green);
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+  }
+  .pcb-board {
+    border: 1px solid #1a251a;
+    flex-grow: 1;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    position: relative;
+  }
+  .warning-text { color: var(--warning); font-size: 9px; font-weight: bold; text-align: center; margin-bottom: 10px; opacity: 0.7; }
+  
+  .trimmer-group { display: flex; justify-content: space-between; align-items: center; }
+  .trimmer-label { font-size: 8px; color: #4a6a4a; font-family: monospace; }
+  .trimmer-slot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #888;
+    border: 2px solid #555;
+    position: relative;
+  }
+  .trimmer-slot::after { content: ''; position: absolute; top: 9px; left: 2px; width: 18px; height: 2px; background: #222; transform: rotate(30deg); }
+
+  .pcb-serigraphy {
+    margin-top: auto;
+    border-top: 1px solid #1a251a;
+    padding-top: 12px;
+  }
+  .serigraph-line { font-size: 8px; color: #223322; text-transform: uppercase; margin-bottom: 3px; }
+
+  /* Ownership Plate (Fissa sotto il cassettino se non c'e la pcb) */
+  .ownership-plate {
+    position: absolute;
+    inset: 0;
+    background: #141414;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+  }
+  .plate-item { margin-bottom: 20px; }
+  .plate-label { font-size: 8px; color: #333; margin-bottom: 5px; font-weight: bold; }
+  .plate-value { font-size: 11px; color: #666; border-bottom: 1px solid #222; padding-bottom: 4px; }
+
+</style>
+</head>
+<body>
+
+  <h2>V6.1: Refined Bus Space & Fixed Maintenance Cover</h2>
+  <div class="plugin-window">
+    <div class="oscilloscope">
+      <div class="waveform-axis"></div>
+      <div class="threshold-line"></div>
+      <div class="marker-solid" style="left: 40%;"></div>
+    </div>
+    <div class="bottom-area">
+      <div class="matrix" id="matrix1"></div>
+      <div class="maint-area">
+        <!-- CLOSED COVER -->
+        <div class="maint-cover">
+          <div class="screw screw-tl"></div><div class="screw screw-tr"></div>
+          <div class="screw screw-bl"></div><div class="screw screw-br"></div>
+          <div class="maint-seal-label">FACTORY CALIBRATION SEAL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>V6.2: Internal PCB (Same Dimensions as Cover)</h2>
+  <div class="plugin-window">
+    <div class="oscilloscope"></div>
+    <div class="bottom-area">
+      <div class="matrix" id="matrix2"></div>
+      <div class="maint-area">
+        <!-- PCB REVEAL -->
+        <div class="maint-pcb">
+          <div class="warning-text">SERVICE ONLY - DO NOT TAMPER</div>
+          <div class="pcb-board">
+            <div class="trimmer-group">
+              <span class="trimmer-label">V_THRESHOLD_BIAS</span>
+              <div class="trimmer-slot"></div>
+            </div>
+            <div class="trimmer-group">
+              <span class="trimmer-label">TCN_DILATION_X8</span>
+              <div class="trimmer-slot" style="transform: rotate(-60deg);"></div>
+            </div>
+            <div class="pcb-serigraphy">
+              <div class="serigraph-line">USER: MARCO ROSSI</div>
+              <div class="serigraph-line">ID: OP-NX-9928-11</div>
+              <div class="serigraph-line" style="color: #1a2a1a;">(C) 2026 LINEAR DSP</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNARE', 'TOM 1', 'TOM 2', 'H-HAT', 'RIDE', 'CRASH', 'SPLASH'];
+    
+    function populateMatrix(id) {
+      const container = document.getElementById(id);
+      let html = '';
+      labels.forEach((l, i) => {
+        const isActive = i === 1;
+        const val = 20 + Math.random() * 60;
+        const thr = 55;
+        const isTrigger = val > thr;
+
+        html += `
+          <div class="channel-strip ${isActive ? 'active' : ''}">
+            <div class="ch-label">${l}</div>
+            <div class="meter-container">
+              <div class="meter-scale">
+                <div class="tick major"></div><div class="tick"></div><div class="tick"></div>
+                <div class="tick major"></div><div class="tick"></div><div class="tick"></div>
+                <div class="tick major"></div>
+              </div>
+              <div class="meter-bg">
+                <div class="meter-threshold" style="bottom: ${thr}%"></div>
+                <div class="meter-fill" style="height: ${val}%"></div>
+              </div>
+            </div>
+            <div class="trigger-led ${isTrigger ? 'trigger-on' : ''}"></div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    populateMatrix('matrix1');
+    populateMatrix('matrix2');
+  </script>
+</body>
+</html>

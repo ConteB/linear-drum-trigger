@@ -1,0 +1,178 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #080807; 
+    --bg-plugin: #20201e;
+    --bg-panel: #050505;
+    --metal-plate: #2a2a28;
+    --wood: #3d2212;
+    --crt-green: #33ff33;
+    --nixie: #ff7700;
+    --needle: #ff4444;
+    --text-dim: #444;
+  }
+
+  body { background: var(--bg-main); color: #b0ae9d; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; display: flex; flex-direction: column; align-items: center; }
+  
+  .chassis { display: flex; box-shadow: 0 100px 200px rgba(0,0,0,1); border-radius: 16px; overflow: hidden; border: 1px solid #000; }
+  
+  .cheek { width: 35px; height: 800px; background: linear-gradient(90deg, #1a1008, var(--wood), #1a1008); border-radius: 16px 0 0 16px; box-shadow: inset -5px 0 20px rgba(0,0,0,0.7); }
+  .cheek-right { border-radius: 0 16px 16px 0; box-shadow: inset 5px 0 20px rgba(0,0,0,0.7); }
+
+  .window { background: var(--bg-plugin); width: 1060px; height: 800px; display: flex; flex-direction: column; position: relative; }
+
+  .top-row { display: flex; height: 500px; padding: 30px; gap: 30px; }
+  .scope-box { flex: 2.2; background: var(--bg-panel); border: 8px solid #151514; border-radius: 12px; position: relative; overflow: hidden; box-shadow: inset 0 0 100px #000; }
+  .scope-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(51,255,51,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(51,255,51,0.02) 1px, transparent 1px); background-size: 40px 40px; }
+
+  /* SECTION C: MASTER NEURAL ENGINE */
+  .master-box { flex: 1; background: var(--metal-plate); border: 1px solid #111; border-radius: 6px; padding: 25px; display: flex; flex-direction: column; box-shadow: inset 0 1px 1px rgba(255,255,255,0.05); position: relative; }
+  
+  .analog-meter { height: 100px; background: #e0e0d0; border-radius: 4px 4px 50% 50%; border: 4px solid #111; position: relative; overflow: hidden; margin-bottom: 25px; box-shadow: inset 0 10px 20px rgba(0,0,0,0.2); }
+  .needle { position: absolute; bottom: -10px; left: 50%; width: 2px; height: 90px; background: var(--needle); transform-origin: bottom center; transform: rotate(15deg); }
+  .meter-scale { position: absolute; top: 15px; width: 100%; text-align: center; font-size: 8px; color: #333; font-weight: bold; letter-spacing: 2px; }
+
+  .knob-row { display: flex; justify-content: space-around; margin-bottom: 25px; }
+  .knob-unit { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .knob-hw { width: 55px; height: 55px; background: radial-gradient(circle, #444, #111); border-radius: 50%; border: 3px solid #000; position: relative; box-shadow: 0 5px 10px rgba(0,0,0,0.5); }
+  .knob-hw::after { content: ''; position: absolute; width: 3px; height: 14px; background: #fff; top: 6px; left: 26px; border-radius: 1px; }
+  .knob-label { font-size: 8px; color: #666; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+
+  .toggle-row { display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #1a1a18; border-bottom: 1px solid #1a1a18; margin-bottom: 20px; }
+  .switch-box { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .switch-hw { width: 14px; height: 24px; background: #111; border-radius: 2px; border: 1px solid #333; position: relative; }
+  .switch-hw::after { content: ''; position: absolute; width: 10px; height: 10px; background: #777; left: 1px; top: 1px; border-radius: 1px; }
+  .switch-hw.on::after { top: 11px; background: #eee; }
+
+  /* SECTION D: MIDI COMMAND CENTER */
+  .bottom-row { display: flex; height: 300px; padding: 0 30px 30px 30px; gap: 30px; }
+  .matrix-box { flex: 2.2; background: #181816; border: 2px solid #151514; border-radius: 4px; display: flex; overflow: hidden; }
+  
+  .midi-box { flex: 1; background: #1a1a18; border: 1px solid #000; border-radius: 6px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 15px; box-shadow: inset 0 0 30px #000; }
+  .midi-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding-bottom: 8px; }
+  .midi-label { font-size: 8px; color: #555; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase; }
+  .nixie-small { background: #000; color: var(--nixie); font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; padding: 3px 8px; border: 1px solid #111; border-radius: 2px; text-shadow: 0 0 8px var(--nixie); }
+  
+  .trimmer { width: 22px; height: 22px; background: #333; border-radius: 50%; border: 2px solid #000; position: relative; }
+  .trimmer::after { content: ''; position: absolute; width: 14px; height: 2px; background: #000; top: 8px; left: 2px; }
+
+  .strip { flex: 1; border-right: 1px solid #000; display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
+  .strip.active { background: rgba(51, 255, 51, 0.03); }
+  .meter-bg { width: 14px; height: 130px; background: #000; border: 1px solid #222; position: relative; }
+  .meter-f { position: absolute; bottom: 0; width: 100%; background: #666; }
+  .meter-f.on { background: #fff; box-shadow: 0 0 10px #fff; }
+
+</style>
+</head>
+<body>
+
+  <h2 style="font-size:10px; letter-spacing:8px; color:#444; margin-bottom:30px; text-transform:uppercase;">V16: Master MIDI Edition (Industrial Rack Excellence)</h2>
+
+  <div class="chassis">
+    <div class="cheek"></div>
+    <div class="window">
+      
+      <div class="top-row">
+        <div class="scope-box">
+          <div class="scope-grid"></div>
+          <div style="position:absolute; top:20px; left:25px; font-size:9px; color:var(--crt-green); opacity:0.6;">ANALYSIS: SNARE_TR_V2</div>
+          <div style="position:absolute; left:20%; top:10%; bottom:10%; width:2px; background:#fff; box-shadow:0 0 15px #fff;"></div>
+        </div>
+
+        <div class="master-box">
+          <div style="font-size:9px; font-weight:bold; color:#111; letter-spacing:2px; margin-bottom:15px;">NEURAL_LOAD</div>
+          <div class="analog-meter">
+            <div class="meter-scale">CONFIDENCE (%)</div>
+            <div class="needle"></div>
+          </div>
+
+          <div class="knob-row">
+            <div class="knob-unit">
+              <div class="knob-hw"></div>
+              <div class="knob-label">SENSITIVITY</div>
+            </div>
+            <div class="knob-unit">
+              <div class="knob-hw" style="transform: rotate(45deg);"></div>
+              <div class="knob-label">DISCRIM.</div>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <div class="switch-box">
+               <div class="switch-hw on"></div>
+               <div class="knob-label">ULTRA-RES</div>
+            </div>
+            <div class="switch-box">
+               <div class="switch-hw"></div>
+               <div class="knob-label">SAFE_MODE</div>
+            </div>
+          </div>
+
+          <div class="knob-unit" style="margin-top:auto;">
+             <div class="knob-hw" style="width:40px; height:40px;"></div>
+             <div class="knob-label">GLOBAL BIAS</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-row">
+        <div class="matrix-box" id="matrix-target"></div>
+
+        <div class="midi-box">
+          <div style="font-size:9px; font-weight:bold; color:#333; letter-spacing:2px; border-bottom:1px solid #222; padding-bottom:10px;">MIDI COMMAND CENTER</div>
+          
+          <div class="midi-row">
+            <span class="midi-label">NOTE ASSIGN</span>
+            <span class="nixie-small">D1 (38)</span>
+          </div>
+
+          <div class="midi-row">
+            <span class="midi-label">VELO_CURVE</span>
+            <div style="display:flex; gap:10px; align-items:center;">
+               <div class="trimmer"></div>
+               <span style="font-size:8px; color:#444;">LOG</span>
+            </div>
+          </div>
+
+          <div class="midi-row">
+            <span class="midi-label">VELO_RANGE</span>
+            <div style="display:flex; gap:10px;">
+               <span class="nixie-small" style="font-size:10px;">12</span>
+               <span class="nixie-small" style="font-size:10px;">127</span>
+            </div>
+          </div>
+
+          <div class="midi-row">
+            <span class="midi-label">RETRIGGER</span>
+            <span class="nixie-small">15 MS</span>
+          </div>
+
+          <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:center;">
+             <span class="midi-label">CHANNEL</span>
+             <span class="nixie-small" style="color:#0af; text-shadow:0 0 10px #0af;">CH 10</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="cheek cheek-right"></div>
+  </div>
+
+  <script>
+    const channels = ['KICK', 'SNARE', 'TOM 1', 'TOM 2', 'H-HAT', 'RIDE', 'CRASH', 'SPLASH'];
+    const container = document.getElementById('matrix-target');
+    channels.forEach(c => {
+      const active = (c === 'SNARE') ? 'active' : '';
+      const on = (c === 'SNARE') ? 'on' : '';
+      const height = (c === 'SNARE') ? '85' : '10';
+      container.innerHTML += '<div class="strip ' + active + '">' +
+        '<div style="font-size:9px; font-weight:900; color:#333; margin-bottom:20px; letter-spacing:1px;">' + c + '</div>' +
+        '<div class="meter-bg"><div class="meter-f ' + on + '" style="height: ' + height + '%;"></div></div>' +
+        '<div style="width:6px; height:6px; border-radius:50%; background:' + (on ? '#fff' : '#111') + '; margin-top:20px; border:1px solid #000;"></div>' +
+        '</div>';
+    });
+  </script>
+
+</body>
+</html>

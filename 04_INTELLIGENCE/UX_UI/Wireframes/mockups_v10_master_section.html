@@ -1,0 +1,207 @@
+<html>
+<head>
+<style>
+  :root {
+    --bg-main: #141412; 
+    --bg-plugin: #242422;
+    --bg-panel: #080a08;
+    --bg-matrix: #1a1a18;
+    --wood: #4d2d18;
+    --wood-light: #5d3d28;
+    --text-dim: #55524a;
+    --text-bright: #b0ae9d;
+    --crt-green: #33ff33;
+    --border-color: #33312c;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-bright);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  h2 { color: #444; text-transform: uppercase; letter-spacing: 4px; font-size: 11px; margin-bottom: 20px; width: 980px; text-align: left; }
+
+  .plugin-chassis { display: flex; box-shadow: 0 50px 100px rgba(0,0,0,0.9); border-radius: 4px; overflow: hidden; }
+
+  .wood-cheek {
+    width: 25px;
+    height: 650px;
+    background: linear-gradient(90deg, var(--wood), var(--wood-light), var(--wood));
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+  }
+
+  .plugin-window {
+    background-color: var(--bg-plugin);
+    width: 930px;
+    height: 650px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* --- TOP AREA (SCOPE + MASTER CONTROLS) --- */
+  .top-section {
+    display: flex;
+    height: 380px;
+    padding: 20px 30px 10px 30px;
+    gap: 20px;
+  }
+
+  /* CRT OSCILLOSCOPE (Aligned with Matrix) */
+  .oscilloscope {
+    flex-grow: 1; /* Prende lo spazio sopra la matrix */
+    background-color: var(--bg-panel);
+    border: 3px solid #181816;
+    border-radius: 4px;
+    box-shadow: inset 0 0 40px rgba(0,0,0,1);
+    position: relative;
+    overflow: hidden;
+  }
+  .oscilloscope::after {
+    content: ''; position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(51,255,51,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(51,255,51,0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+
+  /* NEW: MASTER COMMAND SECTION (Above Cassettino) */
+  .master-commands {
+    width: 280px; /* Same width as maintenance panel */
+    background-color: #1e1e1c;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+  }
+  .cmd-group { display: flex; flex-direction: column; gap: 5px; }
+  .cmd-label { font-size: 8px; color: #444; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase; }
+  
+  /* Knobs & Switches */
+  .knob-container { display: flex; gap: 10px; align-items: center; }
+  .knob-mini { width: 24px; height: 24px; border-radius: 50%; background: #333; border: 2px solid #555; position: relative; }
+  .knob-mini::after { content: ''; position: absolute; width: 2px; height: 8px; background: #888; top: 2px; left: 11px; }
+  
+  .digital-display {
+    background: #050505;
+    border: 1px solid #222;
+    padding: 4px 8px;
+    color: #00ff00;
+    font-family: monospace;
+    font-size: 10px;
+    text-align: right;
+    min-width: 50px;
+  }
+
+  /* --- BOTTOM AREA (MATRIX + MAINTENANCE) --- */
+  .bottom-area {
+    display: flex;
+    width: 100%;
+    height: 250px;
+    padding: 0 30px 20px 30px;
+    box-sizing: border-box;
+    gap: 20px;
+  }
+
+  .matrix {
+    flex-grow: 1;
+    background-color: var(--bg-matrix);
+    border: 1px solid var(--border-color);
+    display: flex;
+  }
+
+  .maint-area {
+    width: 280px;
+    height: 100%;
+    position: relative;
+    border: 1px solid var(--border-color);
+    background-color: #222220;
+  }
+  .screw { width: 14px; height: 14px; background: #333; border-radius: 50%; position: absolute; border: 1px solid #111; }
+  .screw-tl { top: 8px; left: 8px; } .screw-tr { top: 8px; right: 8px; }
+
+</style>
+</head>
+<body>
+
+  <h2>V10: Aligned CRT & Master Command Section</h2>
+  <div class="plugin-chassis">
+    <div class="wood-cheek"></div>
+    <div class="plugin-window">
+      
+      <!-- TOP: SCOPE + MASTER CONTROLS -->
+      <div class="top-section">
+        <div class="oscilloscope">
+           <!-- CRT Grid & Waveform space -->
+           <div style="position: absolute; top: 10px; left: 15px; font-size: 9px; color: #115511;">MODE: PRECISION_ANALYSIS</div>
+        </div>
+
+        <div class="master-commands">
+          <div class="cmd-group">
+            <div class="cmd-label">Global Sensitivity</div>
+            <div class="knob-container">
+              <div class="knob-mini" style="transform: rotate(-45deg)"></div>
+              <div class="digital-display">0.85</div>
+            </div>
+          </div>
+          
+          <div class="cmd-group">
+            <div class="cmd-label">Input Gain</div>
+            <div class="knob-container">
+              <div class="knob-mini"></div>
+              <div class="digital-display">+2.4dB</div>
+            </div>
+          </div>
+
+          <div class="cmd-group">
+            <div class="cmd-label">Neural Mix</div>
+            <div class="knob-container">
+              <div class="knob-mini" style="transform: rotate(90deg)"></div>
+              <div class="digital-display">100%</div>
+            </div>
+          </div>
+
+          <div class="cmd-group" style="margin-top: auto;">
+            <div class="cmd-label">Active Preset</div>
+            <div class="digital-display" style="text-align: left; color: #aaa;">STUDIO_DRY_KICK</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- BOTTOM: MATRIX + MAINTENANCE -->
+      <div class="bottom-area">
+        <div class="matrix" id="m1"></div>
+        <div class="maint-area">
+          <div class="screw screw-tl"></div><div class="screw screw-tr"></div>
+          <div style="margin-top: 40px; padding: 20px;">
+            <div style="font-size: 11px; font-weight: bold; color: #555;">MARCO ROSSI</div>
+            <div style="font-size: 8px; color: #3a3a38; font-family: monospace;">ASSET #9928</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="wood-cheek"></div>
+  </div>
+
+  <script>
+    const labels = ['KICK', 'SNARE', 'TOM 1', 'TOM 2', 'H-HAT', 'RIDE', 'CRASH', 'SPLASH'];
+    const container = document.getElementById('m1');
+    labels.forEach((l) => {
+      container.innerHTML += `<div style="flex:1; display:flex; flex-direction:column; align-items:center; border-right:1px solid #111; padding-top:15px;">
+        <div style="font-size:9px; color:#444; margin-bottom:15px;">${l}</div>
+        <div style="width:14px; height:110px; background:#000; border:1px solid #2a2a28; position:relative;">
+          <div style="position:absolute; bottom:0; width:100%; height:30%; background:#999;"></div>
+        </div>
+      </div>`;
+    });
+  </script>
+
+</body>
+</html>

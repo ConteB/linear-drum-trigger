@@ -36,6 +36,8 @@ exclude_also = ["raise NotImplementedError"]
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+# Package roots — so `data_engineering` and `harness` are classed first-party.
+src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

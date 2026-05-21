@@ -1,7 +1,7 @@
 """§6.2 — Recipe YAML parser oracle.
 
 Critical module — mutation kill-rate gate >= 90 % (TESTING_DOCTRINE §3).
-Contract: F0-T2a §1.1. Written test-first — awaiting F0-T2b.
+Contract: F0-T2a §1.1. Written test-first (F0-T9b); implemented by F0-T2b.
 """
 from __future__ import annotations
 
@@ -15,12 +15,10 @@ from data_engineering.gold.recipe import (
     Split,
     parse_recipe,
 )
-from harness import awaiting
 
 pytestmark = pytest.mark.critical
 
 
-@awaiting("F0-T2b")
 def test_parses_canonical_recipe(valid_recipe_yaml) -> None:
     r = parse_recipe(valid_recipe_yaml)
     assert isinstance(r, Recipe)
@@ -35,7 +33,6 @@ def test_parses_canonical_recipe(valid_recipe_yaml) -> None:
     assert r.target_frame_rate_hz == 344.53125
 
 
-@awaiting("F0-T2b")
 @pytest.mark.parametrize(
     "bad",
     [
@@ -50,14 +47,12 @@ def test_malformed_recipe_raises_recipe_error(bad) -> None:
         parse_recipe(bad)
 
 
-@awaiting("F0-T2b")
 def test_unknown_engine_is_rejected(valid_recipe_yaml) -> None:
     bad = valid_recipe_yaml.replace("engine: drumgizmo", "engine: fluidsynth")
     with pytest.raises(RecipeError):
         parse_recipe(bad)
 
 
-@awaiting("F0-T2b")
 def test_sample_rate_must_be_44100(valid_recipe_yaml) -> None:
     # F0-T2a §1.1 — sample_rate is fixed; 48 kHz is a contract violation.
     bad = valid_recipe_yaml.replace("sample_rate: 44100", "sample_rate: 48000")
@@ -65,7 +60,6 @@ def test_sample_rate_must_be_44100(valid_recipe_yaml) -> None:
         parse_recipe(bad)
 
 
-@awaiting("F0-T2b")
 def test_unknown_split_is_rejected(valid_recipe_yaml) -> None:
     # F0-T2a §1.1 / §3.6 — only train|val; holdout is real data, never a recipe.
     bad = valid_recipe_yaml.replace("split: train", "split: holdout")
@@ -73,7 +67,6 @@ def test_unknown_split_is_rejected(valid_recipe_yaml) -> None:
         parse_recipe(bad)
 
 
-@awaiting("F0-T2b")
 def test_missing_seed_is_rejected(valid_recipe_yaml) -> None:
     # The RNG seed is mandatory — without it the sample is not reproducible
     # (ENGINEERING_STANDARDS §1). A partial Recipe must never be returned.

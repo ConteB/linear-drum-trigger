@@ -3,14 +3,20 @@
 # CPython 3.14 / macOS arm64. Install into a venv:
 #   python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 #
-# pytest      — Layer-1 unit runner (TESTING_DOCTRINE §7)
-# hypothesis  — Layer-2 property-based + Layer-3 fuzz strategies
-# coverage    — branch-coverage diagnostic floor (§3)
-# mutmut      — Layer-0 mutation meta-gate (§3)
+# pytest         — Layer-1 unit runner (TESTING_DOCTRINE §7)
+# hypothesis     — Layer-2 property-based + Layer-3 fuzz strategies
+# coverage       — branch-coverage diagnostic floor (§3)
+# mutmut         — Layer-0 mutation meta-gate (§3)
+# ruff           — linter / import-sort gate (ENGINEERING_STANDARDS §3.1)
+# mypy           — static type gate, run with --strict (§3.1)
+# types-PyYAML   — type stubs for the recipe parser's YAML dependency
 pytest==9.0.3
 hypothesis==6.152.9
 coverage==7.14.0
 mutmut==3.5.0
+ruff==0.15.14
+mypy==2.1.0
+types-PyYAML==6.0.12.20260518
 
 # numpy is a runtime dependency (pinned in requirements.txt); the harness
 # imports it to build buffer fixtures. Kept out of this file to avoid a

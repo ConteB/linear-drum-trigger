@@ -68,16 +68,16 @@ def test_barcode_has_six_ordered_segments() -> None:
 @pytest.mark.parametrize(
     "func, args",
     [
-        (recipe.parse_recipe, ("",)),
-        (recipe.load_recipe, ("/nonexistent.yaml",)),
+        # recipe.parse_recipe / load_recipe — implemented by F0-T2b, no longer stubs.
         (dna_trace.decode_barcode, ("a-b-c-d-e-f",)),
         (gold_writer.n_frames, (1.0,)),
         (gold_writer.bus_columns, (0,)),
     ],
 )
 def test_skeleton_stubs_raise_notimplemented(func, args) -> None:
-    """Every skeleton stub raises ``NotImplementedError`` — so the ``awaiting``
-    oracles fail for the right reason and cannot decay into false greens."""
+    """Every *remaining* skeleton stub raises ``NotImplementedError`` — so the
+    ``awaiting`` oracles fail for the right reason and cannot decay into false
+    greens. Modules implemented by a sub-task drop off this list."""
     with pytest.raises(NotImplementedError):
         func(*args)
 

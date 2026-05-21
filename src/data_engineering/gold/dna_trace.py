@@ -9,6 +9,7 @@ Spec: ``docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md`` §4.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -92,7 +93,7 @@ def build_dna_json(
     audio: np.ndarray,
     target: np.ndarray,
     generated_at: str | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Build the ``dna.json`` "Libretto Sanitario" for one Gold sample.
 
     The document permits full reverse-engineering of the sample (F0-T2a §4.2):
@@ -105,7 +106,7 @@ def build_dna_json(
     raise NotImplementedError("dna.json builder — owned by F0-T2d")
 
 
-def validate_dna_json(dna: dict, *, audio: np.ndarray, target: np.ndarray) -> None:
+def validate_dna_json(dna: dict[str, Any], *, audio: np.ndarray, target: np.ndarray) -> None:
     """Verify a ``dna.json`` against its buffers (Gate L2 / DoD F0-T2d).
 
     Recomputes the buffer hashes, checks ``0`` non-finite values, and checks

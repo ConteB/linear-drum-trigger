@@ -24,7 +24,6 @@ _FUZZ = settings(
 )
 
 
-@awaiting("F0-T2b")
 @_FUZZ
 @given(st.text(max_size=512))
 def test_recipe_parser_only_ever_raises_recipe_error(blob) -> None:
@@ -37,7 +36,6 @@ def test_recipe_parser_only_ever_raises_recipe_error(blob) -> None:
         pass
 
 
-@awaiting("F0-T2b")
 @_FUZZ
 @given(st.binary(max_size=512))
 def test_recipe_parser_survives_binary_garbage(blob) -> None:

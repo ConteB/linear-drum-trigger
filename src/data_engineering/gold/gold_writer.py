@@ -9,6 +9,7 @@ Spec: ``docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md`` §3.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -69,7 +70,7 @@ def write_gold_sample(
     *,
     audio: np.ndarray,
     target: np.ndarray,
-    dna: dict,
+    dna: dict[str, Any],
 ) -> Path:
     """Write the ``{key}.audio.f16`` / ``.target.f16`` / ``.dna.json`` triple.
 

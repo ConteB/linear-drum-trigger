@@ -201,7 +201,16 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Azioni:* riscrivere `MidiRenderer` per pilotare **Sfizz** via CLI (librerie SFZ
   multi-layer) al posto di FluidSynth.
 - *DoD:* render di prova SFZ multi-layer corretto (log).
-- ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)*.
+- ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)* — entrambi ☑, sbloccato.
+- ◐ **IN CORSO (2026-05-21):** **parser recipe** implementato (`src/data_engineering/gold/recipe.py`)
+  — schema F0-T2a §1.1, strict fail-loud (`RecipeError`, mai stato parziale). 11 oracoli
+  del contratto (9 unit + 2 fuzz) passati da `xfail` a verde; `ruff` + `mypy --strict`
+  puliti (`ENGINEERING_STANDARDS §3.1`); dipendenza `PyYAML==6.0.3` aggiunta a
+  `requirements.txt`. **Renderer Sfizz BLOCCATO:** il binario `sfizz_render` non è
+  installato (assente da Homebrew) e non esiste alcuna libreria SFZ del roster F0-T1b in
+  locale (`lib/` = symlink morto). Il *render di prova* del DoD richiede provisioning del
+  binario + asset SFZ — decisione di procurement al CEO (e vincolo di vendoring,
+  `ENGINEERING_STANDARDS §4`).
 
 **F0-T2c · Integrazione DrumGizmo · `[F]` `P1`**
 - *📚 Letture:* [`F0-T2a §2.4 — mic config`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#mic-config) · [`DOSSIER §3.2`](../docs/methodology/DOSSIER_TECNICO.md#aug-l1) · [`TESTING_DOCTRINE §6`](TESTING_DOCTRINE.md#f0-test-plan) · [`ENGINEERING_STANDARDS §6`](ENGINEERING_STANDARDS.md#execution-robustness).
@@ -475,7 +484,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T1b | Survey & selezione kit (roster) | F0 | ☑ | — | — |
 | F0-T1c | Ridisegno Validation Protocol/Holdout | F0 | ☑ | — | — |
 | F0-T2a | Recipe + contratto dati (STRP-001) | F0 | ☑ | — | — |
-| F0-T2b | Render engine Sfizz | F0 | ☐ | — *(sbloccato)* | — |
+| F0-T2b | Render engine Sfizz | F0 | ◐ | ⊘ binario sfizz_render | — |
 | F0-T2c | Integrazione DrumGizmo | F0 | ☐ | — *(sbloccato)* | — |
 | F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☐ | — *(sbloccato)* | — |
 | F0-T2e | Mini-batch end-to-end | F0 | ☐ | F0-T2b, F0-T2c, F0-T2d | — |

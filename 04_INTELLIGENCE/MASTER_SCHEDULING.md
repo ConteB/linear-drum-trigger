@@ -320,6 +320,19 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *DoD:* harness eseguibile; test-oracolo del contratto F0-T2a verdi sullo scheletro;
   gate mutation configurato. Ocular Proof — log.
 - ⛔ F0-T9a. **Gate di F0-T2b/c/d** (test-first).
+- ☑ **FATTO (2026-05-21):** harness `pytest`+`Hypothesis`+`mutmut`+`coverage` in
+  `tests/` (config `pyproject.toml`/`setup.cfg`, toolchain pinnato in
+  `requirements-dev.txt`). Pacchetto-scheletro `src/data_engineering/gold/` (interfacce
+  pubbliche bloccate sul contratto F0-T2a; logica = stub `NotImplementedError`, di
+  proprietà di F0-T2b/c/d). 50 test-oracolo del contratto (writer Gold-tensor, DNA-Trace,
+  parser recipe, mic-std) scritti test-first; Layer 2 property (Hypothesis) + Layer 3
+  fuzz; §6.3 acceptance come scaffold `skip`; harness Atheris standalone (dep opzionale).
+  **Scaffold auto-smontante:** ogni oracolo è `xfail(strict, raises=NotImplementedError)`
+  — verde-come-xfail ora, ma diventa `XPASS`→run rosso appena F0-T2x implementa il
+  modulo, forzando la rimozione del marker (meccanismo verificato — Ocular Proof). Layer-0
+  meta-test (15, verdi reali) blindano le costanti del contratto. `pytest`: **15 passed,
+  6 skipped, 50 xfailed, 0 failed**. Gate mutation configurato (`setup.cfg`,
+  `tools/run_mutation.sh`; kill-rate ≥ 90 % critici / ≥ 85 % core — operativo a F0-T2d).
 
 **F0-T10 · Documentation Linking Layer (STRP-001) · `[C]`/`[F]` `P2`**
 - *Origine:* osservazione del CEO (2026-05-20) — i riferimenti tra documenti erano in
@@ -462,9 +475,9 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T1b | Survey & selezione kit (roster) | F0 | ☑ | — | — |
 | F0-T1c | Ridisegno Validation Protocol/Holdout | F0 | ☑ | — | — |
 | F0-T2a | Recipe + contratto dati (STRP-001) | F0 | ☑ | — | — |
-| F0-T2b | Render engine Sfizz | F0 | ☐ | F0-T2a, F0-T9b | — |
-| F0-T2c | Integrazione DrumGizmo | F0 | ☐ | F0-T2a, F0-T9b | — |
-| F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☐ | F0-T2a, F0-T9b | — |
+| F0-T2b | Render engine Sfizz | F0 | ☐ | — *(sbloccato)* | — |
+| F0-T2c | Integrazione DrumGizmo | F0 | ☐ | — *(sbloccato)* | — |
+| F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☐ | — *(sbloccato)* | — |
 | F0-T2e | Mini-batch end-to-end | F0 | ☐ | F0-T2b, F0-T2c, F0-T2d | — |
 | F0-T3 | Validazione Gate L2 | F0 | ☐ | F0-T2e | **L2** |
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
@@ -474,7 +487,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T7 | Classi JUCE (opz.) | F0 | ☐ | — | — |
 | F0-T8 | Model Artifact — spec export | F0 | ☐ | — | — |
 | F0-T9a | Testing & QA Doctrine (STRP-001) | F0 | ☑ | — | — |
-| F0-T9b | F0 Pipeline Test Harness | F0 | ☐ | F0-T9a | — |
+| F0-T9b | F0 Pipeline Test Harness | F0 | ☑ | — | — |
 | F0-T10 | Documentation Linking Layer (STRP-001) | F0 | ☑ | — | — |
 | F0-T11 | Content-rot audit (roster F0-T1b) | F0 | ☑ | — | — |
 | F0-T12 | Audit OpenPhase — standard ingegneristici | F0 | ☑ | — | — |
@@ -496,8 +509,10 @@ stop compute + push HDD · **$10** → chiudi tutto.
 · ☑ F0-T12 (audit OpenPhase — `ENGINEERING_STANDARDS.md` internalizzato)
 · ☑ F0-T13 (de-referenziazione OP-X — decoupling dall'archivio chiuso)
 · ☑ F0-T14 (mapping documentale — campo `📚 Letture` su 17 task aperti)
-(Decision Lock 2026-05-20) · Sbloccati: **F0-T9b** (harness test-first, via sub-agente —
-ora gate di F0-T2b/c/d) e **F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) ·
+· ☑ F0-T9b (F0 Pipeline Test Harness — scaffold test-first auto-smontante, gate di F0-T2b/c/d)
+(Decision Lock 2026-05-20) · Sbloccati: **F0-T2b/c/d** (render engine Sfizz, DrumGizmo,
+writer Gold-tensor — ora che il gate test-first F0-T9b è chiuso; restano gated solo dal
+già-fatto F0-T2a) e **F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) ·
 Scenario credito: *da fissare a CP-1* · Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---

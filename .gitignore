@@ -24,3 +24,11 @@ lib/soundfonts/
 # Logs & Temp
 *.log
 data/temp/
+
+# Test harness artifacts (F0-T9b)
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+.mutmut-cache
+mutants/

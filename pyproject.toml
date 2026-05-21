@@ -1,0 +1,41 @@
+# OP-NEUROTRIGGER — Python tooling configuration.
+# Owns the F0 test-harness (F0-T9b) tool config: pytest, coverage, ruff.
+# Mutation testing (mutmut) is configured in setup.cfg.
+# Toolchain pinned in requirements-dev.txt (ENGINEERING_STANDARDS §4).
+
+[tool.pytest.ini_options]
+minversion = "9.0"
+# Package roots: src holds the pipeline package, tests holds the shared
+# `harness` helper module (TESTING_DOCTRINE §6).
+pythonpath = ["src", "tests"]
+testpaths = ["tests"]
+# A strict-xfail that unexpectedly passes (XPASS) is a FAILURE: it forces the
+# contract oracle to be un-skipped once F0-T2b/c/d land (see tests/README.md).
+xfail_strict = true
+addopts = "-ra --strict-markers --strict-config"
+markers = [
+    "meta: Layer-0 — harness self-check (TESTING_DOCTRINE §2)",
+    "critical: critical module — mutation kill-rate gate >= 90% (§3)",
+    "core: core module — mutation kill-rate gate >= 85% (§3)",
+    "property: Layer-2 — property-based oracle (§2)",
+    "fuzz: Layer-3 — hostile-input oracle (§2, §6.4)",
+    "acceptance: §6.3 — per-subtask acceptance (needs render engine)",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/data_engineering/gold"]
+
+[tool.coverage.report]
+show_missing = true
+precision = 1
+# Coverage is a diagnostic floor, never the target (TESTING_DOCTRINE §3).
+# Skeleton stub bodies are excluded so they do not skew the floor.
+exclude_also = ["raise NotImplementedError"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

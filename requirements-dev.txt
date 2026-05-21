@@ -1,0 +1,24 @@
+# OP-NEUROTRIGGER — F0 test-harness toolchain (F0-T9b).
+# Strict pinning per ENGINEERING_STANDARDS §4 — versions verified on
+# CPython 3.14 / macOS arm64. Install into a venv:
+#   python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+#
+# pytest      — Layer-1 unit runner (TESTING_DOCTRINE §7)
+# hypothesis  — Layer-2 property-based + Layer-3 fuzz strategies
+# coverage    — branch-coverage diagnostic floor (§3)
+# mutmut      — Layer-0 mutation meta-gate (§3)
+pytest==9.0.3
+hypothesis==6.152.9
+coverage==7.14.0
+mutmut==3.5.0
+
+# numpy is a runtime dependency (pinned in requirements.txt); the harness
+# imports it to build buffer fixtures. Kept out of this file to avoid a
+# duplicate, drift-prone pin.
+#
+# OPTIONAL — Atheris coverage-guided fuzzing (TESTING_DOCTRINE §6.4).
+# Atheris needs a native libFuzzer/clang build and has no universal wheel; it
+# is therefore NOT pinned here. Install manually where the platform supports it:
+#   pip install atheris
+# The harness degrades gracefully: tests/fuzz/atheris_recipe.py is skipped when
+# Atheris is absent (Hypothesis still covers Layer-3 fuzzing).

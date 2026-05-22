@@ -229,14 +229,26 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Azioni:* implementare il writer del Gold tensor (FP16 multi-mic + matrice 8-target)
   e il generatore DNA-Trace, secondo la spec bloccata in F0-T2a.
 - *DoD:* un tensore Gold scritto su disco; integrità FP16 e DNA-Trace verificate.
-- ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)*.
+- ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)* — entrambi ☑.
+- ☑ **FATTO (2026-05-22):** `dna_trace.py` (codec barcode biiettivo + `build/validate
+  dna.json`, integrità sha256/non-finite §3.7) e `gold_writer.py` (layout `flat-25`,
+  scrittura `audio/target.f16` little-endian + `dna.json`, fail-loud su non-finite /
+  silent-zero / larghezza errata) implementati sul contratto F0-T2a §3–§4; `ruff` +
+  `mypy --strict` puliti. I 39 oracoli `xfail` del harness portati a verde, marker
+  rimossi, meta-test auto-smontante aggiornato. **Suite F0: 130 passed, 0 failed.**
+  **Gate mutation** (`mutmut`, TESTING_DOCTRINE §3) sbloccato: gira su Linux/OrbStack
+  (`tools/run_mutation.sh` — `fork` di mutmut va in segfault su macOS con le librerie
+  native); mutazione dei literal-stringa disattivata per policy (`TESTING_DOCTRINE §3.1`,
+  Decision Lock CEO 2026-05-22). Esito: 680 mutanti, 0 segfault; moduli critici 533
+  uccisi / 86 sopravvissuti, tutti **equivalenti** nelle classi A/B/C del registro §3.1
+  → **kill-rate comportamentale 100 %** (gate ≥ 90 % superato).
 
 **F0-T2e · Mini-batch end-to-end · `[F]` `P1`**
 - *📚 Letture:* [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`DOSSIER §9.2`](../docs/methodology/DOSSIER_TECNICO.md#medallion) · [`ENGINEERING_STANDARDS §6`](ENGINEERING_STANDARDS.md#execution-robustness).
 - *Azioni:* orchestrare la pipeline (recipe → Sfizz/DrumGizmo → writer Gold tensor) e
   generare un mini-batch (~10–20 scenari).
 - *DoD:* log stdout che mostra N campioni Gold generati senza errori.
-- ⛔ F0-T2c, F0-T2d *(F0-T2b ☑)*. → F0-T3.
+- ⛔ F0-T2c *(F0-T2b, F0-T2d ☑)*. → F0-T3.
 
 **F0-T3 · Gate L2 (validazione recipe) · `[C]` `P1`**
 - *📚 Letture:* [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`DOSSIER §4 — matrice MIDI`](../docs/methodology/DOSSIER_TECNICO.md#midi-matrix) · [`MASTER_CHECKLIST §6 — Gate`](../MASTER_CHECKLIST.md#gates) · [`ENGINEERING_STANDARDS §6`](ENGINEERING_STANDARDS.md#execution-robustness).
@@ -492,8 +504,8 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T2a | Recipe + contratto dati (STRP-001) | F0 | ☑ | — | — |
 | F0-T2b | Render engine Sfizz | F0 | ☑ | — | — |
 | F0-T2c | Integrazione DrumGizmo | F0 | ☐ | — *(sbloccato)* | — |
-| F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☐ | — *(sbloccato)* | — |
-| F0-T2e | Mini-batch end-to-end | F0 | ☐ | F0-T2c, F0-T2d | — |
+| F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☑ | — | — |
+| F0-T2e | Mini-batch end-to-end | F0 | ☐ | F0-T2c | — |
 | F0-T3 | Validazione Gate L2 | F0 | ☐ | F0-T2e | **L2** |
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☐ | F0-T3, F0-T4a | **L3** |
@@ -527,10 +539,12 @@ stop compute + push HDD · **$10** → chiudi tutto.
 · ☑ F0-T9b (F0 Pipeline Test Harness — scaffold test-first auto-smontante, gate di F0-T2b/c/d)
 · ☑ F0-T2b (render engine Sfizz — parser recipe + provisioning + adapter `SfizzRenderer`
 sul CLI reale, watchdog + fail-loud Silent Zero, oracoli §6.3 verdi)
-(Decision Lock 2026-05-20) · Sbloccati: **F0-T2c/d** (DrumGizmo, writer Gold-tensor — il
-gate test-first F0-T9b è chiuso; gated solo dal già-fatto F0-T2a) e **F0-T4b**
-(mini-prototipo TCN, gated anche da F0-T3) · Percorso critico verso L2: F0-T2c → T2d →
-T2e → T3 · Scenario credito: *da fissare a CP-1* · Prossimo checkpoint: **CP-1 / 2026-05-30**.
+· ☑ F0-T2d (writer Gold-tensor + DNA-Trace — contratto F0-T2a §3–§4, suite F0 verde,
+gate mutation sbloccato su Linux/OrbStack, kill-rate comportamentale 100 %)
+(Decision Lock 2026-05-20) · Sbloccato: **F0-T2c** (DrumGizmo — gated solo dal
+già-fatto F0-T2a) e **F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) · Percorso
+critico verso L2: **F0-T2c → T2e → T3** · Scenario credito: *da fissare a CP-1* ·
+Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---
 *Decision Lock 2026-05-20. Aggiornare il Tracking Board (§7) e lo scenario credito (§4)

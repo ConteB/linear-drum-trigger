@@ -12,7 +12,6 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from data_engineering.gold.dna_trace import Barcode, decode_barcode, encode_barcode
-from harness import awaiting
 
 pytestmark = [pytest.mark.critical, pytest.mark.property]
 
@@ -21,14 +20,12 @@ pytestmark = [pytest.mark.critical, pytest.mark.property]
 _segment = st.text(alphabet=string.ascii_uppercase + string.digits, min_size=1, max_size=8)
 
 
-@awaiting("F0-T2d")
 @given(_segment, _segment, _segment, _segment, _segment, _segment)
 def test_decode_is_left_inverse_of_encode(s0, s1, s2, s3, s4, s5) -> None:
     barcode = Barcode(s0, s1, s2, s3, s4, s5)
     assert decode_barcode(encode_barcode(barcode)) == barcode
 
 
-@awaiting("F0-T2d")
 @given(_segment, _segment, _segment, _segment, _segment, _segment)
 def test_encoded_key_has_exactly_five_separators(s0, s1, s2, s3, s4, s5) -> None:
     # Six dash-free segments -> exactly five '-' separators.

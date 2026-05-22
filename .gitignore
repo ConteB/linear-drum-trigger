@@ -37,3 +37,6 @@ mutants/
 # The manifest vendor/README.md is tracked; everything else is ignored.
 /vendor/*
 !/vendor/README.md
+
+# Audition renders (F0-T2b) — aural proof material, re-generatable.
+/audition/

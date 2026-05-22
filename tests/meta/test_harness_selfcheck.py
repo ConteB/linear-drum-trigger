@@ -65,38 +65,16 @@ def test_barcode_has_six_ordered_segments() -> None:
     assert fields == dna_trace.BARCODE_SEGMENTS
 
 
-@pytest.mark.parametrize(
-    "func, args",
-    [
-        # recipe.parse_recipe / load_recipe — implemented by F0-T2b, no longer stubs.
-        (dna_trace.decode_barcode, ("a-b-c-d-e-f",)),
-        (gold_writer.n_frames, (1.0,)),
-        (gold_writer.bus_columns, (0,)),
-    ],
-)
-def test_skeleton_stubs_raise_notimplemented(func, args) -> None:
-    """Every *remaining* skeleton stub raises ``NotImplementedError`` — so the
-    ``awaiting`` oracles fail for the right reason and cannot decay into false
-    greens. Modules implemented by a sub-task drop off this list."""
-    with pytest.raises(NotImplementedError):
-        func(*args)
+def test_remaining_skeleton_stub_raises_notimplemented(make_audio) -> None:
+    """The one stub still awaiting a sub-task raises ``NotImplementedError``.
 
-
-def test_kwarg_stubs_raise_notimplemented(sample_barcode, sample_recipe, sample_dna,
-                                          make_audio, make_target) -> None:
-    audio, target = make_audio(), make_target()
+    ``mic_standardize.standardize_mics`` is owned by the data-loader stage
+    (F0-T4b); its ``awaiting`` oracle must keep failing for the *right* reason.
+    The recipe parser (F0-T2b) and the writer / DNA-Trace modules (F0-T2d) are
+    implemented and have dropped off this check — the self-dismantling scaffold
+    working as designed (TESTING_DOCTRINE §6)."""
     with pytest.raises(NotImplementedError):
-        dna_trace.encode_barcode(sample_barcode)
-    with pytest.raises(NotImplementedError):
-        dna_trace.build_dna_json(
-            barcode=sample_barcode, recipe=sample_recipe, audio=audio, target=target
-        )
-    with pytest.raises(NotImplementedError):
-        dna_trace.validate_dna_json({}, audio=audio, target=target)
-    with pytest.raises(NotImplementedError):
-        gold_writer.write_gold_sample("/tmp", "k", audio=audio, target=target, dna=sample_dna)
-    with pytest.raises(NotImplementedError):
-        mic_standardize.standardize_mics(audio, 4)
+        mic_standardize.standardize_mics(make_audio(), 4)
 
 
 def test_xfail_strict_is_enabled(pytestconfig) -> None:

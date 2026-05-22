@@ -1,13 +1,20 @@
 """Gold-tensor writer — FP16 WebDataset sample triple (F0-T2a §3).
 
-SKELETON / CONTRACT INTERFACE.  Public constants are LOCKED here for the F0-T9b
-test harness; the logic is owned by **F0-T2d** and raises
-:class:`NotImplementedError`.
+Implements the F0-T2a §3 data contract: the ``flat-25`` target layout, the
+frame-count formula, and the writer of the ``audio.f16`` / ``target.f16`` /
+``dna.json`` sample triple. Buffers are written as raw little-endian float16,
+C-contiguous (F0-T2a §3.2/§3.3).
+
+Critical module — mutation kill-rate gate >= 90 % (TESTING_DOCTRINE §3). The
+writer fails loud with :class:`GoldWriterError` on any contract violation and
+never writes a partial sample (ENGINEERING_STANDARDS §6).
 
 Spec: ``docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md`` §3.
 """
 from __future__ import annotations
 
+import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +30,10 @@ N_BUSES = 8
 TARGET_COLS = 25
 #: Column index of the continuous Hi-Hat opening head (F0-T2a §3.3).
 HIHAT_OPENING_COL = 24
+#: Maximum microphone channels in an ``audio`` buffer (F0-T2a §3.2 — n_mic in [1,8]).
+MAX_MIC_CHANNELS = 8
+#: Raw buffer dtype — little-endian float16 (F0-T2a §3.2/§3.3).
+_LE_FLOAT16 = np.dtype("<f2")
 
 
 class GoldWriterError(ValueError):
@@ -41,10 +52,12 @@ def n_frames(duration_s: float, r_target_hz: float = R_TARGET_HZ) -> int:
     Returns:
         The number of target frames.
 
-    Note:
-        SKELETON — implementation owned by F0-T2d.
+    Raises:
+        GoldWriterError: If ``duration_s`` is negative.
     """
-    raise NotImplementedError("n_frames — owned by F0-T2d")
+    if duration_s < 0.0:
+        raise GoldWriterError(f"duration_s must be >= 0, got {duration_s}")
+    return math.ceil(duration_s * r_target_hz)
 
 
 def bus_columns(bus: int) -> tuple[int, int, int]:
@@ -58,10 +71,58 @@ def bus_columns(bus: int) -> tuple[int, int, int]:
     Returns:
         ``(onset_col, velocity_col, microtiming_col)``.
 
-    Note:
-        SKELETON — implementation owned by F0-T2d.
+    Raises:
+        GoldWriterError: If ``bus`` is outside ``[0, 7]``.
     """
-    raise NotImplementedError("bus_columns — owned by F0-T2d")
+    if not 0 <= bus < N_BUSES:
+        raise GoldWriterError(f"bus index must be in [0, {N_BUSES - 1}], got {bus}")
+    base = 3 * bus
+    return (base, base + 1, base + 2)
+
+
+def _validate_audio(audio: np.ndarray) -> None:
+    """Fail loud on any ``audio`` buffer that violates F0-T2a §3.2."""
+    if audio.ndim != 2:
+        raise GoldWriterError(f"audio must be 2-D [n_mic, n_sample], got {audio.ndim}-D")
+    n_mic = audio.shape[0]
+    if not 1 <= n_mic <= MAX_MIC_CHANNELS:
+        raise GoldWriterError(
+            f"audio n_mic must be in [1, {MAX_MIC_CHANNELS}], got {n_mic}"
+        )
+    if audio.shape[1] == 0:
+        raise GoldWriterError("audio has zero samples")
+    if audio.dtype != np.float16:
+        raise GoldWriterError(f"audio must be float16 (FP16 contract), got {audio.dtype}")
+    if not bool(np.isfinite(audio).all()):
+        raise GoldWriterError(
+            "audio contains NaN/Inf — fail loud (ENGINEERING_STANDARDS §6, F0-T2a §3.7)"
+        )
+    if not bool(np.any(audio)):
+        raise GoldWriterError(
+            "silent-zero audio — an identically-zero render is a structural defect "
+            "(ENGINEERING_STANDARDS §6)"
+        )
+
+
+def _validate_target(target: np.ndarray) -> None:
+    """Fail loud on any ``target`` matrix that violates F0-T2a §3.3."""
+    if target.ndim != 2:
+        raise GoldWriterError(f"target must be 2-D [n_frame, 25], got {target.ndim}-D")
+    if target.shape[1] != TARGET_COLS:
+        raise GoldWriterError(
+            f"target must have {TARGET_COLS} columns (flat-25), got {target.shape[1]}"
+        )
+    if target.dtype != np.float16:
+        raise GoldWriterError(f"target must be float16 (FP16 contract), got {target.dtype}")
+    if not bool(np.isfinite(target).all()):
+        raise GoldWriterError(
+            "target contains NaN/Inf — fail loud (ENGINEERING_STANDARDS §6, F0-T2a §3.7)"
+        )
+
+
+def _raw_le_f16(arr: np.ndarray) -> bytes:
+    """Serialise ``arr`` to raw C-contiguous little-endian float16 bytes."""
+    return np.ascontiguousarray(arr, dtype=_LE_FLOAT16).tobytes()
 
 
 def write_gold_sample(
@@ -75,9 +136,9 @@ def write_gold_sample(
     """Write the ``{key}.audio.f16`` / ``.target.f16`` / ``.dna.json`` triple.
 
     The buffers are written as raw little-endian float16, C-contiguous
-    (F0-T2a §3.2/§3.3). The writer fails loud (:class:`GoldWriterError`) on any
-    contract violation — non-finite values, wrong ``target`` width, silent-zero
-    audio (ENGINEERING_STANDARDS §6) — and never writes a partial sample.
+    (F0-T2a §3.2/§3.3). Both buffers are validated *before* any file is
+    written, so a contract violation never leaves a partial sample on disk
+    (ENGINEERING_STANDARDS §6).
 
     Args:
         out_dir: Destination directory for the sample triple.
@@ -87,9 +148,20 @@ def write_gold_sample(
         dna: The ``dna.json`` document (see :func:`~.dna_trace.build_dna_json`).
 
     Returns:
-        Path to the written directory.
+        Path to the directory the triple was written to.
 
-    Note:
-        SKELETON — implementation owned by F0-T2d.
+    Raises:
+        GoldWriterError: On any contract violation — wrong rank/width/dtype,
+            non-finite values, or silent-zero audio.
     """
-    raise NotImplementedError("gold-tensor writer — owned by F0-T2d")
+    _validate_audio(audio)
+    _validate_target(target)
+
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / f"{key}.audio.f16").write_bytes(_raw_le_f16(audio))
+    (out / f"{key}.target.f16").write_bytes(_raw_le_f16(target))
+    (out / f"{key}.dna.json").write_text(
+        json.dumps(dna, indent=2, sort_keys=True), encoding="utf-8"
+    )
+    return out

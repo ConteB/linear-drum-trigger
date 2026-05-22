@@ -1,14 +1,23 @@
 """DNA-Trace — sample lineage barcode + ``dna.json`` "Libretto Sanitario".
 
-SKELETON / CONTRACT INTERFACE.  Public types/constants are LOCKED here for the
-F0-T9b test harness; the logic is owned by **F0-T2d** and raises
-:class:`NotImplementedError`.
+Implements the F0-T2a §4 contract: the six-segment barcode codec (a strict
+bijection) and the ``dna.json`` document that permits full reverse-engineering
+of a Gold sample — lineage plus the ``sha256`` / non-finite integrity of both
+buffers (F0-T2a §3.7).
+
+Critical module — mutation kill-rate gate >= 90 % (TESTING_DOCTRINE §3). Every
+function fails loud with :class:`DnaTraceError` and never returns partial state
+(ENGINEERING_STANDARDS §6).
 
 Spec: ``docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md`` §4.
 """
 from __future__ import annotations
 
+import dataclasses
+import hashlib
+import json
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
@@ -27,6 +36,11 @@ BARCODE_SEGMENTS: tuple[str, ...] = (
     "audioalt",
     "saboteur",
 )
+
+#: Barcode segment separator — also the reason segments may not contain it.
+_SEPARATOR = "-"
+#: Reserved by WebDataset for the extension split (F0-T2a §3.1).
+_RESERVED = "."
 
 
 class DnaTraceError(ValueError):
@@ -50,6 +64,23 @@ class Barcode:
     saboteur: str
 
 
+def _check_segment(segment: object, field: str) -> str:
+    """Return ``segment`` if it is a valid barcode segment, else fail loud."""
+    if not isinstance(segment, str) or not segment:
+        raise DnaTraceError(f"barcode segment '{field}' must be a non-empty string")
+    if _SEPARATOR in segment:
+        raise DnaTraceError(
+            f"barcode segment '{field}'={segment!r} must not contain "
+            f"the separator {_SEPARATOR!r}"
+        )
+    if _RESERVED in segment:
+        raise DnaTraceError(
+            f"barcode segment '{field}'={segment!r} must not contain "
+            f"the WebDataset-reserved {_RESERVED!r}"
+        )
+    return segment
+
+
 def encode_barcode(barcode: Barcode) -> str:
     """Encode a :class:`Barcode` into its ``-``-joined string key.
 
@@ -59,10 +90,14 @@ def encode_barcode(barcode: Barcode) -> str:
     Returns:
         The WebDataset sample key (dot-free).
 
-    Note:
-        SKELETON — implementation owned by F0-T2d.
+    Raises:
+        DnaTraceError: If any segment is empty or contains ``-`` or ``.``.
     """
-    raise NotImplementedError("barcode encoder — owned by F0-T2d")
+    segments = dataclasses.astuple(barcode)
+    return _SEPARATOR.join(
+        _check_segment(seg, field)
+        for field, seg in zip(BARCODE_SEGMENTS, segments, strict=True)
+    )
 
 
 def decode_barcode(key: str) -> Barcode:
@@ -79,11 +114,45 @@ def decode_barcode(key: str) -> Barcode:
 
     Raises:
         DnaTraceError: If ``key`` is not a well-formed six-segment barcode.
-
-    Note:
-        SKELETON — implementation owned by F0-T2d.
     """
-    raise NotImplementedError("barcode decoder — owned by F0-T2d")
+    if not isinstance(key, str):
+        raise DnaTraceError(f"barcode key must be a string, got {type(key).__name__}")
+    if _RESERVED in key:
+        raise DnaTraceError(
+            f"barcode key {key!r} must not contain the WebDataset-reserved {_RESERVED!r}"
+        )
+    segments = key.split(_SEPARATOR)
+    if len(segments) != len(BARCODE_SEGMENTS):
+        raise DnaTraceError(
+            f"barcode key {key!r} has {len(segments)} segment(s), "
+            f"expected {len(BARCODE_SEGMENTS)}"
+        )
+    if any(not segment for segment in segments):
+        raise DnaTraceError(f"barcode key {key!r} has an empty segment")
+    return Barcode(*segments)
+
+
+def _buffer_integrity(arr: np.ndarray) -> dict[str, Any]:
+    """Compute the F0-T2a §3.7 integrity block for one buffer.
+
+    The buffer is canonicalised to C-contiguous little-endian float16 before
+    hashing, so the ``sha256`` is reproducible across machines and matches the
+    bytes written to the ``.f16`` shard.
+    """
+    canonical = np.ascontiguousarray(arr, dtype="<f2")
+    n_nonfinite = int(canonical.size - int(np.isfinite(canonical).sum()))
+    return {
+        "shape": list(arr.shape),
+        "dtype": "float16",
+        "sha256": hashlib.sha256(canonical.tobytes()).hexdigest(),
+        "n_nonfinite": n_nonfinite,
+    }
+
+
+def _recipe_hash(recipe: Recipe) -> str:
+    """Deterministic ``sha256`` of a recipe — the lineage anchor (F0-T2a §4.2)."""
+    payload = json.dumps(dataclasses.asdict(recipe), sort_keys=True, default=str)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def build_dna_json(
@@ -100,10 +169,60 @@ def build_dna_json(
     lineage, render/augmentation parameters, and the ``sha256`` + ``n_nonfinite``
     of both buffers (F0-T2a §3.7).
 
-    Note:
-        SKELETON — implementation owned by F0-T2d.
+    Args:
+        barcode: The sample's six-segment barcode.
+        recipe: The validated recipe that produced the sample.
+        audio: The ``audio`` buffer, shape ``[n_mic, n_sample]``.
+        target: The ``target`` matrix, shape ``[n_frame, 25]``.
+        generated_at: ISO-8601 timestamp; defaults to the current UTC time.
+
+    Returns:
+        The ``dna.json`` document as a plain, JSON-serialisable dict.
+
+    Raises:
+        DnaTraceError: If the barcode is malformed (via :func:`encode_barcode`).
     """
-    raise NotImplementedError("dna.json builder — owned by F0-T2d")
+    key = encode_barcode(barcode)
+    return {
+        "dna_version": DNA_VERSION,
+        "barcode": key,
+        "key": key,
+        "recipe_id": recipe.recipe_id,
+        "recipe_sha256": _recipe_hash(recipe),
+        "split": recipe.split.value,
+        "generated_at": generated_at or datetime.now(UTC).isoformat(),
+        "lineage": {
+            "midi_source": {
+                "dataset": recipe.midi_source.dataset,
+                "file": recipe.midi_source.file,
+            },
+            "midi_jitter": {
+                "time_jitter_ms": list(recipe.midi_jitter.time_jitter_ms),
+                "flam_probability": recipe.midi_jitter.flam_probability,
+                "velocity_jitter": recipe.midi_jitter.velocity_jitter.value,
+                "component_drop_probability": recipe.midi_jitter.component_drop_probability,
+                "seed": recipe.midi_jitter.seed,
+            },
+            "render": {
+                "engine": recipe.render.engine.value,
+                "kit": recipe.render.kit,
+                "mic_config": recipe.render.mic_config.value,
+                "sample_rate": recipe.render.sample_rate,
+            },
+            "augmentation": {
+                "level": recipe.augmentation.level,
+                "reverb_ir": recipe.augmentation.reverb_ir,
+                "mutilation": recipe.augmentation.mutilation,
+                "saboteur": recipe.augmentation.saboteur,
+            },
+        },
+        "audio": _buffer_integrity(audio),
+        "target": {
+            **_buffer_integrity(target),
+            "layout": "flat-25",
+            "frame_rate_hz": recipe.target_frame_rate_hz,
+        },
+    }
 
 
 def validate_dna_json(dna: dict[str, Any], *, audio: np.ndarray, target: np.ndarray) -> None:
@@ -112,10 +231,33 @@ def validate_dna_json(dna: dict[str, Any], *, audio: np.ndarray, target: np.ndar
     Recomputes the buffer hashes, checks ``0`` non-finite values, and checks
     that the recorded shapes match (F0-T2a §3.7).
 
-    Raises:
-        DnaTraceError: On any mismatch.
+    Args:
+        dna: The ``dna.json`` document to verify.
+        audio: The ``audio`` buffer the document is supposed to describe.
+        target: The ``target`` matrix the document is supposed to describe.
 
-    Note:
-        SKELETON — implementation owned by F0-T2d.
+    Raises:
+        DnaTraceError: On any mismatch — missing block, non-finite values,
+            shape mismatch, or an altered buffer (``sha256`` mismatch).
     """
-    raise NotImplementedError("dna.json validator — owned by F0-T2d")
+    for block, arr in (("audio", audio), ("target", target)):
+        recorded = dna.get(block)
+        if not isinstance(recorded, dict):
+            raise DnaTraceError(f"dna.json is missing the '{block}' integrity block")
+        fresh = _buffer_integrity(arr)
+        if recorded.get("n_nonfinite") != 0:
+            raise DnaTraceError(
+                f"dna.json '{block}': records {recorded.get('n_nonfinite')} "
+                "non-finite value(s)"
+            )
+        if fresh["n_nonfinite"] != 0:
+            raise DnaTraceError(f"dna.json '{block}': buffer contains NaN/Inf")
+        if list(recorded.get("shape", [])) != fresh["shape"]:
+            raise DnaTraceError(
+                f"dna.json '{block}': recorded shape {recorded.get('shape')} "
+                f"!= buffer shape {fresh['shape']}"
+            )
+        if recorded.get("sha256") != fresh["sha256"]:
+            raise DnaTraceError(
+                f"dna.json '{block}': sha256 mismatch — the buffer was altered"
+            )

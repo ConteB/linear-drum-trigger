@@ -87,6 +87,42 @@ DoD = (suite verde)  AND  (mutation kill-rate ≥ soglia)  AND  (coverage ≥ fl
 > sopravvissuti vanno *uccisi* (test aggiunto) o *giustificati per iscritto* (mutante
 > equivalente), mai ignorati.
 
+<a id="equivalent-mutants"></a>
+### 3.1 Mutanti equivalenti — policy e registro (Decision Lock 2026-05-22)
+
+Il kill-rate si misura sui **mutanti comportamentali**. Un mutante è *equivalente*
+quando non altera alcun comportamento osservabile sotto il contratto: ucciderlo
+richiederebbe test che vincolano dettagli **non** contrattuali — la formulazione di
+un messaggio d'errore, il valore esatto di un digest opaco, la formattazione di un
+file. La §3 lo prevede già («uccisi *o* giustificati per iscritto»); questo
+paragrafo è la giustificazione, **per classi**.
+
+**Esecuzione del gate.** `mutmut` 3.x impone il `fork`; un figlio forkato che ha
+caricato librerie native (numpy BLAS, `libsndfile`) va in segfault su macOS — ogni
+mutante muore prima d'essere testato. Il gate gira quindi su **Linux (OrbStack)** —
+`tools/run_mutation.sh`. La mutazione dei *literal stringa* è disattivata
+(`tools/mutation_run.py`, classe A).
+
+**Classi equivalenti — escluse dal denominatore del gate:**
+
+- **A — Messaggistica diagnostica.** Mutazioni confinate al contenuto dei messaggi
+  d'eccezione, o agli argomenti `ctx`/`field` che esistono solo per comporli
+  (`_require(block, "seed", ctx)` → `_require(block, "seed", None)`). Il contratto
+  è il *tipo* d'eccezione, asserito dalla suite; la formulazione è diagnostica.
+- **B — Interno di digest.** Parametri di `_recipe_hash` (`json.dumps`
+  `sort_keys`/`default`): `recipe_sha256` è un digest deterministico opaco — il
+  contratto ne fissa determinismo e lunghezza (testati), non il valore.
+- **C — Equivalenti di piattaforma/formato.** `dtype="<f2"` ↔ `dtype=None` su
+  buffer già `float16` (identici su little-endian); `zip(strict=True)` su sequenze
+  di lunghezza sempre uguale; `indent`/`sort_keys` di `json.dumps` per `dna.json`
+  (riletto da `json.loads`, formato-agnostico).
+
+**Esito F0-T2d (run 2026-05-22, 680 mutanti, 0 segfault).** Moduli critici
+`recipe.py` / `dna_trace.py` / `gold_writer.py`: 619 mutanti, **533 uccisi, 86
+sopravvissuti — tutti nelle classi A/B/C**. Kill-rate **comportamentale = 100 %**
+(gate ≥ 90 % superato); kill-rate grezzo 86 %, la coda è la quota equivalente.
+Ogni nuovo sopravvissuto fuori da A/B/C va ucciso, o aggiunto qui con motivazione.
+
 <a id="ai-adversarial"></a>
 ## 4. Protocollo AI-Adversarial QA (Layer 4)
 

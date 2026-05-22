@@ -229,8 +229,22 @@ Per garantire la scalabilità e la tracciabilità "Industrial Grade", il progett
 ### 9.2 Medallion Flow (Livelli del Dato)
 Il processamento del dato è strutturato a livelli incrementali di qualità gestiti via DVC:
 - **BRONZE LAYER (Raw):** Immutabile. Dataset originali (GMD, DrumGizmo, kit SFZ Karoryfer/Salamander, Noise/Stems per Negative Sampling).
-- **SILVER LAYER (Clean & Target):** Generato tramite `midi_renderer.py` e `ugt_generator.py`. Contiene i Clean Stems estratti dai MIDI e i Tensori MIDI Target (Piano Roll a 8 canali).
-- **GOLD LAYER (Augmented Tensors):** Gestito dall' `augmentation_engine.py`. Fonde i Clean Stems con Phase Chirping, Bleed e "Stealth Mix Mode" (Negative Sampling). Tensori quantizzati a 16-bit pronti per l'Inference Layer (TCN). **Impacchettamento:** WebDataset in tar-shard da ~1 GB (terna `audio.f16` / `target.f16` / `dna.json` per campione), tracciati da DVC come shard — non come micro-file (Decision Lock STRP-001 2026-05-20, D1). Layout di byte FP16 di `audio.f16` / `target.f16` (`[n_mic,n_sample]` e `[n_frame,25]` flat-25) e schema dello shard: [`F0-T2a` §3 — contratto dati](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract).
+- **SILVER LAYER (Clean & Target):** Stem audio prodotti dai render engine
+  `src/data_engineering/gold/render.py` (adapter Sfizz / DrumGizmo, F0-T2b/c) e Tensori
+  MIDI Target (matrice di trascrizione a 8 bus, layout `flat-25`) prodotti da
+  `src/data_engineering/gold/target_builder.py` (F0-T2e). *(I prototipi FluidSynth
+  `midi_renderer.py` / `ugt_generator.py` sono stati scartati al Design Lock — vedi F0-T2.)*
+- **GOLD LAYER (Augmented Tensors):** La terna `audio.f16` / `target.f16` / `dna.json` è
+  scritta da `src/data_engineering/gold/gold_writer.py` + `dna_trace.py` (F0-T2d) e
+  l'intera pipeline `recipe → render → Gold` è cucita da
+  `src/data_engineering/gold/orchestrate.py` (F0-T2e). L'augmentation (Phase Chirping,
+  Bleed sintetico, "Stealth Mix Mode" / Negative Sampling) è lo stadio **F2-T2** —
+  `augmentation_engine.py` è ancora un prototipo da riscrivere. Tensori quantizzati a
+  16-bit pronti per l'Inference Layer (TCN). **Impacchettamento:** WebDataset in tar-shard
+  da ~1 GB (terna per campione), tracciati da DVC come shard — non come micro-file
+  (Decision Lock STRP-001 2026-05-20, D1). Layout di byte FP16 di `audio.f16` /
+  `target.f16` (`[n_mic,n_sample]` e `[n_frame,25]` flat-25) e schema dello shard:
+  [`F0-T2a` §3 — contratto dati](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract).
 
 <a id="validation"></a>
 ## 10. Validation & Holdout Protocol (The "Iron Gate")

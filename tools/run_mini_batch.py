@@ -24,18 +24,48 @@ import shutil
 import sys
 from pathlib import Path
 
+import numpy as np
+import soundfile as sf  # type: ignore[import-untyped]
+
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
+from data_engineering.gold.gold_writer import SAMPLE_RATE  # noqa: E402
 from data_engineering.gold.orchestrate import (  # noqa: E402
     DEFAULT_BUS_MAPPING_PATH,
+    GoldSampleResult,
     build_gold_sample,
 )
 from data_engineering.gold.recipe import Engine, load_recipe  # noqa: E402
 from data_engineering.gold.target_builder import load_bus_mapping  # noqa: E402
 
+#: Peak the audition mixdown is normalised to (~-1 dBFS) so a quiet render —
+#: e.g. a sparse Sfizz snare stem — is still clearly audible.
+_AUDITION_PEAK = 0.89
+
+
+def _export_audition(out_dir: Path, result: GoldSampleResult, audition_dir: Path) -> Path:
+    """Write a listenable mono mixdown of a Gold sample's audio (proof artifact).
+
+    Reads the written ``audio.f16`` back, sums every mic channel into one mono
+    track and peak-normalises it — the Gold buffer itself is left untouched.
+    """
+    audio = (
+        np.fromfile(out_dir / f"{result.key}.audio.f16", dtype="<f2")
+        .astype(np.float32)
+        .reshape(result.n_mic, result.n_sample)
+    )
+    mix = audio.mean(axis=0)
+    peak = float(np.abs(mix).max())
+    if peak > 0.0:
+        mix = mix * (_AUDITION_PEAK / peak)
+    wav_path = audition_dir / f"{result.key}.wav"
+    sf.write(str(wav_path), mix, SAMPLE_RATE, subtype="FLOAT")
+    return wav_path
+
 _RECIPE_DIR = _REPO_ROOT / "recipes" / "mini_batch"
 _DEFAULT_OUT = _REPO_ROOT / "data" / "gold" / "mini_batch"
+_DEFAULT_AUDITION = _REPO_ROOT / "audition" / "f0t2e"
 
 
 def _parse_args() -> argparse.Namespace:
@@ -58,6 +88,17 @@ def _parse_args() -> argparse.Namespace:
         default=_RECIPE_DIR,
         help=f"recipe directory (default: {_RECIPE_DIR})",
     )
+    parser.add_argument(
+        "--audition",
+        nargs="?",
+        type=Path,
+        const=_DEFAULT_AUDITION,
+        default=None,
+        help=(
+            "also export a listenable mono WAV mixdown per sample "
+            f"(default dir if flag given bare: {_DEFAULT_AUDITION})"
+        ),
+    )
     return parser.parse_args()
 
 
@@ -76,11 +117,17 @@ def main() -> int:
     if args.out.exists():
         shutil.rmtree(args.out)
     args.out.mkdir(parents=True)
+    # The audition dir is NOT wiped — successive per-engine passes accumulate
+    # their mixdowns there into one listenable set.
+    if args.audition is not None:
+        args.audition.mkdir(parents=True, exist_ok=True)
 
     print("=" * 72)
     print("F0-T2e — Gold pipeline mini-batch")
     print(f"  recipes: {args.recipes}")
     print(f"  output:  {args.out}")
+    if args.audition is not None:
+        print(f"  audition: {args.audition}")
     if args.engine:
         print(f"  engine filter: {args.engine}")
     print("=" * 72)
@@ -120,12 +167,17 @@ def main() -> int:
             f"       audio [{result.n_mic}x{result.n_sample}] peak={result.audio_peak:.4f}  "
             f"target [{result.n_frame}x25]"
         )
+        if args.audition is not None:
+            wav = _export_audition(args.out, result, args.audition)
+            print(f"       audition -> {wav.name}")
 
     print("=" * 72)
     print(f"OK — {generated} Gold sample(s) generated, 0 errors.")
     if skipped:
         print(f"     ({skipped} recipe(s) skipped by --engine {args.engine})")
     print(f"     written to {args.out}")
+    if args.audition is not None:
+        print(f"     audible mixdowns in {args.audition}")
     return 0
 
 

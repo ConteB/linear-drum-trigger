@@ -32,3 +32,8 @@ data/temp/
 htmlcov/
 .mutmut-cache
 mutants/
+
+# Vendored render toolchain & SFZ assets (F0-T2b) — heavy, re-fetchable.
+# The manifest vendor/README.md is tracked; everything else is ignored.
+/vendor/*
+!/vendor/README.md

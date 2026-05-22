@@ -1,38 +1,37 @@
 ---
 id: LIN-DT-HANDOVER-001
-title: Session Handover — rev. post F0-T9b / F0-T2b (parser)
+title: Session Handover — rev. post F0-T9b / F0-T2b (parser + provisioning)
 type: registro
 status: ACTIVE
 phase: F0
 domain: Operations
-version: 2.0.0
-updated: 2026-05-21
+version: 2.1.0
+updated: 2026-05-22
 tags: [handover, registro, F0]
 related: [LIN-DT-MSCHED-001, LIN-DT-REGAV-001]
 supersedes: []
 ---
 
-# SESSION HANDOVER - 2026-05-21 (rev. post F0-T9b / F0-T2b parser)
+# SESSION HANDOVER - 2026-05-22 (rev. post F0-T9b / F0-T2b parser + provisioning)
 **Task Attivo:** Fase F0 — avviata l'esecuzione del codice di pipeline.
 **Stato:** **F0 attiva.** Chiusi F0-T1/T1b/T1c/T2a/T4a/T9a/T10-T14 + **F0-T9b**.
-F0-T2b **◐ in corso** (parser fatto, renderer bloccato).
+F0-T2b **◐ in corso** (parser fatto, provisioning fatto, adapter renderer da scrivere).
 
-## ⚠️ AZIONE RICHIESTA AL CEO — provisioning render engine
+## ✅ Provisioning render engine — FATTO (2026-05-22)
 
-**F0-T2b (renderer Sfizz) è bloccato in attesa di provisioning manuale del CEO.**
-Per Decision del CEO (2026-05-21) il provisioning è a sua cura. Servono due cose:
+Il provisioning, inizialmente assegnato al CEO, è stato eseguito dall'agente su sua
+richiesta. Tutto vendorizzato in `vendor/` (manifest `vendor/README.md`; binari pesanti
+git-ignored — `ENGINEERING_STANDARDS §4`):
 
-1. **Binario `sfizz_render`** — la CLI di rendering SFZ, disponibile su PATH (oppure
-   comunicarne il path assoluto). Non è in Homebrew: va costruito da sorgente
-   (`github.com/sfztools/sfizz`, CMake) o preso da release prebuilt. Verifica:
-   `which sfizz_render`.
-2. **Un kit SFZ del roster F0-T1b** — per Sfizz servono i kit in formato **SFZ**:
-   **Salamander** o **Karoryfer** (CC-BY). Collocazione vendorizzata definitiva
-   (`ENGINEERING_STANDARDS §4`): proposto `lib/sfz/<kit>/`. Comunicare il path del `.sfz`.
+- **`sfizz_render` 1.2.3** → `vendor/sfizz/sfizz_render`. Prebuilt ufficiale sfizz,
+  eseguibile autonomo x86_64 (gira sotto Rosetta 2 su Apple Silicon).
+- **Kit SFZ Karoryfer Frankensnare v2.100** (CC0, roster F0-T1b) →
+  `vendor/sfz/frankensnare/`. 309 file `.sfz`; snare su GM key 38.
+- **Catena verificata:** render di prova → WAV 44.1 kHz non-silent (peak 0.134).
 
-Appena binario + kit sono presenti, la prossima sessione implementa l'adapter
-`SfizzRenderer` sul CLI reale e chiude il DoD di F0-T2b (render di prova multi-mic + log).
-*Nota:* lo stesso provisioning, lato **DrumGizmo**, servirà per F0-T2c.
+CLI reale: `sfizz_render --sfz <f> --midi <f> --wav <f> --samplerate 44100`
+(opz. `-b blocksize`, `-q quality`, `--log`). *Nota:* per **F0-T2c** servirà un kit
+**DrumGizmo** (engine diverso) — provisioning analogo, **non ancora fatto**.
 
 ## STATO DELLA COMMESSA
 
@@ -58,18 +57,21 @@ Appena binario + kit sono presenti, la prossima sessione implementa l'adapter
   `mypy --strict` pulito.
 
 ### In corso / non avviato
-- **F0-T2b renderer:** bloccato (provisioning CEO).
+- **F0-T2b renderer:** provisioning fatto; resta da scrivere l'adapter `SfizzRenderer`
+  + oracoli §6.3 → chiusura DoD. **Non più bloccato.**
 - **F0-T2d** (Writer Gold-tensor + DNA-Trace) — pronto a partire: pura Python, **zero
   binari**, modulo critico, 16 oracoli già nell'harness. Non gated da nulla.
-- **F0-T2c** (DrumGizmo) — bloccato dallo stesso tipo di provisioning (kit DrumGizmo).
+- **F0-T2c** (DrumGizmo) — bloccato sul provisioning di un kit DrumGizmo (engine diverso).
 - **F0-T10 (corpo, P2)** e **F0-T4b** (gated da F0-T3): invariati.
 
 ## OBIETTIVO IMMEDIATO (prossima sessione)
-**F0-T2d · Writer Gold-tensor + DNA-Trace** — è il task pronto e non bloccato, sulla
-critical path verso Gate L2. Implementare `gold_writer.py` (n_frames, bus_columns, writer
-FP16 + integrità §3.7) e `dna_trace.py` (barcode codec bijettivo, `dna.json`) contro gli
-oracoli `@awaiting("F0-T2d")` già scritti; poi rimuovere i marker e far girare il gate
-mutation (≥ 90 % critici). In parallelo, appena il CEO provisiona Sfizz → ripresa F0-T2b.
+**F0-T2b · adapter `SfizzRenderer`** — provisioning completo, si chiude il task:
+implementare l'adapter CLI Sfizz (subprocess su `vendor/sfizz/sfizz_render` + watchdog
+timeout, `ENGINEERING_STANDARDS §6`), riscrivendo l'ex-`MidiRenderer`; sostituire gli
+oracoli §6.3 `skip` (render deterministico per seed, sr 44100, ampiezza [-1,1]) con i
+test reali; chiudere il DoD. **In parallelo/alternativa: F0-T2d** (Writer Gold-tensor +
+DNA-Trace, pura Python, 16 oracoli `@awaiting("F0-T2d")` pronti) — anch'esso sulla
+critical path L2.
 
 ## CONTESTO CONGELATO (vitale)
 - **VINCOLO DURO:** credito Azure $200 scade **2026-06-19**. Primo checkpoint **CP-1 il

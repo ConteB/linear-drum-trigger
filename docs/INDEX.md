@@ -32,7 +32,7 @@ Documenti indicizzati: **34** · senza frontmatter: **0**.
 | `LIN-DT-DPL-001` | Registro Provenienza Dati & Compliance | registro | ACTIVE | cross-cutting | `docs/compliance/DATA_PROVENANCE_LOG.md` |
 | `LIN-DT-ENGSTD-001` | Engineering Standards — OP-NEUROTRIGGER | standard | ACTIVE | cross-cutting | `04_INTELLIGENCE/ENGINEERING_STANDARDS.md` |
 | `LIN-DT-GOV-001` | Protocollo LINEAR-SHIELD — Governance Sub-Agenti | governance | ACTIVE | cross-cutting | `04_INTELLIGENCE/SUB_AGENT_GOVERNANCE.md` |
-| `LIN-DT-HANDOVER-001` | Session Handover — rev. post F0-T9b / F0-T2b (parser) | registro | ACTIVE | F0 | `04_INTELLIGENCE/SESSION_HANDOVER_REVISION.md` |
+| `LIN-DT-HANDOVER-001` | Session Handover — rev. post F0-T9b / F0-T2b (parser + provisioning) | registro | ACTIVE | F0 | `04_INTELLIGENCE/SESSION_HANDOVER_REVISION.md` |
 | `LIN-DT-HOLDOUT-F0T1c` | F0-T1c — Survey Holdout + Ridisegno Validation Protocol | registro | LOCKED | F0 | `docs/compliance/F0-T1c_HOLDOUT_SURVEY.md` |
 | `LIN-DT-LICVER-F0T1` | F0-T1 — Verifica Licenze (Working Artifact) | registro | ACTIVE | F0 | `docs/compliance/F0-T1_LICENSE_VERIFICATION.md` |
 | `LIN-DT-MKTOCULAR-001` | Strategia Ocular Proof — The Impossible Triad | reference | ACTIVE | cross-cutting | `04_INTELLIGENCE/MARKETING_OCULAR_PROOF.md` |

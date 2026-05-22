@@ -5,8 +5,8 @@ type: registro
 status: DRAFT
 phase: F0
 domain: Data Engineering
-version: 0.2.0
-updated: 2026-05-22
+version: 0.3.0
+updated: 2026-05-23
 tags: [augmentation, audit, backlog, dataset, input-agnostic, F0-T15]
 related: [LIN-DT-DOSSIER-001, LIN-DT-SPEC-F0T2a, LIN-DT-SPEC-F0T4a]
 supersedes: []
@@ -69,6 +69,25 @@ F0-T15 deve decidere quanto di quello spazio coprire.
   F0-T15 deve decidere: il phase-flip opera sui canali esistenti, oppure serve
   un canale snare-bottom dedicato — il che riaprirebbe la tensione col tetto di
   8 canali. *(Basso costo decisionale, va solo chiuso.)*
+
+- **Randomizzazione del bilanciamento di mix / gain-staging d'ingresso**
+  (emerso 2026-05-23 — osservazione del CEO). Il piano §3.1 disaccoppia dal
+  volume *assoluto* (Global Gain Shift, pre-render, sull'intero kit insieme) e
+  §3.3 comprime/EQ-a i singoli stem — ma **nessun asse randomizza il
+  bilanciamento *relativo* tra i canali/bus**. Oggi il Gold tensor porta la
+  "house balance" del renderer: la rete può imparare *quella* proporzione
+  cassa/rullante/overhead come feature implicita. Un utente reale fornisce un
+  mix qualsiasi — cassa sepolta o in faccia, overhead dominanti, stem a livelli
+  arbitrari, gain-staging casuale. Il livello e il bilanciamento sono
+  variabili-disturbo: la rete deve trascrivere l'evento fisico **a prescindere
+  dal mix**, non leggerlo. Rimedio: un vettore di guadagno casuale per-canale
+  (più un guadagno globale) applicato allo stadio audio. È augmentation
+  **sicura per le etichette** — il guadagno non sposta gli onset, a differenza
+  del time-stretch (§5.1) — e a costo quasi nullo. Vincolo: rispettare il tetto
+  d'integrità §5.2 — l'attenuazione non può spingere l'unica evidenza di un
+  colpo sotto la soglia di rilevabilità (col multi-mic il bleed mitiga il
+  rischio: un colpo sopravvive su più microfoni). *(Alto valore, costo
+  bassissimo.)*
 
 ## 4. Casi particolari ma verosimili nel caso d'uso
 
@@ -135,14 +154,15 @@ Decision Lock F0-T15. Voce **alto valore**: è una promessa di prodotto.
 Ordine indicativo per rapporto **valore / costo** — i primi tre sono alto
 impatto e costo basso:
 
-1. Artefatti di codec lossy.
-2. Noise floor stazionario + hum di rete.
-3. Noise gating.
-4. Limiting di bus / master.
-5. Click/metronomo come saboteur · collasso mono · DC offset.
-6. Delay / riverbero algoritmico · sidechain pumping.
-7. Lo-fi / wow & flutter (condizionato alla decisione di mercato).
-8. Scenario composito "cattura amatoriale".
+1. Randomizzazione del bilanciamento di mix / gain-staging d'ingresso.
+2. Artefatti di codec lossy.
+3. Noise floor stazionario + hum di rete.
+4. Noise gating.
+5. Limiting di bus / master.
+6. Click/metronomo come saboteur · collasso mono · DC offset.
+7. Delay / riverbero algoritmico · sidechain pumping.
+8. Lo-fi / wow & flutter (condizionato alla decisione di mercato).
+9. Scenario composito "cattura amatoriale".
 
 ---
 *Backlog aperto 2026-05-22 — input del task F0-T15. Aggiornare `status` a

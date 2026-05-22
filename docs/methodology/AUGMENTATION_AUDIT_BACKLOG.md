@@ -5,7 +5,7 @@ type: registro
 status: DRAFT
 phase: F0
 domain: Data Engineering
-version: 0.3.0
+version: 0.4.0
 updated: 2026-05-23
 tags: [augmentation, audit, backlog, dataset, input-agnostic, F0-T15]
 related: [LIN-DT-DOSSIER-001, LIN-DT-SPEC-F0T2a, LIN-DT-SPEC-F0T4a]
@@ -82,12 +82,19 @@ F0-T15 deve decidere quanto di quello spazio coprire.
   variabili-disturbo: la rete deve trascrivere l'evento fisico **a prescindere
   dal mix**, non leggerlo. Rimedio: un vettore di guadagno casuale per-canale
   (più un guadagno globale) applicato allo stadio audio. È augmentation
-  **sicura per le etichette** — il guadagno non sposta gli onset, a differenza
-  del time-stretch (§5.1) — e a costo quasi nullo. Vincolo: rispettare il tetto
-  d'integrità §5.2 — l'attenuazione non può spingere l'unica evidenza di un
-  colpo sotto la soglia di rilevabilità (col multi-mic il bleed mitiga il
-  rischio: un colpo sopravvive su più microfoni). *(Alto valore, costo
-  bassissimo.)*
+  **sicura per il timing delle etichette** — il guadagno non sposta gli onset,
+  a differenza del time-stretch (§5.1) — e a costo quasi nullo.
+  **Vincolo critico (sottrattivo).** La randomizzazione va costruita in modo da
+  **non rendere mai inudibile un bus che ha un onset nel target**: se uno
+  strumento è presente nel MIDI ed è catturato da un **solo microfono**,
+  portare quel canale a zero lascia il target nella loss ma toglie alla rete
+  ogni segnale da ascoltare — la si punisce per un compito impossibile. Il
+  bleed multi-mic mitiga il rischio *solo* per gli strumenti che suonano su più
+  microfoni; il caso single-mic non ha ridondanza. Va prevenuto **a priori**,
+  non riparato dopo (rimuovere il target qui sarebbe sbagliato — è ground-truth
+  legittima): un limite inferiore, **quantitativo e misurabile**, al rapporto
+  fra i guadagni dei canali / all'evidenza superstite di ogni bus etichettato.
+  Dettaglio in §5, regola 3. *(Alto valore, costo bassissimo.)*
 
 ## 4. Casi particolari ma verosimili nel caso d'uso
 
@@ -101,7 +108,7 @@ F0-T15 deve decidere quanto di quello spazio coprire.
   routing d'ingresso da non dare per scontato.
 - **DC offset.** Banale, reale, a costo nullo.
 
-## 5. Il confine dell'augmentation — due regole da fissare
+## 5. Il confine dell'augmentation — tre regole da fissare
 
 L'audit F0-T15 deve fissare esplicitamente i limiti, non solo le tecniche:
 
@@ -110,10 +117,34 @@ L'audit F0-T15 deve fissare esplicitamente i limiti, non solo le tecniche:
    **solo** se il target viene ri-temporizzato in modo coerente, altrimenti
    corrompe le etichette. Il piano attuale fa pitch-shift e **non** time-stretch
    — scelta corretta, da rendere esplicita come regola.
-2. **Il masking ha un tetto di integrità.** Se lo "Stealth Mix" copre una ghost
-   note fino a renderla *davvero* inudibile, l'etichetta diventa una bugia.
-   Regola: l'augmentation non può mascherare un colpo sotto la sua soglia di
-   rilevabilità senza rimuoverne anche il target corrispondente.
+2. **Il masking ha un tetto di integrità (additivo).** Se lo "Stealth Mix"
+   copre una ghost note fino a renderla *davvero* inudibile, l'etichetta diventa
+   una bugia. Regola: l'augmentation non può mascherare un colpo sotto la sua
+   soglia di rilevabilità senza rimuoverne anche il target corrispondente.
+3. **L'attenuazione non può rendere inudibile un'etichetta (sottrattivo).**
+   Distinta dalla regola 2: lì il colpo è coperto da un interferente *aggiunto*;
+   qui è la randomizzazione del guadagno (§3, voce mix-balance) che abbassa
+   l'evidenza dello strumento stesso sotto la soglia di rilevabilità. Se uno
+   strumento è presente nel MIDI — quindi ha un target — ed è catturato da un
+   **solo microfono**, portare quel canale a zero lascia il target nella loss
+   ma toglie alla rete ogni segnale: la si addestra su un compito impossibile.
+   A differenza della regola 2, **rimuovere il target NON è la soluzione** — lo
+   strumento c'è davvero, l'etichetta è ground-truth legittima; cancellarla
+   insegnerebbe alla rete a ignorare colpi reali. La soluzione è **preventiva e
+   misurabile**: la randomizzazione del guadagno è vincolata in modo che, per
+   ogni bus con un onset nel target, l'evidenza superstite resti sopra una
+   soglia di rilevabilità quantitativa.
+   - *Forma rigorosa (label-aware):* per ogni onset del bus `b`, il picco del
+     transiente nel canale più forte **dopo** il guadagno deve restare ≥ un
+     margine SNR sopra il noise floor effettivo del mix. È calcolabile: il
+     renderer espone i canali per-microfono e il target dice quali bus suonano,
+     quindi l'energia per-strumento per-canale è **nota e misurabile**.
+   - *Forma proxy (economica):* un limite inferiore fisso al rapporto fra i
+     guadagni dei canali — uno spread massimo di attenuazione — senza analisi
+     per-onset.
+   F0-T15 sceglie la forma, fissa la soglia, e decide come misurare il "noise
+   floor effettivo". Caso peggiore da coprire esplicitamente: `mic_config: mono`
+   e gli strumenti single-mic, dove non esiste ridondanza di bleed.
 
 ## 6. Pre-render (MIDI Jittering, §3.1) — da auditare a parte
 

@@ -6,7 +6,7 @@ status: LOCKED
 phase: cross-cutting
 domain: Quality Assurance
 version: 1.0.0
-updated: 2026-05-20
+updated: 2026-05-22
 tags: [testing, qa, doctrine, governance, mutation-testing]
 related: [LIN-DT-GOV-001, LIN-DT-SPEC-F0T2a, LIN-DT-CHKLST-001]
 supersedes: []
@@ -191,8 +191,13 @@ Implementato in **F0-T9b** (harness), che **gate-a F0-T2b/c/d** (test-first).
 ### 6.3 Accettazione per sotto-task
 - **F0-T2b (Sfizz):** render deterministico per seed; `sample_rate = 44100`; conteggio
   canali per `mic_config`; ampiezza in `[-1,1]`.
-- **F0-T2c (DrumGizmo):** `n_mic` coerente col `mic_config`; **bleed presente** —
-  proprietà *falsificabile*: cross-correlazione inter-canale > 0 (non "a occhio").
+- **F0-T2c (DrumGizmo):** conteggio canali del render coerente col kit multi-mic
+  (`n_mic` = canali dichiarati dal kit); **bleed presente** — proprietà
+  *falsificabile*: la **correlazione di inviluppo** (RMS a finestre, polarity-free)
+  tra canali distinti supera una soglia, e crolla a ~0 contro un segnale scorrelato
+  (controprova). *(Rettifica 2026-05-22, Decision Lock CEO: la cross-correlazione
+  grezza della forma d'onda dà falsi negativi — dipende da polarità e ritardo
+  inter-microfonico; il probe render DRSKit l'ha dimostrato.)*
 - **F0-T2d (writer):** suite §6.2 completa + gate mutation ≥ 90 %.
 - **F0-T2e (orchestrazione):** smoke end-to-end + conteggio di N campioni Gold.
 

@@ -6,9 +6,9 @@ status: ACTIVE
 phase: cross-cutting
 domain: Architecture / DSP / Neural
 version: 1.0.0
-updated: 2026-05-20
+updated: 2026-05-22
 tags: [dossier, architecture, dsp, neural, augmentation]
-related: [LIN-DT-CHKLST-001, LIN-DT-SPEC-F0T2a, LIN-DT-SPEC-F0T4a]
+related: [LIN-DT-CHKLST-001, LIN-DT-SPEC-F0T2a, LIN-DT-SPEC-F0T4a, LIN-DT-AUGAUDIT-001]
 supersedes: []
 ---
 
@@ -91,6 +91,16 @@ Ogni tensore Gold finale (in pasto all'IA) possiede una "Carta d'Identità" per 
 - **Libretto Sanitario (JSON):** Ogni batch o tensore critico è accompagnato da un file JSON con l'esatto quantitativo di time shift applicato, la percentuale di riverbero Wet/Dry o il ratio di mix, consentendo reverse-engineering totale.
 
 > Lo schema formale dei campi (barcode e JSON) è **bloccato** — vedi [`F0-T2a` §4 — DNA-Trace](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#dna-trace-format) (Decision Lock 2026-05-20); ogni campione WebDataset porta il proprio `{key}.dna.json` (vedi [§9.2](#medallion)).
+
+<a id="aug-gap"></a>
+### 3.6 Audit Backlog — gap di augmentation (aperto)
+La dottrina §3 modella implicitamente **un solo input**: una batteria tracciata e
+mixata in studio professionale. La revisione del 2026-05-22 (osservazione del CEO) ha
+isolato assi reali scoperti — artefatti di codec, noise floor / hum, cattura
+amatoriale, gating, lo-fi — raccolti in [`AUGMENTATION_AUDIT_BACKLOG.md`](AUGMENTATION_AUDIT_BACKLOG.md).
+L'arbitraggio valore/costo e il Decision Lock sono delegati al task
+[`F0-T15`](../../04_INTELLIGENCE/MASTER_SCHEDULING.md#tasks); questo §3 va aggiornato a
+valle di quella chiusura. Non sul percorso critico di F0 (l'augmentation è F2).
 
 <a id="midi-matrix"></a>
 ## 4. Matrice di Output MIDI (Standard OpenPhase)

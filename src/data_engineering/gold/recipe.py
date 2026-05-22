@@ -64,10 +64,13 @@ MIC_CONFIG_CHANNELS: dict[MicConfig, tuple[str, ...]] = {
     MicConfig.MONO: ("mix",),
     MicConfig.SOLO_STEREO: ("mix_L", "mix_R"),
     MicConfig.GLYN_JOHNS: ("kick", "snare", "oh_L", "oh_R"),
+    # multitrack_full — the industry-standard 8-channel layout (Superior
+    # Drummer 3 / EZdrummer / Steven Slate / GetGood Drums; Decision Lock CEO
+    # 2026-05-22): every kit zone gets one close mic, stereo overheads, a room.
     MicConfig.MULTITRACK_FULL: (
         "kick",
-        "snare_top",
-        "snare_bot",
+        "snare",
+        "hihat",
         "tom",
         "floor",
         "oh_L",

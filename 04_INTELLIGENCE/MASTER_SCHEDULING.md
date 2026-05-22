@@ -6,7 +6,7 @@ status: ACTIVE
 phase: cross-cutting
 domain: Operations / Project Execution
 version: 1.0.0
-updated: 2026-05-21
+updated: 2026-05-22
 tags: [scheduling, execution, governance, tracking]
 related: [LIN-DT-SCHED-001, LIN-DT-CHKLST-001, LIN-DT-DOCSTD-001]
 supersedes: []
@@ -222,7 +222,30 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *📚 Letture:* [`F0-T2a §2.4 — mic config`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#mic-config) · [`DOSSIER §3.2`](../docs/methodology/DOSSIER_TECNICO.md#aug-l1) · [`TESTING_DOCTRINE §6`](TESTING_DOCTRINE.md#f0-test-plan) · [`ENGINEERING_STANDARDS §6`](ENGINEERING_STANDARDS.md#execution-robustness).
 - *Azioni:* integrare **DrumGizmo** via CLI; kit multi-microfono per il bleed reale.
 - *DoD:* render multi-mic con bleed presente e verificabile (log).
-- ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)*.
+- ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)* — entrambi ☑.
+- ☑ **FATTO (2026-05-22):** chiuso in quattro passi. (1) **Provisioning** — DrumGizmo 0.9.20
+  via apt nella VM OrbStack `ubuntu` (nessun prebuilt macOS → si gira su Linux, parità
+  con Azure F2) + kit **DRSKit 2.1** (CC-BY-4.0, 13 mic, roster F0-T1b) vendorizzato in
+  `vendor/drumgizmo/DRSKit/`; manifest `vendor/README.md`. (2) **Adapter
+  `DrumGizmoRenderer`** in `render.py` sul CLI reale (`drumgizmo -i midifile -o wavfile`)
+  — assembla i WAV per-canale `out{Canale}-{idx}.wav` in un WAV multi-mic unico;
+  fail-loud + watchdog + sanity-check Silent Zero / NaN / canali ragged (`ENGINEERING_STANDARDS §6`);
+  `ruff` + `mypy --strict` puliti. (3) **Standardizzazione 13→8** (Decision Lock CEO
+  2026-05-22): `multitrack_full` riallineato allo **standard di settore** (Superior
+  Drummer 3 / EZdrummer / Steven Slate / GetGood Drums) — scambio `snare_bot`→`hihat`,
+  `F0-T2a §2.3` emendato (v1.1.0). L'adapter **seleziona** i 13 mic DRSKit sugli 8
+  canonici (`DRSKIT_MULTITRACK8` — un microfono reale per slot, mai sommati); la modalità
+  engine-faithful a 13 canali è conservata per una futura linea *NeuroTrigger Pro*.
+  Risolve la tensione `n_mic > 8` vs contratto F0-T2a §3.2. (4) **Oracoli §6.3** verdi:
+  20 unit Layer-1 (binary-free, fake-binary per ogni failure mode) + 4 acceptance reali
+  (`tests/acceptance/test_drumgizmo_render.py`: `sr=44100`, render standardizzato a **8**
+  canali, modalità faithful a 13, **bleed falsificabile**). **Rettifica TESTING_DOCTRINE
+  §6.3** (Decision Lock CEO): la metrica di bleed passa da cross-correlazione grezza →
+  **correlazione di inviluppo** (RMS a finestre, polarity-free) — il probe DRSKit ha
+  dimostrato che la Pearson grezza dà falsi negativi (Snare↔OH −0.55 grezza vs **+0.93**
+  inviluppo). Suite F0: **153 passed, 0 failed**; 4 acceptance DrumGizmo verdi dentro
+  OrbStack. Ocular Proof — render reale DRSKit standardizzato: 8 WAV, 44100 Hz,
+  non-silent, bleed snare→OH ≈ 0.93.
 
 **F0-T2d · Writer Gold-tensor + DNA-Trace · `[F]` `P1`**
 - *📚 Letture:* [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`F0-T2a — DNA-Trace`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#dna-trace-format) · [`DOSSIER §9.2`](../docs/methodology/DOSSIER_TECNICO.md#medallion) · [`TESTING_DOCTRINE §6`](TESTING_DOCTRINE.md#f0-test-plan) · [`ENGINEERING_STANDARDS §1`](ENGINEERING_STANDARDS.md#determinism).
@@ -248,7 +271,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Azioni:* orchestrare la pipeline (recipe → Sfizz/DrumGizmo → writer Gold tensor) e
   generare un mini-batch (~10–20 scenari).
 - *DoD:* log stdout che mostra N campioni Gold generati senza errori.
-- ⛔ F0-T2c *(F0-T2b, F0-T2d ☑)*. → F0-T3.
+- ⛔ F0-T2c, F0-T2b, F0-T2d — tutti ☑, **sbloccato**. → F0-T3.
 
 **F0-T3 · Gate L2 (validazione recipe) · `[C]` `P1`**
 - *📚 Letture:* [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`DOSSIER §4 — matrice MIDI`](../docs/methodology/DOSSIER_TECNICO.md#midi-matrix) · [`MASTER_CHECKLIST §6 — Gate`](../MASTER_CHECKLIST.md#gates) · [`ENGINEERING_STANDARDS §6`](ENGINEERING_STANDARDS.md#execution-robustness).
@@ -434,6 +457,27 @@ stop compute + push HDD · **$10** → chiudi tutto.
   mapping documentale OP-X (TOP-002), costruito sul linking layer del progetto invece che
   su una matrice separata soggetta a drift.
 
+**F0-T15 · Audit augmentation & agnosticità d'ingresso (STRP-001) · `[D]` `P2`**
+- *📚 Letture:* [`AUGMENTATION_AUDIT_BACKLOG`](../docs/methodology/AUGMENTATION_AUDIT_BACKLOG.md) · [`DOSSIER §3 — augmentation`](../docs/methodology/DOSSIER_TECNICO.md#aug-prerender) · [`DOSSIER §3.6 — gap`](../docs/methodology/DOSSIER_TECNICO.md#aug-gap) · [`DOSSIER §2.1 — input-agnostic`](../docs/methodology/DOSSIER_TECNICO.md#input-agnostic) · [`F0-T4a §4`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md#input-agnostic-slots).
+- *Origine:* due revisioni del CEO (2026-05-22), coniugate perché stessa famiglia di
+  decisioni — la **varietà dei dati di training** a monte di F2-T2. (1) La dottrina di
+  augmentation del `DOSSIER §3` modella implicitamente **un solo input** (batteria
+  tracciata e mixata in studio): assi scoperti — codec, noise floor / hum, cattura
+  amatoriale, gating, limiting di master, lo-fi / wow & flutter, click come saboteur.
+  (2) L'**agnosticità d'ingresso** è oggi solo *parziale* — agnostica al conteggio
+  (1–8, zero-fill) ma **non all'assegnazione**: slot a semantica fissa, training solo
+  sui conteggi {1,2,4,8} in ordine fisso. Tutto raccolto in `AUGMENTATION_AUDIT_BACKLOG.md`.
+- *Azioni:* applicare STRP-001; auditare (a) l'augmentation **post-render** (`DOSSIER`
+  §3.3–§3.4) e **pre-render** (§3.1 — MIDI Jittering); (b) l'**agnosticità d'ingresso** —
+  augmentation di **permutazione dei canali** + **conteggi variabili {1…8}** in training,
+  così l'input diventa agnostico anche all'ordine/assegnazione; arbitrare valore/costo le
+  voci del backlog; Executive Briefing al CEO.
+- *DoD:* Executive Briefing approvato (Decision Lock); `DOSSIER §3` aggiornato con le voci
+  ratificate; **amendment a `F0-T4a §4`** (la semantica fissa per-slot → "porte"
+  d'ingresso); `AUGMENTATION_AUDIT_BACKLOG.md` → `status: SUPERSEDED`.
+- *Non sul percorso critico di F0* — augmentation e training-data sono F2. **Dovrebbe
+  precedere F2-T2 e F2-T3.** Da schedulare dopo la chiusura del critico verso L2.
+
 > **Gate d'uscita F0:** L2 superato (~05-28) **e** L3 superato (~06-02).
 
 ### Fase F1 — Provisioning Azure · gate d'ingresso: L2 superato
@@ -503,9 +547,9 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T1c | Ridisegno Validation Protocol/Holdout | F0 | ☑ | — | — |
 | F0-T2a | Recipe + contratto dati (STRP-001) | F0 | ☑ | — | — |
 | F0-T2b | Render engine Sfizz | F0 | ☑ | — | — |
-| F0-T2c | Integrazione DrumGizmo | F0 | ☐ | — *(sbloccato)* | — |
+| F0-T2c | Integrazione DrumGizmo | F0 | ☑ | — | — |
 | F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☑ | — | — |
-| F0-T2e | Mini-batch end-to-end | F0 | ☐ | F0-T2c | — |
+| F0-T2e | Mini-batch end-to-end | F0 | ☐ | — *(sbloccato)* | — |
 | F0-T3 | Validazione Gate L2 | F0 | ☐ | F0-T2e | **L2** |
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☐ | F0-T3, F0-T4a | **L3** |
@@ -520,6 +564,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T12 | Audit OpenPhase — standard ingegneristici | F0 | ☑ | — | — |
 | F0-T13 | De-referenziazione OP-X (chiusura decoupling) | F0 | ☑ | — | — |
 | F0-T14 | Mapping documentale dei task (campo Letture) | F0 | ☑ | — | — |
+| F0-T15 | Audit augmentation & agnosticità d'ingresso (STRP-001) | F0 | ☐ | — *(non critico — pre F2-T2)* | — |
 | F1-T1 | Setup Azure | F1 | ⊘ | F0-T3 | — |
 | F1-T2 | dvc remote Azure | F1 | ⊘ | F1-T1 | — |
 | F2-T1 | Render Gold 1.5 TB | F2 | ⊘ | F1-T1 | — |
@@ -541,9 +586,15 @@ stop compute + push HDD · **$10** → chiudi tutto.
 sul CLI reale, watchdog + fail-loud Silent Zero, oracoli §6.3 verdi)
 · ☑ F0-T2d (writer Gold-tensor + DNA-Trace — contratto F0-T2a §3–§4, suite F0 verde,
 gate mutation sbloccato su Linux/OrbStack, kill-rate comportamentale 100 %)
-(Decision Lock 2026-05-20) · Sbloccato: **F0-T2c** (DrumGizmo — gated solo dal
-già-fatto F0-T2a) e **F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) · Percorso
-critico verso L2: **F0-T2c → T2e → T3** · Scenario credito: *da fissare a CP-1* ·
+· ☑ F0-T2c (integrazione DrumGizmo — provisioning DRSKit 13-mic + adapter
+`DrumGizmoRenderer` sul CLI reale, 17 unit + 3 acceptance §6.3, bleed falsificabile via
+correlazione di inviluppo, suite F0 150 passed)
+(Decision Lock 2026-05-20) · ☐ F0-T15 (audit augmentation & agnosticità d'ingresso —
+aperto 2026-05-22 su due revisioni del CEO, backlog in `AUGMENTATION_AUDIT_BACKLOG.md`;
+non critico, pre F2-T2/T3)
+· Sbloccato: **F0-T2e** (mini-batch end-to-end — render engine entrambi pronti) e
+**F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) · Percorso
+critico verso L2: **F0-T2e → T3** · Scenario credito: *da fissare a CP-1* ·
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---

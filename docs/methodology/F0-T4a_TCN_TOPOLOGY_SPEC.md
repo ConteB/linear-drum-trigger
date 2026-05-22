@@ -6,7 +6,7 @@ status: LOCKED
 phase: F0
 domain: AI / Neural Engineering
 version: 1.0.0
-updated: 2026-05-20
+updated: 2026-05-22
 tags: [tcn, topology, neural, F0-T4a]
 related: [LIN-DT-SPEC-F0T2a, LIN-DT-DOSSIER-001, LIN-DT-CHKLST-001]
 supersedes: []
@@ -112,6 +112,7 @@ Le 4 teste si concatenano esattamente nel layout `flat-25` ([`F0-T2a §3.3`](F0-
 opening. Il data-loader fa già il reshape `cols 0:24 → [n_frame,8,3]` e `col 24 →
 [n_frame]`: il modello produce direttamente i tensori nello stesso ordine.
 
+<a id="input-agnostic-slots"></a>
 ## 4. Input agnostico — 8 slot canonici
 
 Il modello ha **larghezza d'ingresso fissa = 8** (requisito di grafo statico RTNeural).
@@ -120,11 +121,15 @@ non usati sono **zero-fill**:
 
 | Slot | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-| Etichetta canonica | kick | snare_top | snare_bot | tom | floor | oh_L | oh_R | room |
+| Etichetta canonica | kick | snare | hihat | tom | floor | oh_L | oh_R | room |
 | `mono` | mix→0 | — | — | — | — | — | — | — |
 | `solo_stereo` | — | — | — | — | — | mix_L→5 | mix_R→6 | — |
 | `glyn_johns` | kick | snare→1 | — | — | — | oh_L | oh_R | — |
-| `multitrack_full` | kick | snare_top | snare_bot | tom | floor | oh_L | oh_R | room |
+| `multitrack_full` | kick | snare | hihat | tom | floor | oh_L | oh_R | room |
+
+> **Allineato all'amendment F0-T2a §2.3 (2026-05-22):** `multitrack_full` segue lo
+> standard di settore (slot 1 `snare`, slot 2 `hihat`). La robustezza alla *permutazione*
+> dei canali e ai conteggi non-canonici (5/7 mic) è un punto aperto — vedi nota sotto.
 
 L'**Input-Agnostic Projection** (Conv1D k=1) impara a estrarre la "verità" indipendentemente
 dalla densità informativa ([`DOSSIER §2.1`](DOSSIER_TECNICO.md#input-agnostic)). L'assegnazione dei mic reali agli slot in fase

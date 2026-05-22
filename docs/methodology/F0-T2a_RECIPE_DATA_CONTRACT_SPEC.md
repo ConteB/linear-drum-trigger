@@ -5,8 +5,8 @@ type: spec
 status: LOCKED
 phase: F0
 domain: Data Engineering
-version: 1.0.0
-updated: 2026-05-20
+version: 1.1.0
+updated: 2026-05-22
 tags: [recipe, data-contract, webdataset, F0-T2a]
 related: [LIN-DT-SPEC-F0T4a, LIN-DT-DOSSIER-001, LIN-DT-CHKLST-001]
 supersedes: []
@@ -114,11 +114,21 @@ output:
 | `mono` | 1 | `["mix"]` |
 | `solo_stereo` | 2 | `["mix_L","mix_R"]` |
 | `glyn_johns` | 4 | `["kick","snare","oh_L","oh_R"]` |
-| `multitrack_full` | 8 | `["kick","snare_top","snare_bot","tom","floor","oh_L","oh_R","room"]` |
+| `multitrack_full` | 8 | `["kick","snare","hihat","tom","floor","oh_L","oh_R","room"]` |
 
 `n_mic` e `channel_labels` sono registrati nel `dna.json`. Il contratto ammette
 `n_mic ∈ [1,8]` arbitrario; la standardizzazione a tensore fisso avviene al data-loading
 (layer di pre-processing del modello, [§2.1 DOSSIER](DOSSIER_TECNICO.md#input-agnostic)), **non** in fase di scrittura Gold.
+
+> **Amendment 2026-05-22 (Decision Lock CEO).** `multitrack_full` riallineato allo
+> **standard di settore**: i prodotti di riferimento (Superior Drummer 3, EZdrummer,
+> Steven Slate Drums, GetGood Drums) espongono tutti il set core *kick · snare · hi-hat ·
+> tom · floor · overhead L/R · room*. Il layout precedente (`snare_top`/`snare_bot`, senza
+> hi-hat) spendeva due canali sul rullante e ometteva l'hi-hat — canale che ogni prodotto
+> citato espone come dedicato. Scambio applicato: `snare_bot` → `hihat`. Conteggio
+> invariato (8). I kit DrumGizmo con più microfoni (DRSKit: 13) vengono **selezionati** su
+> questo layout dall'adapter di render — un microfono reale per slot, mai sommati. Una
+> configurazione a 13+ canali è rinviata a una futura linea `NeuroTrigger Pro`.
 
 ---
 

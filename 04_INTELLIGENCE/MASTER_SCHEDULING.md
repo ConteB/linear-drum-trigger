@@ -202,17 +202,21 @@ stop compute + push HDD · **$10** → chiudi tutto.
   multi-layer) al posto di FluidSynth.
 - *DoD:* render di prova SFZ multi-layer corretto (log).
 - ⛔ F0-T2a, F0-T9b *(harness test-first — Testing Doctrine)* — entrambi ☑, sbloccato.
-- ◐ **IN CORSO (2026-05-21):** **parser recipe** implementato (`src/data_engineering/gold/recipe.py`)
-  — schema F0-T2a §1.1, strict fail-loud (`RecipeError`, mai stato parziale). 11 oracoli
-  del contratto (9 unit + 2 fuzz) passati da `xfail` a verde; `ruff` + `mypy --strict`
-  puliti (`ENGINEERING_STANDARDS §3.1`); dipendenza `PyYAML==6.0.3` aggiunta a
-  `requirements.txt`. **Provisioning render risolto (2026-05-22):** `sfizz_render` 1.2.3
-  (prebuilt ufficiale) e il kit SFZ Karoryfer **Frankensnare** (CC0, roster F0-T1b)
-  vendorizzati in `vendor/` (`ENGINEERING_STANDARDS §4`; manifest `vendor/README.md`,
-  binari git-ignored); catena binario+kit verificata con render di prova non-silent
-  (44.1 kHz, peak 0.134). **Resta da fare:** l'adapter `SfizzRenderer` sul CLI reale
-  (`sfizz_render --sfz/--midi/--wav --samplerate`) con watchdog (`ENGINEERING_STANDARDS §6`)
-  e gli oracoli §6.3 → chiusura DoD.
+- ☑ **FATTO (2026-05-22):** chiuso in tre passi. (1) **Parser recipe**
+  (`src/data_engineering/gold/recipe.py`) — schema F0-T2a §1.1, strict fail-loud
+  (`RecipeError`, mai stato parziale); 11 oracoli del contratto da `xfail` a verde;
+  `PyYAML==6.0.3` aggiunto a `requirements.txt`. (2) **Provisioning** (2026-05-22):
+  `sfizz_render` 1.2.3 (prebuilt ufficiale) + kit SFZ Karoryfer **Frankensnare** (CC0,
+  roster F0-T1b) vendorizzati in `vendor/` (`ENGINEERING_STANDARDS §4`; manifest
+  `vendor/README.md`, binari git-ignored). (3) **Adapter `SfizzRenderer`**
+  (`src/data_engineering/gold/render.py`) sul CLI reale `sfizz_render` — fail-loud,
+  watchdog di timeout esplicito + sanity-check anti «Silent Zero»
+  (`ENGINEERING_STANDARDS §6`); `ruff` + `mypy --strict` puliti. **Oracoli §6.3** verdi:
+  15 unit Layer-1 (binary-free, fake-binary per ogni failure mode) + 4 acceptance reali
+  (`tests/acceptance/test_sfizz_render.py`: render deterministico, `sr=44100`, stereo
+  stem, ampiezza in `[-1,1]`); i 2 scaffold `skip` Sfizz rimossi dal harness. Ocular
+  Proof — render reale Frankensnare: `sr=44100 ch=2 frames=164864 peak=0.1071`,
+  non-silent. Suite F0: **43 passed, 4 skipped, 39 xfailed, 0 failed**.
 
 **F0-T2c · Integrazione DrumGizmo · `[F]` `P1`**
 - *📚 Letture:* [`F0-T2a §2.4 — mic config`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#mic-config) · [`DOSSIER §3.2`](../docs/methodology/DOSSIER_TECNICO.md#aug-l1) · [`TESTING_DOCTRINE §6`](TESTING_DOCTRINE.md#f0-test-plan) · [`ENGINEERING_STANDARDS §6`](ENGINEERING_STANDARDS.md#execution-robustness).
@@ -232,7 +236,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Azioni:* orchestrare la pipeline (recipe → Sfizz/DrumGizmo → writer Gold tensor) e
   generare un mini-batch (~10–20 scenari).
 - *DoD:* log stdout che mostra N campioni Gold generati senza errori.
-- ⛔ F0-T2b, F0-T2c, F0-T2d. → F0-T3.
+- ⛔ F0-T2c, F0-T2d *(F0-T2b ☑)*. → F0-T3.
 
 **F0-T3 · Gate L2 (validazione recipe) · `[C]` `P1`**
 - *📚 Letture:* [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`DOSSIER §4 — matrice MIDI`](../docs/methodology/DOSSIER_TECNICO.md#midi-matrix) · [`MASTER_CHECKLIST §6 — Gate`](../MASTER_CHECKLIST.md#gates) · [`ENGINEERING_STANDARDS §6`](ENGINEERING_STANDARDS.md#execution-robustness).
@@ -486,10 +490,10 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T1b | Survey & selezione kit (roster) | F0 | ☑ | — | — |
 | F0-T1c | Ridisegno Validation Protocol/Holdout | F0 | ☑ | — | — |
 | F0-T2a | Recipe + contratto dati (STRP-001) | F0 | ☑ | — | — |
-| F0-T2b | Render engine Sfizz | F0 | ◐ | — | — |
+| F0-T2b | Render engine Sfizz | F0 | ☑ | — | — |
 | F0-T2c | Integrazione DrumGizmo | F0 | ☐ | — *(sbloccato)* | — |
 | F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☐ | — *(sbloccato)* | — |
-| F0-T2e | Mini-batch end-to-end | F0 | ☐ | F0-T2b, F0-T2c, F0-T2d | — |
+| F0-T2e | Mini-batch end-to-end | F0 | ☐ | F0-T2c, F0-T2d | — |
 | F0-T3 | Validazione Gate L2 | F0 | ☐ | F0-T2e | **L2** |
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☐ | F0-T3, F0-T4a | **L3** |
@@ -521,10 +525,12 @@ stop compute + push HDD · **$10** → chiudi tutto.
 · ☑ F0-T13 (de-referenziazione OP-X — decoupling dall'archivio chiuso)
 · ☑ F0-T14 (mapping documentale — campo `📚 Letture` su 17 task aperti)
 · ☑ F0-T9b (F0 Pipeline Test Harness — scaffold test-first auto-smontante, gate di F0-T2b/c/d)
-(Decision Lock 2026-05-20) · Sbloccati: **F0-T2b/c/d** (render engine Sfizz, DrumGizmo,
-writer Gold-tensor — ora che il gate test-first F0-T9b è chiuso; restano gated solo dal
-già-fatto F0-T2a) e **F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) ·
-Scenario credito: *da fissare a CP-1* · Prossimo checkpoint: **CP-1 / 2026-05-30**.
+· ☑ F0-T2b (render engine Sfizz — parser recipe + provisioning + adapter `SfizzRenderer`
+sul CLI reale, watchdog + fail-loud Silent Zero, oracoli §6.3 verdi)
+(Decision Lock 2026-05-20) · Sbloccati: **F0-T2c/d** (DrumGizmo, writer Gold-tensor — il
+gate test-first F0-T9b è chiuso; gated solo dal già-fatto F0-T2a) e **F0-T4b**
+(mini-prototipo TCN, gated anche da F0-T3) · Percorso critico verso L2: F0-T2c → T2d →
+T2e → T3 · Scenario credito: *da fissare a CP-1* · Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---
 *Decision Lock 2026-05-20. Aggiornare il Tracking Board (§7) e lo scenario credito (§4)

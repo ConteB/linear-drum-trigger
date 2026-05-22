@@ -1,27 +1,18 @@
-"""§6.3 — per-subtask acceptance tests.
+"""§6.3 — per-subtask acceptance tests (pending sub-tasks).
 
-These exercise the render engines end-to-end and therefore need external
-binaries (Sfizz, DrumGizmo) and the orchestrator — none of which exist yet.
+These exercise the render engines / orchestrator end-to-end and therefore need
+external binaries (DrumGizmo) or the orchestrator — none of which exist yet.
 They are materialised here as SKIPPED scaffolds so the §6.3 acceptance plan is
 tracked in the harness and filled in by the owning sub-task.
 
 When a sub-task lands it replaces the corresponding ``skip`` with a real body.
+F0-T2b (Sfizz) is done: its §6.3 oracles live in ``test_sfizz_render.py``.
 """
 from __future__ import annotations
 
 import pytest
 
 pytestmark = pytest.mark.acceptance
-
-
-@pytest.mark.skip(reason="F0-T2b — needs the Sfizz binary integrated")
-def test_sfizz_render_is_deterministic_per_seed() -> None:
-    """Same recipe + same seed -> bit-identical WAV (TESTING_DOCTRINE §6.3)."""
-
-
-@pytest.mark.skip(reason="F0-T2b — needs the Sfizz binary integrated")
-def test_sfizz_render_sample_rate_is_44100() -> None:
-    """Rendered WAV is 44.1 kHz, amplitude within [-1, 1] (§6.3)."""
 
 
 @pytest.mark.skip(reason="F0-T2c — needs a DrumGizmo multi-mic kit")

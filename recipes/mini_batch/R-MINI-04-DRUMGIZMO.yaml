@@ -1,0 +1,27 @@
+# F0-T2e mini-batch — synthetic smoke recipe (generated).
+recipe_id: R-MINI-04-DRUMGIZMO
+schema_version: "1.0"
+split: train
+midi_source:
+  dataset: GMD
+  file: bronze/gmd/mini/groove_04.mid
+  bus_mapping: midi_mapping_table.yaml@1.0
+midi_jitter:
+  time_jitter_ms: [0, 0]
+  flam_probability: 0.0
+  velocity_jitter: none
+  component_drop_probability: 0.0
+  seed: 1004
+render:
+  engine: drumgizmo
+  kit: DRSKit
+  kit_path: vendor/drumgizmo/DRSKit/DRSKit_full.xml
+  sample_rate: 44100
+  mic_config: multitrack_full
+augmentation:
+  level: 1
+  reverb_ir: null
+  mutilation: {}
+  saboteur: null
+output:
+  target_frame_rate_hz: 344.53125

@@ -1,0 +1,283 @@
+"""Pipeline orchestrator — recipe -> Gold sample (F0-T2e).
+
+The single seam that joins the F0 render pipeline end-to-end: it takes one
+validated :class:`~data_engineering.gold.recipe.Recipe` and drives it through
+
+    recipe -> render (Sfizz / DrumGizmo) -> audio.f16 + target.f16 -> dna.json
+
+It owns no DSP of its own — it wires the modules built by F0-T2b/c/d plus the
+:mod:`~data_engineering.gold.target_builder`, and verifies the result with
+:func:`~data_engineering.gold.dna_trace.validate_dna_json` before returning.
+
+Fail-loud (ENGINEERING_STANDARDS §6): any failure of any stage raises
+:class:`OrchestrationError` (or the stage's own error) and no partial Gold
+sample is left behind for a caller to mistake for a complete one.
+
+Spec: ``docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md`` §3;
+``04_INTELLIGENCE/MASTER_SCHEDULING.md`` §6 F0-T2e.
+"""
+from __future__ import annotations
+
+import re
+import tempfile
+from dataclasses import dataclass
+from pathlib import Path
+
+import mido  # type: ignore[import-untyped]
+import numpy as np
+import soundfile as sf  # type: ignore[import-untyped]
+
+from data_engineering.gold.dna_trace import (
+    Barcode,
+    build_dna_json,
+    encode_barcode,
+    validate_dna_json,
+)
+from data_engineering.gold.gold_writer import SAMPLE_RATE, write_gold_sample
+from data_engineering.gold.recipe import Engine, Recipe
+from data_engineering.gold.render import (
+    DRSKIT_MULTITRACK8,
+    DrumGizmoRenderer,
+    RenderError,
+    SfizzRenderer,
+)
+from data_engineering.gold.target_builder import BusMapping, build_target
+
+#: Repo root, resolved from ``src/data_engineering/gold/orchestrate.py``.
+REPO_ROOT = Path(__file__).resolve().parents[3]
+#: The versioned GM <-> 8-bus mapping table (F0-T2a §1.1).
+DEFAULT_BUS_MAPPING_PATH = REPO_ROOT / "docs" / "specs" / "midi_mapping_table.yaml"
+#: Tail appended to a DrumGizmo render so cymbal / ambience decay is captured —
+#: DrumGizmo needs the output length up front (the CLI ``--endpos``).
+_DRUMGIZMO_TAIL_S = 5.0
+#: Velocity-jitter ordinal for the barcode ``MIDIALT`` segment (F0-T2a §4.1).
+_VELOCITY_JITTER_CODE = {"none": 0, "ghost_mask": 1, "gain_shift": 2, "both": 3}
+
+
+class OrchestrationError(RuntimeError):
+    """Raised when the recipe -> Gold-sample pipeline cannot complete."""
+
+
+@dataclass(frozen=True)
+class GoldSampleResult:
+    """Verified outcome of one orchestrated Gold sample.
+
+    Attributes:
+        key: The WebDataset sample key (the DNA barcode, dot-free).
+        recipe_id: The originating recipe's id.
+        engine: The render engine used.
+        out_dir: Directory holding the ``{key}.audio.f16`` / ``.target.f16`` /
+            ``.dna.json`` triple.
+        n_mic: Microphone channel count of the ``audio`` buffer.
+        n_sample: Samples per channel of the ``audio`` buffer.
+        n_frame: Frame count of the ``target`` matrix.
+        audio_peak: Largest absolute audio amplitude (strictly ``> 0``).
+    """
+
+    key: str
+    recipe_id: str
+    engine: Engine
+    out_dir: Path
+    n_mic: int
+    n_sample: int
+    n_frame: int
+    audio_peak: float
+
+
+def _digit_token(text: str) -> str:
+    """Return the first digit-run of ``text`` as a 3-char token, else a hash."""
+    match = re.search(r"\d+", text)
+    if match:
+        return match.group()[-3:].rjust(3, "0")
+    return f"{abs(hash(text)) % 1000:03d}"
+
+
+def derive_barcode(recipe: Recipe) -> Barcode:
+    """Derive a deterministic six-segment DNA barcode from a recipe (F0-T2a §4.1).
+
+    Every segment is dot-free and dash-free by construction, so the encoded key
+    survives WebDataset's extension splitting (F0-T2a §3.1). The mapping is a
+    pure function of the recipe: the same recipe always yields the same key.
+
+    Args:
+        recipe: The validated recipe.
+
+    Returns:
+        The sample's :class:`Barcode`.
+    """
+    midi_stem = Path(recipe.midi_source.file).stem
+    midisrc = f"{recipe.midi_source.dataset}{_digit_token(midi_stem)}"
+
+    v_code = _VELOCITY_JITTER_CODE[recipe.midi_jitter.velocity_jitter.value]
+    low, high = recipe.midi_jitter.time_jitter_ms
+    t_code = 0 if low == 0.0 and high == 0.0 else 1
+    midialt = f"V{v_code}T{t_code}"
+
+    engine = "SFZ" if recipe.render.engine is Engine.SFIZZ else "DGZ"
+    reverb = "R0" if recipe.augmentation.reverb_ir is None else "R1"
+    audioalt = f"L{recipe.augmentation.level}"
+
+    saboteur = "NONE"
+    if recipe.augmentation.saboteur is not None:
+        source = str(recipe.augmentation.saboteur.get("source", "SAB"))
+        cleaned = re.sub(r"[^0-9A-Za-z]", "", source) or "SAB"
+        saboteur = cleaned
+
+    return Barcode(
+        midisrc=midisrc,
+        midialt=midialt,
+        engine=engine,
+        reverb=reverb,
+        audioalt=audioalt,
+        saboteur=saboteur,
+    )
+
+
+def wav_to_audio_buffer(wav_path: str | Path) -> tuple[np.ndarray, float]:
+    """Read a rendered WAV into a Gold ``audio`` buffer (F0-T2a §3.2).
+
+    Args:
+        wav_path: The WAV produced by a render engine.
+
+    Returns:
+        ``(audio, duration_s)`` — ``audio`` is float16, shape ``[n_mic,
+        n_sample]`` (channels-first, C-contiguous); ``duration_s`` is the
+        buffer length in seconds.
+
+    Raises:
+        OrchestrationError: If the WAV is unreadable, empty, or not at the
+            contract sample rate.
+    """
+    wav = Path(wav_path)
+    try:
+        data, sr = sf.read(str(wav), dtype="float32", always_2d=True)
+    except (sf.LibsndfileError, OSError) as exc:
+        raise OrchestrationError(f"cannot read rendered WAV {wav}: {exc}") from exc
+    if sr != SAMPLE_RATE:
+        raise OrchestrationError(
+            f"rendered WAV sample rate is {sr}, expected {SAMPLE_RATE}: {wav}"
+        )
+    if data.shape[0] == 0:
+        raise OrchestrationError(f"rendered WAV is empty (zero frames): {wav}")
+    # soundfile gives [n_sample, n_mic]; the contract is channels-first.
+    audio = np.ascontiguousarray(data.T, dtype=np.float16)
+    duration_s = data.shape[0] / SAMPLE_RATE
+    return audio, duration_s
+
+
+def _resolve_drumgizmo_midimap(kit_path: Path) -> Path:
+    """Resolve a DrumGizmo kit's MIDI map by the kit-file naming convention.
+
+    DrumGizmo kits ship ``<Name>_<variant>.xml`` kit files alongside
+    ``Midimap_<variant>.xml`` maps (e.g. DRSKit's ``DRSKit_full.xml`` /
+    ``Midimap_full.xml``). The recipe schema (F0-T2a §1.1) carries only the kit
+    path, so the map is derived here.
+    """
+    stem = kit_path.stem
+    if "_" not in stem:
+        raise OrchestrationError(
+            f"cannot derive a MIDI map from kit file {kit_path.name}: "
+            "expected a '<Name>_<variant>.xml' DrumGizmo kit name"
+        )
+    variant = stem.split("_", 1)[1]
+    midimap = kit_path.parent / f"Midimap_{variant}.xml"
+    if not midimap.is_file():
+        available = sorted(p.name for p in kit_path.parent.glob("Midimap_*.xml"))
+        raise OrchestrationError(
+            f"DrumGizmo MIDI map not found: {midimap} (available: {available})"
+        )
+    return midimap
+
+
+def _render(recipe: Recipe, midi_path: Path, kit_path: Path, wav_path: Path) -> None:
+    """Drive the recipe's render engine into ``wav_path`` (fail-loud)."""
+    if recipe.render.engine is Engine.SFIZZ:
+        SfizzRenderer().render(sfz_path=kit_path, midi_path=midi_path, wav_path=wav_path)
+        return
+
+    midimap = _resolve_drumgizmo_midimap(kit_path)
+    try:
+        midi_len = mido.MidiFile(str(midi_path)).length
+    except (OSError, ValueError, EOFError, KeyError, IndexError) as exc:
+        raise OrchestrationError(f"cannot read MIDI length of {midi_path}: {exc}") from exc
+    DrumGizmoRenderer().render(
+        kit_path=kit_path,
+        midimap_path=midimap,
+        midi_path=midi_path,
+        wav_path=wav_path,
+        duration_s=midi_len + _DRUMGIZMO_TAIL_S,
+        channel_map=DRSKIT_MULTITRACK8,
+    )
+
+
+def build_gold_sample(
+    recipe: Recipe,
+    *,
+    out_dir: str | Path,
+    bus_mapping: BusMapping,
+    repo_root: str | Path = REPO_ROOT,
+) -> GoldSampleResult:
+    """Run one recipe end-to-end and write its Gold sample triple.
+
+    The pipeline: render the recipe's MIDI through its engine, read the WAV
+    into the ``audio`` buffer, build the companion ``target`` matrix from the
+    same MIDI, assemble the ``dna.json``, write the triple, and verify it.
+
+    Args:
+        recipe: The validated recipe to realise.
+        out_dir: Destination directory for the ``{key}.*`` sample triple.
+        bus_mapping: GM-note -> 8-bus mapping for the target builder.
+        repo_root: Root the recipe's relative ``midi_source.file`` and
+            ``render.kit_path`` are resolved against.
+
+    Returns:
+        A :class:`GoldSampleResult` describing the written, verified sample.
+
+    Raises:
+        OrchestrationError: If a recipe input is missing.
+        RenderError / TargetBuilderError / GoldWriterError / DnaTraceError:
+            Propagated from the stage that failed — fail-loud, no partial
+            sample is written.
+    """
+    root = Path(repo_root)
+    midi_path = root / recipe.midi_source.file
+    kit_path = root / recipe.render.kit_path
+    if not midi_path.is_file():
+        raise OrchestrationError(f"recipe MIDI source not found: {midi_path}")
+    if not kit_path.is_file():
+        raise OrchestrationError(f"recipe render kit not found: {kit_path}")
+
+    with tempfile.TemporaryDirectory(prefix="orchestrate_") as tmp:
+        wav_path = Path(tmp) / "render.wav"
+        try:
+            _render(recipe, midi_path, kit_path, wav_path)
+        except RenderError as exc:
+            raise OrchestrationError(
+                f"render failed for recipe {recipe.recipe_id}: {exc}"
+            ) from exc
+        audio, duration_s = wav_to_audio_buffer(wav_path)
+
+    target = build_target(
+        midi_path,
+        duration_s=duration_s,
+        bus_mapping=bus_mapping,
+        r_target_hz=recipe.target_frame_rate_hz,
+    )
+
+    barcode = derive_barcode(recipe)
+    key = encode_barcode(barcode)
+    dna = build_dna_json(barcode=barcode, recipe=recipe, audio=audio, target=target)
+
+    written_dir = write_gold_sample(out_dir, key, audio=audio, target=target, dna=dna)
+    validate_dna_json(dna, audio=audio, target=target)
+
+    return GoldSampleResult(
+        key=key,
+        recipe_id=recipe.recipe_id,
+        engine=recipe.render.engine,
+        out_dir=written_dir,
+        n_mic=int(audio.shape[0]),
+        n_sample=int(audio.shape[1]),
+        n_frame=int(target.shape[0]),
+        audio_peak=float(np.abs(audio.astype(np.float32)).max()),
+    )

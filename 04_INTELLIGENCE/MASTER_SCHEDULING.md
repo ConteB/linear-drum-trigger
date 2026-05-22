@@ -272,6 +272,27 @@ stop compute + push HDD · **$10** → chiudi tutto.
   generare un mini-batch (~10–20 scenari).
 - *DoD:* log stdout che mostra N campioni Gold generati senza errori.
 - ⛔ F0-T2c, F0-T2b, F0-T2d — tutti ☑, **sbloccato**. → F0-T3.
+- ☑ **FATTO (2026-05-22):** chiuso in tre passi. (1) **`target_builder.py`** — l'anello
+  mancante: traduttore MIDI → matrice di trascrizione `flat-25` (onset Gaussian-smeared
+  ±3 ms, velocity normalizzata, microtiming sub-frame, testa Hi-Hat continua step-held),
+  mapping GM→8-bus dalla `midi_mapping_table.yaml` versionata; fail-loud su MIDI
+  malformato / durata non valida / groove senza note mappate. Implementa il contratto
+  F0-T2a §3.3 — già LOCKED, nessuna nuova decisione di design. (2) **`orchestrate.py`** —
+  la cucitura della pipeline: `recipe → render (Sfizz/DrumGizmo) → audio.f16 + target.f16
+  → dna.json → write_gold_sample`, con derivazione deterministica del barcode a 6
+  segmenti e verifica `validate_dna_json` del campione scritto; fail-loud, nessun
+  campione parziale. (3) **Mini-batch** — 12 grooves sintetici multi-bus (`mido`,
+  deterministici — il GMD reale è Bronze, provisioning F1/F2) + 12 recipe in
+  `recipes/mini_batch/`; `tools/gen_mini_batch_fixtures.py` (generatore) e
+  `tools/run_mini_batch.py` (runner con log stdout). `ruff` + `mypy --strict` puliti.
+  **Split di piattaforma** (come F0-T2b/c): `sfizz_render` è un build macOS, `drumgizmo`
+  è nativo Linux → il runner gira in due passi nativi (`--engine`). **Ocular Proof:**
+  6 Sfizz su macOS + 6 DrumGizmo in OrbStack = **12 campioni Gold, 0 errori**; campione
+  DrumGizmo reale — audio `[8×445296]`, target `[3479×25]` multi-bus, testa HH 0→1,
+  **bleed snare→OH 0.874**. **Oracoli §6.3** verdi: 37 test (18 unit target-builder +
+  13 unit orchestrate + 6 acceptance smoke/conteggio). Suite F0: macOS **189 passed,
+  7 skipped, 12 xfailed, 0 failed**; acceptance OrbStack **8 passed**. Sblocca **F0-T3
+  (Gate L2)**.
 
 **F0-T3 · Gate L2 (validazione recipe) · `[C]` `P1`**
 - *📚 Letture:* [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`DOSSIER §4 — matrice MIDI`](../docs/methodology/DOSSIER_TECNICO.md#midi-matrix) · [`MASTER_CHECKLIST §6 — Gate`](../MASTER_CHECKLIST.md#gates) · [`ENGINEERING_STANDARDS §6`](ENGINEERING_STANDARDS.md#execution-robustness).
@@ -549,8 +570,8 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T2b | Render engine Sfizz | F0 | ☑ | — | — |
 | F0-T2c | Integrazione DrumGizmo | F0 | ☑ | — | — |
 | F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☑ | — | — |
-| F0-T2e | Mini-batch end-to-end | F0 | ☐ | — *(sbloccato)* | — |
-| F0-T3 | Validazione Gate L2 | F0 | ☐ | F0-T2e | **L2** |
+| F0-T2e | Mini-batch end-to-end | F0 | ☑ | — | — |
+| F0-T3 | Validazione Gate L2 | F0 | ☐ | — *(sbloccato)* | **L2** |
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☐ | F0-T3, F0-T4a | **L3** |
 | F0-T5 | DVC + struttura Medallion | F0 | ☐ | — | — |
@@ -589,12 +610,15 @@ gate mutation sbloccato su Linux/OrbStack, kill-rate comportamentale 100 %)
 · ☑ F0-T2c (integrazione DrumGizmo — provisioning DRSKit 13-mic + adapter
 `DrumGizmoRenderer` sul CLI reale, 17 unit + 3 acceptance §6.3, bleed falsificabile via
 correlazione di inviluppo, suite F0 150 passed)
+· ☑ F0-T2e (mini-batch end-to-end — `target_builder.py` MIDI→`flat-25` + `orchestrate.py`
+cuce la pipeline, 12 campioni Gold generati su 12 grooves sintetici, 37 oracoli §6.3,
+suite F0 189 passed)
 (Decision Lock 2026-05-20) · ☐ F0-T15 (audit augmentation & agnosticità d'ingresso —
 aperto 2026-05-22 su due revisioni del CEO, backlog in `AUGMENTATION_AUDIT_BACKLOG.md`;
 non critico, pre F2-T2/T3)
-· Sbloccato: **F0-T2e** (mini-batch end-to-end — render engine entrambi pronti) e
+· Sbloccato: **F0-T3** (Gate L2 — il mini-batch Gold è pronto da ispezionare) e
 **F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) · Percorso
-critico verso L2: **F0-T2e → T3** · Scenario credito: *da fissare a CP-1* ·
+critico verso L2: **F0-T3** · Scenario credito: *da fissare a CP-1* ·
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---

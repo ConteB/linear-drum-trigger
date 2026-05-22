@@ -1,0 +1,48 @@
+======================================================================
+sample key: GMD000-V0T0-DGZ-R0-L1-NONE
+engine: drumgizmo  kit: DRSKit  mic_config: multitrack_full
+recipe_id: R-MINI-00-DRUMGIZMO
+======================================================================
+
+[FP16 INTEGRITY — audio]
+  shape:             (8, 445296)  (expected [n_mic,n_sample])
+  duration_s:        10.0974
+  any non-finite:    False
+  peak |x|:          0.96826  (must be in (0,1])
+  RMS (overall):     0.02855
+  silent channels:   0 of 8
+
+[FP16 INTEGRITY — target]
+  shape:             (3479, 25)  (expected [n_frame, 25])
+  any non-finite:    False
+  onset cols range:  [0.000, 1.000]  (must be [0,1])
+  velocity cols rng: [0.000, 0.866]
+  HH continuous rng: [0.000, 1.000]  (must be [0,1])
+
+[DNA-TRACE LINEAGE]
+  audio_shape (dna): [8, 445296]  vs measured [8, 445296]  -> OK
+  target_shape (dna):[3479, 25]  vs measured [3479, 25] -> OK
+  audio  non-finite (dna): 0
+  target non-finite (dna): 0
+  audio_sha256:      5a9e1e08a45d2129d3dd0db8…
+  target_sha256:     afe4d9a1bb999cf09da2af8c…
+  recipe_sha256:     2d54e32200e6935d19a3e8fb…
+  generated_at:      2026-05-22T22:47:58.368240+00:00
+
+[ALIGNMENT — MIDI vs target onset peaks, ±3 ms]
+  onsets checked:    26
+  within ±3 ms:      26 / 26  (100.0 %)
+  worst-case drift:  0.00 ms  (<= one frame period 2.90 ms is expected)
+
+[BLEED — envelope-RMS correlation between mics]
+       mic0 mic1 mic2 mic3 mic4 mic5 mic6 mic7
+  mic0  +1.00 +0.21 +0.40 +0.41 +0.19 +0.36 +0.34 +0.59
+  mic1  +0.21 +1.00 +0.75 +0.86 +0.34 +0.93 +0.91 +0.64
+  mic2  +0.40 +0.75 +1.00 +0.80 +0.42 +0.91 +0.90 +0.80
+  mic3  +0.41 +0.86 +0.80 +1.00 +0.41 +0.93 +0.94 +0.85
+  mic4  +0.19 +0.34 +0.42 +0.41 +1.00 +0.45 +0.46 +0.60
+  mic5  +0.36 +0.93 +0.91 +0.93 +0.45 +1.00 +0.99 +0.82
+  mic6  +0.34 +0.91 +0.90 +0.94 +0.46 +0.99 +1.00 +0.85
+  mic7  +0.59 +0.64 +0.80 +0.85 +0.60 +0.82 +0.85 +1.00
+  off-diagonal max:  +0.993  (non-trivial > 0.3 == bleed present, F0-T2c)
+======================================================================

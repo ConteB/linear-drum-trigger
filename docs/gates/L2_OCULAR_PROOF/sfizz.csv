@@ -1,0 +1,7 @@
+recipe_id,engine,kit,n_mic,n_sample,audio_duration_s,wall_clock_s,audio_bytes,target_bytes
+R-MINI-01-SFIZZ,sfizz,Frankensnare,2,379904,8.614603,0.744000,1519616,148400
+R-MINI-03-SFIZZ,sfizz,Frankensnare,2,337920,7.662585,0.098697,1351680,132000
+R-MINI-05-SFIZZ,sfizz,Frankensnare,2,306176,6.942766,0.098889,1224704,119600
+R-MINI-07-SFIZZ,sfizz,Frankensnare,2,281600,6.385488,0.097021,1126400,110000
+R-MINI-09-SFIZZ,sfizz,Frankensnare,2,262144,5.944308,0.096944,1048576,102400
+R-MINI-11-SFIZZ,sfizz,Frankensnare,2,245760,5.572789,0.095028,983040,96000

@@ -1,0 +1,42 @@
+======================================================================
+sample key: GMD001-V0T0-SFZ-R0-L1-NONE
+engine: sfizz  kit: Frankensnare  mic_config: solo_stereo
+recipe_id: R-MINI-01-SFIZZ
+======================================================================
+
+[FP16 INTEGRITY — audio]
+  shape:             (2, 379904)  (expected [n_mic,n_sample])
+  duration_s:        8.6146
+  any non-finite:    False
+  peak |x|:          0.10742  (must be in (0,1])
+  RMS (overall):     0.00616
+  silent channels:   0 of 2
+
+[FP16 INTEGRITY — target]
+  shape:             (2968, 25)  (expected [n_frame, 25])
+  any non-finite:    False
+  onset cols range:  [0.000, 1.000]  (must be [0,1])
+  velocity cols rng: [0.000, 0.866]
+  HH continuous rng: [0.000, 1.000]  (must be [0,1])
+
+[DNA-TRACE LINEAGE]
+  audio_shape (dna): [2, 379904]  vs measured [2, 379904]  -> OK
+  target_shape (dna):[2968, 25]  vs measured [2968, 25] -> OK
+  audio  non-finite (dna): 0
+  target non-finite (dna): 0
+  audio_sha256:      c86f5b58125122bfd18c30bc…
+  target_sha256:     18cb05851887fcec5e81f2c4…
+  recipe_sha256:     19e548d1df0ca23cd8d285e8…
+  generated_at:      2026-05-22T22:47:55.202715+00:00
+
+[ALIGNMENT — MIDI vs target onset peaks, ±3 ms]
+  onsets checked:    39
+  within ±3 ms:      39 / 39  (100.0 %)
+  worst-case drift:  2.90 ms  (<= one frame period 2.90 ms is expected)
+
+[BLEED — envelope-RMS correlation between mics]
+       mic0 mic1
+  mic0  +1.00 +1.00
+  mic1  +1.00 +1.00
+  off-diagonal max:  +0.998  (non-trivial > 0.3 == bleed present, F0-T2c)
+======================================================================

@@ -302,6 +302,18 @@ stop compute + push HDD · **$10** → chiudi tutto.
   verifica integrità FP16; check DNA-Trace lineage ([`DOSSIER_TECNICO` §3.5](../docs/methodology/DOSSIER_TECNICO.md#dna-trace)).
 - *DoD:* **Ocular Proof** — checklist L2 firmata nel `REGISTRO_AVANZAMENTO.md`.
 - ⛔ F0-T2e. **Sblocca lo spend RENDER (F1 + F2-T1).**
+- ☑ **FATTO (2026-05-23):** Decision Lock CEO. Ocular Proof su 2 campioni
+  rappresentativi del mini-batch F0-T2e (1 Sfizz `GMD001` + 1 DrumGizmo `GMD000`),
+  pacchetto in `docs/gates/L2_OCULAR_PROOF/L2_INSPECTION_2026-05-23.md` —
+  waveform multi-mic, target piano-roll con MIDI ground-truth, integrity FP16,
+  DNA-Trace lineage, matrice di bleed envelope-RMS. **Verifiche tutte verdi:**
+  allineamento target↔MIDI ±3 ms 65/65 onsets (drift max 2.90 ms); 0 NaN/inf,
+  peak audio ∈ (0,1]; DNA-Trace shape & sha256 match; bleed DrumGizmo +0.99
+  off-diag (F0-T2c falsificabile). Tooling: `tools/l2_ocular_proof.py`. Evidenza
+  accessoria — calibrazione throughput `tools/calibrate_render.py`:
+  Sfizz 0.03× / DrumGizmo 0.12× render-factor, ~5.6 MB/s single-thread →
+  1.5 TB ≈ ~5 h @ 16 vCPU, ~$3.5 stimati (allocazione §5 = $55, headroom
+  enorme per Tier 2/3). **Sblocca F1-T1 e F2-T1.**
 
 **F0-T4 · TCN mini-prototipo → Gate L3 · `[C]` `P1`**
 > ⚠️ La "topologia [`MASTER_CHECKLIST` §1](../MASTER_CHECKLIST.md#ai-neural)" è un Design Lock concettuale (Strided-Context
@@ -499,6 +511,25 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Non sul percorso critico di F0* — augmentation e training-data sono F2. **Dovrebbe
   precedere F2-T2 e F2-T3.** Da schedulare dopo la chiusura del critico verso L2.
 
+**F0-T16 · Pipeline di augmentation — build & test in locale · `[F]` `P2`**
+- *📚 Letture:* [`AUGMENTATION_AUDIT_BACKLOG`](../docs/methodology/AUGMENTATION_AUDIT_BACKLOG.md) · [`DOSSIER §3 — augmentation`](../docs/methodology/DOSSIER_TECNICO.md#aug-prerender) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`TESTING_DOCTRINE §6`](TESTING_DOCTRINE.md#f0-test-plan) · [`ENGINEERING_STANDARDS §1 — determinismo`](ENGINEERING_STANDARDS.md#determinism) · [`§6 — robustezza`](ENGINEERING_STANDARDS.md#execution-robustness).
+- *Origine:* osservazione del CEO (2026-05-23) — il render aveva i sotto-task locali
+  (F0-T2b/c/d/e) prima dello scale F2-T1; l'augmentation no: `F2-T2` mescolava
+  "scrivi il codice" + "girarlo a 1.5 TB" sul clock Azure, esattamente lo spreco
+  che la doctrine ($200 use-it-or-lose-it) vieta. Sub-task aperto per simmetria.
+- *Azioni:* implementare in `src/data_engineering/augment/` ogni voce ratificata da
+  F0-T15 — convoluzione IR (`pedalboard`, CPU), Machine-Gun Chaos, Studio Mutilation,
+  Transient Saboteurs; smoke-test Demucs AI-Isolation su Mac M5 / MPS su un sotto-set
+  del mini-batch Gold (F0-T2e); harness `pytest` + Hypothesis coerente con F0-T9b
+  (oracoli su determinismo, range FP16, integrità DNA-Trace post-augmentation,
+  ENGINEERING_STANDARDS §1).
+- *DoD:* pipeline eseguibile in locale sul mini-batch Gold; oracoli §6 verdi; smoke
+  Demucs su MPS verde su ≥2 campioni; nessun NaN/inf e peak ∈ (0, 1] su tutti i
+  campioni augmented; Ocular Proof — PNG waveform pre/post per ≥1 campione. **Costo
+  Azure = $0** (interamente locale).
+- ⛔ F0-T2e (mini-batch su cui testare), F0-T15 (la recipe d'augmentation è decisa lì).
+  **Sblocca F2-T2 come *scale-only*.**
+
 > **Gate d'uscita F0:** L2 superato (~05-28) **e** L3 superato (~06-02).
 
 ### Fase F1 — Provisioning Azure · gate d'ingresso: L2 superato
@@ -525,12 +556,20 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *DoD:* 1.5 TB renderizzati e versionati; log di completamento.
 - ⛔ F1-T1.
 
-**F2-T2 · Augmentation + Demucs · `[G]` `P1`**
-- *📚 Letture:* [`DOSSIER §3.2 — bleed`](../docs/methodology/DOSSIER_TECNICO.md#aug-l1) · [`DOSSIER §3.4 — augmentation`](../docs/methodology/DOSSIER_TECNICO.md#aug-l3) · [`ENGINEERING_STANDARDS §1 — determinismo`](ENGINEERING_STANDARDS.md#determinism).
-- *Azioni:* augmentation Python (convoluzione IR `pedalboard`, Machine-Gun Chaos,
-  Studio Mutilation, Transient Saboteurs); Demucs AI-Isolation.
-- *DoD:* dataset aumentato versionato.
-- ⛔ F2-T1 (può procedere in streaming sul renderizzato).
+**F2-T2 · Augmentation + Demucs — *scale-only* su Azure · `[G]` `P1`**
+- *📚 Letture:* `F0-T16` (la pipeline d'augmentation è già scritta e validata in locale,
+  qui si applica al dataset full-size) · [`DOSSIER §3.2 — bleed`](../docs/methodology/DOSSIER_TECNICO.md#aug-l1) · [`DOSSIER §3.4 — augmentation`](../docs/methodology/DOSSIER_TECNICO.md#aug-l3) · [`ENGINEERING_STANDARDS §1 — determinismo`](ENGINEERING_STANDARDS.md#determinism).
+- *Riformulazione (2026-05-23):* il task era originariamente "augmentation Python +
+  Demucs" lumpato. Decision Lock CEO: split in (a) **F0-T16** locale a €0 (build +
+  test + harness) e (b) questo task come puro **scale-only** su Azure, simmetrico a
+  come il render è stato spaccato F0-T2b/c/d/e → F2-T1.
+- *Azioni:* applicare la pipeline di augmentation di F0-T16 al dataset Gold completo
+  (post F2-T1); inferenza Demucs AI-Isolation a scala su GPU Azure; upload Blob;
+  tracciamento DVC.
+- *DoD:* dataset aumentato versionato; nessuna nuova logica scritta su Azure (solo
+  scale di codice già verde in locale).
+- ⛔ F2-T1 (può procedere in streaming sul renderizzato), **F0-T16** (codice
+  d'augmentation validato in locale).
 
 **F2-T3 · Training "Gold" A100 → Gate L4 · `[G]` `P1` — spend A RISCHIO (gate L3)**
 - *📚 Letture:* [`F0-T4a — spec TCN`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md) · [`DOSSIER §10 — training set`](../docs/methodology/DOSSIER_TECNICO.md#training-set) · [`DOSSIER §10 — validation`](../docs/methodology/DOSSIER_TECNICO.md#validation) · [`MASTER_CHECKLIST §6 — Gate`](../MASTER_CHECKLIST.md#gates) · [`ENGINEERING_STANDARDS §5 — validazione statistica`](ENGINEERING_STANDARDS.md#statistical-validation).
@@ -571,7 +610,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T2c | Integrazione DrumGizmo | F0 | ☑ | — | — |
 | F0-T2d | Writer Gold-tensor + DNA-Trace | F0 | ☑ | — | — |
 | F0-T2e | Mini-batch end-to-end | F0 | ☑ | — | — |
-| F0-T3 | Validazione Gate L2 | F0 | ☐ | — *(sbloccato)* | **L2** |
+| F0-T3 | Validazione Gate L2 | F0 | ☑ | — | **L2** *(superato 2026-05-23)* |
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☐ | F0-T3, F0-T4a | **L3** |
 | F0-T5 | DVC + struttura Medallion | F0 | ☐ | — | — |
@@ -585,11 +624,12 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T12 | Audit OpenPhase — standard ingegneristici | F0 | ☑ | — | — |
 | F0-T13 | De-referenziazione OP-X (chiusura decoupling) | F0 | ☑ | — | — |
 | F0-T14 | Mapping documentale dei task (campo Letture) | F0 | ☑ | — | — |
-| F0-T15 | Audit augmentation & agnosticità d'ingresso (STRP-001) | F0 | ☐ | — *(non critico — pre F2-T2)* | — |
-| F1-T1 | Setup Azure | F1 | ⊘ | F0-T3 | — |
+| F0-T15 | Audit augmentation & agnosticità d'ingresso (STRP-001) | F0 | ☐ | — *(non critico — pre F0-T16/F2-T2)* | — |
+| F0-T16 | Augmentation — build & test in locale | F0 | ☐ | F0-T2e, F0-T15 | — |
+| F1-T1 | Setup Azure | F1 | ☐ | — *(sbloccato 2026-05-23 — L2 superato)* | — |
 | F1-T2 | dvc remote Azure | F1 | ⊘ | F1-T1 | — |
 | F2-T1 | Render Gold 1.5 TB | F2 | ⊘ | F1-T1 | — |
-| F2-T2 | Augmentation + Demucs | F2 | ⊘ | F2-T1 | — |
+| F2-T2 | Augmentation + Demucs — *scale-only* | F2 | ⊘ | F2-T1, F0-T16 | — |
 | F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1, F0-T4b | **L4** |
 | F2-T4 | Credit-soak | F2 | ⊘ | CP-3 | — |
 | F3 | Consolidamento HDD | F3 | ⏸ | F2 | — |
@@ -615,10 +655,21 @@ cuce la pipeline, 12 campioni Gold generati su 12 grooves sintetici, 37 oracoli 
 suite F0 189 passed)
 (Decision Lock 2026-05-20) · ☐ F0-T15 (audit augmentation & agnosticità d'ingresso —
 aperto 2026-05-22 su due revisioni del CEO, backlog in `AUGMENTATION_AUDIT_BACKLOG.md`;
-non critico, pre F2-T2/T3)
-· Sbloccato: **F0-T3** (Gate L2 — il mini-batch Gold è pronto da ispezionare) e
-**F0-T4b** (mini-prototipo TCN, gated anche da F0-T3) · Percorso
-critico verso L2: **F0-T3** · Scenario credito: *da fissare a CP-1* ·
+non critico, pre F0-T16/F2-T2/T3)
+· ☐ F0-T16 (augmentation — build & test in locale; aperto 2026-05-23 per simmetria col
+render F0-T2b/c/d/e → F2-T1; sblocca F2-T2 a scale-only su Azure, doctrine €0 in F0)
+· ☑ **F0-T3 / Gate L2 SUPERATO (2026-05-23) — Decision Lock CEO.** Ocular Proof su 2
+campioni (1 Sfizz + 1 DrumGizmo): allineamento target↔MIDI **65/65 onsets entro ±3 ms**;
+0 NaN/inf; DNA-Trace shape & sha256 match; **bleed multi-mic DrumGizmo +0.99 off-diag**.
+Calibrazione render — Sfizz 0.03× / DrumGizmo 0.12× factor, ~5.6 MB/s single-thread →
+**1.5 TB ≈ ~5 h @ 16 vCPU, ~$3.5 stimati** (vs $55 allocazione §5 → headroom enorme per
+Tier 2/3). Pacchetto firmato in `docs/gates/L2_OCULAR_PROOF/L2_INSPECTION_2026-05-23.md`.
+· **Sbloccato dal Gate L2:** **F1-T1** (Setup Azure — il prossimo critico) e **F2-T1**
+(Render Gold 1.5 TB — gated anche da F1-T1) · **F0-T4b** (mini-prototipo TCN) ora
+gated solo da F0-T4a (già ☑) · Percorso critico verso F1/L4: **F1-T1 → F1-T2 → F2-T1**
++ in parallelo locale **F0-T4b** verso L3 · Scenario credito: *da fissare a CP-1
+(2026-05-30, fra 7 gg)* — con L2 in anticipo (target era ~05-28) si conferma **GREEN**
+salvo sorprese su F1.
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---

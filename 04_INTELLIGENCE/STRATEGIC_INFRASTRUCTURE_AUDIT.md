@@ -5,8 +5,8 @@ type: reference
 status: ACTIVE
 phase: cross-cutting
 domain: Infrastructure / Strategy
-version: 1.0.0
-updated: 2026-05-20
+version: 1.1.0
+updated: 2026-05-22
 tags: [infrastructure, azure, budget, strategy]
 related: [LIN-DT-MSCHED-001, LIN-DT-SCHED-001]
 supersedes: []
@@ -54,6 +54,13 @@ Per la gestione professionale su Azure Blob Storage, i dati seguiranno questo fl
 - **Storage Remoto:** `Azure Blob Storage` (LRS - Locally Redundant Storage).
 - **Tracking Esperimenti:** `MLflow` (interno ad Azure o locale).
 - **Database Metadata:** `SQLite` (locale, versionato nel repo).
+- **Ambiente Linux locale:** `OrbStack` — macchina Ubuntu (`ubuntu`) usata come
+  ambiente Linux su macOS. Istanziata (2026-05-22) per eseguire il **gate mutation**
+  (`mutmut`): mutmut 3.x impone il `fork`, e su macOS un figlio forkato con librerie
+  native caricate (numpy BLAS, `libsndfile`) va in **segfault** — il gate è quindi
+  inservibile sul Mac. La macchina ospita un venv dedicato (`~/ntg-venv`); il gate si
+  lancia con `tools/run_mutation.sh`. Dettaglio policy e provisioning:
+  [`TESTING_DOCTRINE §3.1`](TESTING_DOCTRINE.md#equivalent-mutants).
 
 ## 5. DATA INFRASTRUCTURE SECURITY & RISK ANALYSIS (ERM)
 Per proteggere il capitale intellettuale (il nostro dataset "Gold" e i modelli addestrati), adottiamo un approccio di sicurezza basato sull'efficienza di costo e sulla bassa complessità di manutenzione (Lean-Sec).

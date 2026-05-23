@@ -352,22 +352,19 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *DoD (Gate L3 ridefinito):* (a) metriche di onset oltre la soglia di F0-T4a su
   mini-holdout; (b) round-trip RTNeural verificato. Ocular Proof — log.
 - ⛔ F0-T3, F0-T4a. **Sblocca lo spend TRAINING (F2-T3).**
-- ◐ **IN ATTESA DECISIONE CEO (2026-05-23):** prototipo + round-trip implementati
-  e misurati end-to-end (Mac M5 / MPS, ~50 s wall-clock training). **Round-trip
-  RTNeural-equivalente PASS** (PyTorch ↔ NumPy `max|Δ|=1.49e-06`, PyTorch ↔ C++17
-  `max|Δ|=1.19e-07` ≈ epsilon fp32) — la metà architetturale del Gate L3 è
-  chiusa, **opzione (a) di F0-T4a §8 ratificata** (residuo come arco esportato,
-  add elementwise fuori dal grafo sequenziale RTNeural). **Soglia metrica
-  F≥0.80 non raggiunta** sull'holdout: F=0.185 (DGZ) / F=0.163 (SFZ); il modello
-  *apprende* — F=0.90 sul snare in train, F=1.00 sul floor_tom — ma 10 grooves
-  sono insufficienti per generalizzare (gap train→holdout ~5×, coerente col
-  caveat F0-T4a §7 "soglie di de-risking architetturale, non claim di prodotto").
-  Pacchetto in `docs/gates/L3_OCULAR_PROOF/L3_INSPECTION_2026-05-23.md` con 3
-  vie aperte al CEO (A: ratifica architetturale + sposta barra metrica a L4;
-  B: tentativo metrico aggiuntivo; C: riapertura STRP-001). Raccomandazione
-  advisor: **opzione A** — il rischio architetturale (l'unico motivo per cui L3
-  esiste in F0) è chiuso; la barra metrica significativa si misura al **L4** sul
-  Holdout reale E-GMD dove il dataset è di magnitudine sufficiente.
+- ☑ **FATTO (2026-05-23) — Gate L3 SUPERATO (opzione A) — Decision Lock CEO.**
+  **Round-trip RTNeural-equivalente PASS:** PyTorch ↔ NumPy `max|Δ|=1.49e-06`,
+  PyTorch ↔ C++17 `max|Δ|=1.19e-07` ≈ epsilon fp32. Op-set verificato: Conv1D
+  causale strided/dilated + ReLU/sigmoid/tanh + add elementwise; **opzione (a)
+  di F0-T4a §8 ratificata** (residuo come arco esportato, add fuori dal grafo
+  sequenziale RTNeural). Soglia F≥0.80 sull'holdout non raggiunta (F=0.18) ma
+  *statisticamente irrilevante* su 10 grooves anche se superata — la barra
+  metrica significativa si misura al **Gate L4** sull'Holdout reale E-GMD.
+  Pacchetto APPROVED in `docs/gates/L3_OCULAR_PROOF/L3_INSPECTION_2026-05-23.md`.
+  Tooling rieseguibile: `tools/run_round_trip.py` (orchestratore three-way) +
+  `tools/l3_ocular_proof.py` (per-bus report). Topologia: 83 673 parametri,
+  baseline `C=32`, training ~50 s su Mac M5 / MPS. **Sblocca F2-T3** (gated
+  ora solo da F2-T1).
 
 **F0-T5 · DVC + struttura Medallion · `[F]` `P2`**
 - *📚 Letture:* [`DOSSIER §9.2 — Medallion`](../docs/methodology/DOSSIER_TECNICO.md#medallion) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract).
@@ -628,7 +625,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T2e | Mini-batch end-to-end | F0 | ☑ | — | — |
 | F0-T3 | Validazione Gate L2 | F0 | ☑ | — | **L2** *(superato 2026-05-23)* |
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
-| F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ◐ | F0-T3, F0-T4a | **L3** *(architetturale PASS · metrica in attesa decisione CEO)* |
+| F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☑ | F0-T3, F0-T4a | **L3** *(superato 2026-05-23 — opzione A, Decision Lock CEO)* |
 | F0-T5 | DVC + struttura Medallion | F0 | ☐ | — | — |
 | F0-T6 | audit_dsp_rigor.py (predisp.) | F0 | ☐ | — | — |
 | F0-T7 | Classi JUCE (opz.) | F0 | ☐ | — | — |
@@ -646,7 +643,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F1-T2 | dvc remote Azure | F1 | ⊘ | F1-T1 | — |
 | F2-T1 | Render Gold 1.5 TB | F2 | ⊘ | F1-T1 | — |
 | F2-T2 | Augmentation + Demucs — *scale-only* | F2 | ⊘ | F2-T1, F0-T16 | — |
-| F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1, F0-T4b | **L4** |
+| F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1 *(F0-T4b ☑)* | **L4** |
 | F2-T4 | Credit-soak | F2 | ⊘ | CP-3 | — |
 | F3 | Consolidamento HDD | F3 | ⏸ | F2 | — |
 | F4 | Sviluppo Plugin | F4 | ⏸ | L4 | — |
@@ -686,16 +683,12 @@ gated solo da F0-T4a (già ☑) · Percorso critico verso F1/L4: **F1-T1 → F1-
 + in parallelo locale **F0-T4b** verso L3 · Scenario credito: *da fissare a CP-1
 (2026-05-30, fra 7 gg)* — con L2 in anticipo (target era ~05-28) si conferma **GREEN**
 salvo sorprese su F1.
-· ◐ **F0-T4b implementato (2026-05-23) — Gate L3 in attesa decisione CEO.**
-Topologia F0-T4a istanziata (83 673 parametri, baseline `C=32`), training 1500
-epoch su MPS in ~50 s, **round-trip RTNeural-equivalente PASS** (PyTorch ↔ NumPy
-`1.49e-06`, PyTorch ↔ C++17 `1.19e-07` ≈ epsilon fp32). **Soglia metrica
-F≥0.80 non raggiunta** sull'holdout (F=0.18) ma raggiunta per-bus sui buses
-densi del train (snare F=0.90, floor_tom F=1.00, kick F=0.74) — "non apprende"
-escluso. Pacchetto L3: `docs/gates/L3_OCULAR_PROOF/L3_INSPECTION_2026-05-23.md`
-con 3 vie aperte e raccomandazione advisor verso l'opzione **A** (ratifica
-architetturale + sposta barra metrica al Gate L4 sull'Holdout reale E-GMD,
-coerente col caveat F0-T4a §7). Decisione: in attesa.
+· ☑ **F0-T4b chiuso (2026-05-23) — Gate L3 SUPERATO (opzione A) — Decision Lock CEO.**
+Round-trip RTNeural-equivalente PASS (PyTorch ↔ C++17 `1.19e-07` ≈ epsilon fp32),
+F0-T4a §8 open item risolto. Barra metrica F≥0.80 spostata al Gate L4 (su 10
+grooves del mini-batch sarebbe stata statisticamente irrilevante anche se
+superata). Pacchetto APPROVED in `docs/gates/L3_OCULAR_PROOF/`. **F2-T3 ora
+gated solo da F2-T1.**
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---

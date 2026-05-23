@@ -3,7 +3,7 @@ title: L3 Ocular Proof — inspection 2026-05-23
 owner: F0-T4b
 date: 2026-05-23
 scope: F0
-status: PENDING_CEO_DECISION
+status: APPROVED
 ---
 
 # Gate L3 — Ocular Proof (2026-05-23)
@@ -152,7 +152,7 @@ Il "non apprende" è già escluso (vedi §3.1, snare F=0.90).
 
 Tre vie, in ordine di rischio crescente per la timeline credito:
 
-- [ ] **A. Ratifica L3 architetturale ora, posticipa la barra metrica a L4** —
+- [x] **A. Ratifica L3 architetturale ora, posticipa la barra metrica a L4** —
       lo sblocco di F2-T3 (training Gold A100) si basa sull'evidenza che la
       topologia *esporta* (questo è chiuso) e che *apprende* su buses
       densamente popolati (§3.1). La F-measure ≥ 0.80 si sposta dal Gate L3 al
@@ -170,6 +170,13 @@ Tre vie, in ordine di rischio crescente per la timeline credito:
       Non raccomandato dato che il round-trip ha chiuso il rischio architetturale
       che era *l'unico* motivo per cui L3 esiste in F0.
 
+> **Decision Lock CEO — 2026-05-23.** Ratificata opzione A: la barra
+> F-measure ≥ 0.80 era statisticamente irrilevante su 10 grooves anche se
+> superata ("non è una rete neurale, è un interpolatore scemo"). Il rischio
+> architetturale — l'unico vero motivo per cui L3 esiste in F0 — è chiuso dal
+> round-trip a fp32 epsilon. La barra metrica significativa si misura al Gate
+> L4 sull'Holdout reale E-GMD. **F2-T3 sbloccato** appena F1+F2-T1 chiudono.
+
 **Raccomandazione strategica (advisor):** opzione **A**. La doctrine
 $200-or-lose-it (`MASTER_SCHEDULING §1.1`) chiede che il credito si converta in
 *asset*, e il maggior asset di F2 — il dataset Gold da 1.5 TB — non dipende
@@ -181,7 +188,7 @@ significativa.
 
 ---
 
-**Data firma:** _____________________  **Firma CEO:** ___________________________
+**Data firma:** **2026-05-23**  **Firma CEO:** **Decision Lock CEO — L3 superato (opzione A)**
 
 Esito tracciato in [`REGISTRO_AVANZAMENTO.md`](../../../04_INTELLIGENCE/REGISTRO_AVANZAMENTO.md).
 A valle dell'approvazione, **`F2-T3` (Training A100)** resta gated solo da

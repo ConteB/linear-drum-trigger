@@ -36,6 +36,7 @@ and ``--render-only`` if you want to prepare on macOS and render on Linux.
 from __future__ import annotations
 
 import argparse
+import gc
 import shutil
 import sys
 import tempfile
@@ -48,10 +49,12 @@ import mido
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
+from data_engineering.gold.dna_trace import encode_barcode  # noqa: E402
 from data_engineering.gold.orchestrate import (  # noqa: E402
     DEFAULT_BUS_MAPPING_PATH,
     GoldSampleResult,
     build_gold_sample,
+    derive_barcode,
 )
 from data_engineering.gold.recipe import (  # noqa: E402
     AugmentationSpec,
@@ -367,6 +370,14 @@ def _midi_relpath(midi_path: Path) -> str:
     return str(midi_path.relative_to(_REPO_ROOT))
 
 
+def _expected_dna_path(recipe: object, out_dir: Path) -> Path:
+    """Predict the on-disk ``.dna.json`` path that ``build_gold_sample`` would
+    write for ``recipe`` — used for idempotent ``--skip-existing`` resume."""
+    barcode = derive_barcode(recipe)  # type: ignore[arg-type]
+    key = encode_barcode(barcode)
+    return out_dir / f"{key}.dna.json"
+
+
 def _render_entries(
     entries: Iterable[RecipeMatrixEntry],
     midi_paths: dict[str, Path],
@@ -374,9 +385,23 @@ def _render_entries(
     *,
     bus_mapping: object,
     log_every: int = 20,
-) -> tuple[int, int, float]:
-    """Render every recipe-matrix entry. Returns ``(generated, failed, elapsed_s)``."""
+    skip_existing: bool = False,
+    gc_every: int = 10,
+) -> tuple[int, int, int, float]:
+    """Render every recipe-matrix entry.
+
+    Returns ``(generated, skipped, failed, elapsed_s)``.
+
+    When ``skip_existing=True`` an entry whose target ``.dna.json`` already
+    lives under ``out_dir`` is left untouched (idempotent resume across
+    process restarts — necessary on OOM-prone hosts).
+
+    ``gc.collect()`` is invoked every ``gc_every`` samples to keep RSS
+    bounded — the multi-mic Gold tensor + DrumGizmo WAVs make Python's
+    incremental GC fall behind on small-memory hosts.
+    """
     generated = 0
+    skipped = 0
     failed = 0
     started = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="local_rnd_jitter_") as tmp_root:
@@ -389,6 +414,10 @@ def _render_entries(
         for i, entry in enumerate(entry_list):
             src_midi = midi_paths[entry.source_midi_id]
             recipe = _recipe_from_entry(entry, _midi_relpath(src_midi))
+
+            if skip_existing and _expected_dna_path(recipe, out_dir).exists():
+                skipped += 1
+                continue
 
             # Apply MIDI jitter in-memory; orchestrate.py reads from disk so
             # we write a transient jittered MIDI per entry.
@@ -417,6 +446,16 @@ def _render_entries(
                     f"{entry.engine}: {type(exc).__name__}: {exc}",
                     flush=True,
                 )
+
+            # Drop residual references from the loop body, then let the
+            # garbage collector reclaim the multi-mic audio + WAV buffers.
+            del source_midi, jittered
+            try:
+                transient_midi.unlink()
+            except OSError:
+                pass
+            if (i + 1) % gc_every == 0:
+                gc.collect()
                 continue
 
             if (i + 1) % log_every == 0:
@@ -428,7 +467,7 @@ def _render_entries(
                     f"ETA {eta / 60:.1f} min",
                     flush=True,
                 )
-    return generated, failed, time.monotonic() - started
+    return generated, skipped, failed, time.monotonic() - started
 
 
 # ----------------------------------------------------------------------------
@@ -473,7 +512,48 @@ def _parse_args() -> argparse.Namespace:
         "--clean-out", action="store_true",
         help="wipe the Gold output dir before rendering",
     )
+    parser.add_argument(
+        "--skip-existing", action="store_true",
+        help="skip recipe entries whose .dna.json already lives in --out "
+              "(idempotent resume — necessary on OOM-prone hosts where the "
+              "process is restarted after a kill)",
+    )
+    parser.add_argument(
+        "--chunk-size", type=int, default=0,
+        help="if > 0, render only the next N entries (after honouring "
+              "--skip-existing) and exit. Lets a wrapper script chunk the "
+              "workload across multiple process invocations.",
+    )
+    parser.add_argument(
+        "--source-mix", type=Path, default=None,
+        help="path to a midi_synth mix_dataset directory (containing "
+              "manifest.json). If set, the built-in 6 synthetic styles are "
+              "ignored and the MIDIs from the mix are consumed instead. "
+              "--n is also ignored (the manifest dictates the count).",
+    )
     return parser.parse_args()
+
+
+def _load_mix_midi_paths(mix_dir: Path) -> dict[str, Path]:
+    """Read ``manifest.json`` from a midi_synth mix_dataset directory and
+    return ``{midi_id: midi_path}`` with stable, jitter-seed-friendly IDs.
+
+    The MIDI id has the shape ``mix_{order:04d}_{source}`` where ``source`` is
+    one of ``gmd|rare|chaos`` — this preserves the source provenance in the
+    recipe matrix barcode without leaking the full GMD path.
+    """
+    import json
+
+    manifest_path = mix_dir / "manifest.json"
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"mix manifest not found: {manifest_path}")
+    data = json.loads(manifest_path.read_text())
+    out: dict[str, Path] = {}
+    mix_root = mix_dir.resolve()
+    for entry in data["entries"]:
+        midi_id = f"mix_{entry['order_idx']:04d}_{entry['source']}"
+        out[midi_id] = (mix_root / entry["rel_path"]).resolve()
+    return out
 
 
 def main() -> int:
@@ -483,25 +563,48 @@ def main() -> int:
         print("FATAL: --midi-only and --render-only are mutually exclusive",
               file=sys.stderr)
         return 2
+    if args.source_mix and (args.midi_only or args.render_only):
+        print("FATAL: --source-mix is incompatible with --midi-only/--render-only",
+              file=sys.stderr)
+        return 2
 
+    using_mix = args.source_mix is not None
     print("=" * 72)
-    print(f"Local R&D dataset generator — CEO directive 2026-05-23")
-    print(f"  n grooves:     {args.n}")
-    print(f"  k variants:    {args.k}  (=> {args.n * (args.k + 1)} sample)")
+    print("Local R&D dataset generator — CEO directive 2026-05-23")
+    if using_mix:
+        print(f"  source mix:    {args.source_mix}")
+    else:
+        print(f"  n grooves:     {args.n}")
+    print(f"  k variants:    {args.k}")
     print(f"  master_seed:   {args.seed}")
-    print(f"  MIDI dir:      {args.midi_dir}")
+    if not using_mix:
+        print(f"  MIDI dir:      {args.midi_dir}")
     print(f"  Gold output:   {args.out}")
     print("=" * 72)
 
-    # --- MIDI generation ---
-    midi_paths: list[Path]
-    if args.render_only:
+    # --- MIDI generation / loading ---
+    midi_id_to_path: dict[str, Path]
+    if using_mix:
+        midi_id_to_path = _load_mix_midi_paths(args.source_mix)
+        n_sources = len(midi_id_to_path)
+        print(f"[1/2] mix dataset: {n_sources} MIDIs from {args.source_mix}")
+        # Audit: show the source distribution.
+        source_counts: dict[str, int] = {}
+        for midi_id in midi_id_to_path:
+            source = midi_id.rsplit("_", 1)[-1]
+            source_counts[source] = source_counts.get(source, 0) + 1
+        print("       source mix: " + ", ".join(
+            f"{k}={v}" for k, v in sorted(source_counts.items())))
+    elif args.render_only:
         midi_paths = sorted(args.midi_dir.glob("groove_*.mid"))
         if not midi_paths:
             print(f"FATAL: --render-only but no MIDIs in {args.midi_dir}",
                   file=sys.stderr)
             return 1
         print(f"[1/2] reusing {len(midi_paths)} existing MIDIs in {args.midi_dir}")
+        midi_id_to_path = {
+            f"groove_{i:04d}": p for i, p in enumerate(sorted(midi_paths))
+        }
     else:
         print(f"[1/2] synthesising {args.n} MIDIs in {args.midi_dir} ...")
         t0 = time.monotonic()
@@ -512,8 +615,11 @@ def main() -> int:
         for i in range(args.n):
             style_name, _bpm, _events = _groove_for_index(i)
             styles[style_name] = styles.get(style_name, 0) + 1
-        print(f"       style mix: " + ", ".join(
+        print("       style mix: " + ", ".join(
             f"{k}={v}" for k, v in sorted(styles.items())))
+        midi_id_to_path = {
+            f"groove_{i:04d}": p for i, p in enumerate(sorted(midi_paths))
+        }
 
     if args.midi_only:
         print("=" * 72)
@@ -521,9 +627,7 @@ def main() -> int:
         return 0
 
     # --- Recipe matrix ---
-    midi_id_to_path = {
-        f"groove_{i:04d}": p for i, p in enumerate(sorted(midi_paths))
-    }
+    n_sources = len(midi_id_to_path)
     entries = build_recipe_matrix_entries(
         source_midi_ids=sorted(midi_id_to_path.keys()),
         engines_kits=[("drumgizmo", "DRSKit")],
@@ -531,7 +635,7 @@ def main() -> int:
         master_seed=args.seed,
     )
     print(f"[2/2] recipe matrix: {len(entries)} entries "
-          f"(M={args.n} × (k+1)={args.k + 1} × E=1)")
+          f"(M={n_sources} × (k+1)={args.k + 1} × E=1)")
 
     # --- Render ---
     if args.clean_out and args.out.exists():
@@ -541,16 +645,34 @@ def main() -> int:
 
     bus_mapping = load_bus_mapping(DEFAULT_BUS_MAPPING_PATH)
 
+    # Apply --chunk-size after --skip-existing filtering — chunk only the
+    # entries that would actually be rendered this invocation.
+    if args.chunk_size > 0:
+        if args.skip_existing:
+            entries = [
+                e for e in entries
+                if not _expected_dna_path(
+                    _recipe_from_entry(e, _midi_relpath(midi_id_to_path[e.source_midi_id])),
+                    args.out,
+                ).exists()
+            ]
+        entries = entries[: args.chunk_size]
+        print(f"       chunk: rendering {len(entries)} entries this invocation")
+    elif args.skip_existing:
+        print(f"       --skip-existing: scanning {len(entries)} entries for prior output")
+
     print(f"       rendering {len(entries)} sample(s) with DrumGizmo / DRSKit ...")
-    generated, failed, elapsed = _render_entries(
+    generated, skipped, failed, elapsed = _render_entries(
         entries, midi_id_to_path, args.out,
         bus_mapping=bus_mapping,
+        skip_existing=args.skip_existing and args.chunk_size == 0,
     )
 
     print("=" * 72)
-    print(f"DONE — {generated} sample(s) generated, {failed} failed, "
+    print(f"DONE — {generated} generated, {skipped} skipped, {failed} failed, "
           f"elapsed {elapsed / 60:.1f} min")
-    print(f"        rate ≈ {generated / elapsed:.2f} sample/s")
+    if generated and elapsed > 0:
+        print(f"        rate ≈ {generated / elapsed:.2f} sample/s")
     print(f"        output: {args.out}")
     return 1 if failed else 0
 

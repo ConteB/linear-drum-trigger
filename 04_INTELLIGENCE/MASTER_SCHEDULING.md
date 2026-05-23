@@ -1079,6 +1079,24 @@ del DOSSIER §3.1 moltiplica la recipe matrix di F2-T1, non quella di F2-T2).
   ~33 grooves ciascuno), BPM 80-160, multitrack_full 8 canali, DRSKit. Sblocca R&D
   parallelo su **F0-T16-post** (audio aug pipeline) e **F0-T4b extension** (sweep TCN
   hyperparams) mentre la quota A100 è in attesa.
+· **2026-05-24 — Mixed-dataset 70/15/15 (CEO directive next-session-mixed-dataset-rd).**
+  Rimpiazzato il dataset locale 100% sintetico con un mix **140 GMD reali + 30
+  rare-emphasis + 30 chaos = 200 grooves** (Decision Lock CEO 2026-05-23 fine giornata).
+  Nuovo modulo `src/data_engineering/midi_synth/` (5 file, 66 oracoli verdi):
+  `_writer.py` + `rare_emphasis.py` (5 famiglie × 6 = 30 grooves con
+  crash/china/ride/tom/splash sovra-rappresentati 3-5× la freq GMD) + `chaos_generator.py`
+  (30 grooves Poisson per-bus λ ∈ [2,15] hits/s, off-grid, velocity uniforme) +
+  `mix_dataset.py` (orchestratore deterministico, `manifest.json`). Implementa
+  `DOSSIER §10.1` Machine-Gun Chaos da concettuale ☑ a codice; counter-bilancia lo
+  skew della distribuzione GMD reale (crash/china rare → ora foregrounded). GMD v1.0
+  Magenta scaricato (4.8 GB) in `bronze/gmd/v1/` (1150 MIDI CC-BY-4.0). Runner
+  `tools/generate_local_rnd_dataset.py` esteso con flag `--source-mix`,
+  `--skip-existing` (idempotent resume), `--chunk-size` (OOM-tolerant chunking) +
+  `gc.collect()` periodico. Wrapper `tools/render_mix_chunked.sh` per restartare su
+  OOM (OrbStack 7.8 GB shared con macOS sotto pressione di memoria — il rendere
+  multi-mic accumula RSS oltre la soglia). Sblocca **R&D Tier 1** (T1-A data audit,
+  T1-B baseline TCN su MPS, T1-D stabilità per-seed, T1-C sweep iperparametri).
+  Costo Azure: **$0**.
 
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 

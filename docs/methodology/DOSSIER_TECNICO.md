@@ -278,6 +278,31 @@ Per scongiurare l'overfitting e garantire la vendibilità Studio-Grade, il datas
 Usato esclusivamente per aggiornare i pesi della TCN.
 - **Anti-Overfitting Ritmico:** Per impedire alla rete di imparare a memoria il "groove" musicale umano, il 5-10% del Training Set è generato stocasticamente. Il modulo **"Machine-Gun / Chaos"** inserisce blast-beat a 300 BPM, sovrapposizioni fisicamente impossibili (8 tamburi colpiti nello stesso frame) e note randomiche fuori griglia. Questo forza la rete a valutare l'evento acustico fisico, non il pattern musicale.
 
+**Implementazione concreta (2026-05-23, sessione mixed-dataset R&D).** Il modulo
+Machine-Gun + il counterweight "Rare-Emphasis" sono ora codice in
+`src/data_engineering/midi_synth/`:
+
+- **`chaos_generator.py`** — 30 grooves stocastici via processo di Poisson per-bus
+  indipendente, `λ ∈ [2, 15] hits/sec`. Inter-arrival time esponenziale ⇒ onset
+  *off-grid* per costruzione (rompe lo shortcut "posizione-su-griglia"). Velocity
+  uniforme `[40, 120]` (no skew naturale). BPM `[80, 200]`, durata `[2, 6] s`. Nota GM
+  scelta uniformemente dalle articolazioni del DRSKit voiced sul bus. Determinismo
+  byte-deterministico per `(master_seed, index)` via `random.Random` (no NumPy dep).
+- **`rare_emphasis.py`** — 30 grooves dove crash/china/ride/tom/splash sono
+  sovra-rappresentati 3-5× la frequenza naturale GMD. Cinque famiglie × 6 sub-grooves
+  (3 BPM × 2 bar): `crash_led`, `china_led`, `ride_led`, `tom_fill_heavy`,
+  `splash_bell`. Counter-pesa lo skew della distribuzione GMD reale.
+- **`mix_dataset.py`** — orchestratore 70/15/15: 140 GMD reali (sample
+  deterministico da `info.csv`, filtrato a `time_signature=4-4 ∧ split=train`) +
+  30 rare + 30 chaos = 200 grooves. Shuffle deterministico `master_seed=20260524`.
+  Output: `bronze/gmd/mix_2026-05-24/` (gmd/, rare/, chaos/) + `manifest.json`.
+
+Il mix viene consumato da `tools/generate_local_rnd_dataset.py --source-mix <dir>`
+che riusa la pipeline jitter (F0-T15-pre/T16-pre LOCKED) e DrumGizmo+DRSKit per il
+render Gold (`audio/target/dna` triple). Costo Azure: **$0** (gira su Mac M5 +
+OrbStack DrumGizmo). Doctrine: anti-shortcut learning + coverage delle code rare
+della distribuzione GMD.
+
 <a id="validation-set"></a>
 ### 10.2 Validation Set (10%)
 Usato per il monitoraggio "Early Stopping" durante il training su Azure.

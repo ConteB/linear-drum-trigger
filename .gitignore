@@ -7,6 +7,9 @@ __pycache__/
 *.pyc
 .env
 
+# Claude Code harness runtime state (not source)
+.claude/scheduled_tasks.lock
+
 # Data & Assets (Heavy)
 data/
 lib/soundfonts/

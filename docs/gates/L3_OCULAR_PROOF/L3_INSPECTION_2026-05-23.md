@@ -194,6 +194,13 @@ Esito tracciato in [`REGISTRO_AVANZAMENTO.md`](../../../04_INTELLIGENCE/REGISTRO
 A valle dell'approvazione, **`F2-T3` (Training A100)** resta gated solo da
 `F2-T1` (render).
 
+> **Vedi anche** — questa run è stata rigenerata anche in formato
+> **HTML single-file** secondo il nuovo [`MODEL_REPORT_BLUEPRINT`](../../../04_INTELLIGENCE/MODEL_REPORT_BLUEPRINT.md)
+> (Decision Lock CEO 2026-05-23): apri
+> [`reports/2026-05-23-f0t4b-tcn-c32/report.html`](../../../reports/2026-05-23-f0t4b-tcn-c32/report.html)
+> in browser per il pacchetto interattivo con grafici, tabelle e Decision
+> Lock embedded — è il formato canonico per i report futuri (L4 incluso).
+
 ---
 
 ## Appendice — come ri-eseguire le evidenze

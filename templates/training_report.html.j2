@@ -1,0 +1,381 @@
+{# ------------------------------------------------------------------
+   templates/training_report.html.j2 — Single-file HTML training report.
+
+   Vincolato dalla spec LIN-DT-RPTBP-001 (MODEL_REPORT_BLUEPRINT.md).
+   Riempito da src/neural/reporter.py via ReportContext.
+
+   Output: un .html auto-contenuto con CSS + SVG inline. Apri con
+   doppio-click in browser; printable a PDF via Cmd+P.
+------------------------------------------------------------------ #}
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ ctx.title }} — OP-NEUROTRIGGER</title>
+  <style>
+    /* "Laboratory Precision" — coerente con LINEAR_DESIGN_GUIDE.
+       Monospace per i numeri, sans per la prosa, palette sobria. */
+    :root {
+      --bg: #f7f7f7;
+      --fg: #1a1a1a;
+      --muted: #666;
+      --accent: #1f6feb;
+      --pass: #1a7f3a;
+      --warn: #b76d00;
+      --fail: #b00020;
+      --rule: #d8d8d8;
+      --code-bg: #ececec;
+      --font-mono: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #181818; --fg: #ececec; --muted: #999;
+        --rule: #333; --code-bg: #262626;
+      }
+    }
+    html { background: var(--bg); color: var(--fg); }
+    body {
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.55;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 32px 96px;
+    }
+    h1, h2, h3, h4 { font-weight: 600; line-height: 1.25; }
+    h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
+    h2 { font-size: 22px; margin: 40px 0 12px; border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
+    h3 { font-size: 17px; margin: 24px 0 8px; }
+    h4 { font-size: 15px; margin: 16px 0 6px; color: var(--muted); }
+    p { margin: 8px 0 12px; }
+    .meta { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    .meta code { font-family: var(--font-mono); }
+    code, .num, .formula, .formula-block, td.formula {
+      font-family: var(--font-mono);
+      font-size: 0.93em;
+    }
+    code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+    .formula-block {
+      display: inline-block; background: var(--code-bg);
+      padding: 6px 12px; border-radius: 4px; margin: 4px 0;
+    }
+    /* TOC */
+    nav.toc {
+      background: var(--code-bg);
+      padding: 12px 18px;
+      border-radius: 4px;
+      margin: 20px 0 28px;
+      font-size: 14px;
+    }
+    nav.toc h4 { margin-top: 0; }
+    nav.toc ol { margin: 0; padding-left: 24px; }
+    nav.toc li { margin: 2px 0; }
+    nav.toc a { color: var(--fg); text-decoration: none; }
+    nav.toc a:hover { text-decoration: underline; color: var(--accent); }
+    /* Tables */
+    table {
+      border-collapse: collapse;
+      margin: 12px 0 18px;
+      font-size: 14px;
+      width: 100%;
+    }
+    th, td {
+      border-bottom: 1px solid var(--rule);
+      padding: 6px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { font-weight: 600; background: var(--code-bg); }
+    td.num, th.num { text-align: right; font-family: var(--font-mono); }
+    tr.gate-row td { font-weight: 600; }
+    /* Verdict markers */
+    .pass { color: var(--pass); font-weight: 600; }
+    .warn { color: var(--warn); font-weight: 600; }
+    .fail { color: var(--fail); font-weight: 600; }
+    /* Figures */
+    figure {
+      margin: 16px 0;
+      padding: 12px;
+      background: white;
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    @media (prefers-color-scheme: dark) { figure { background: #fff; } }
+    figure svg { display: block; max-width: 100%; height: auto; }
+    figcaption {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 6px;
+      text-align: center;
+    }
+    /* Status banner */
+    .status-banner {
+      padding: 8px 14px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      margin: 8px 0 16px;
+      background: var(--code-bg);
+      display: inline-block;
+    }
+    .status-banner.auto { color: var(--muted); }
+    .status-banner.approved { color: var(--pass); }
+    .status-banner.pending { color: var(--warn); }
+    /* How-to-read styling */
+    .how-to-read .lead {
+      font-style: italic; color: var(--muted); margin-bottom: 18px;
+    }
+    .how-to-read table.confusion-key th, .how-to-read table.confusion-key td {
+      text-align: center;
+    }
+    .how-to-read table.confusion-key th[scope] { background: var(--code-bg); }
+    .how-to-read ul.caveats li { margin: 8px 0; }
+    .how-to-read .meta-note {
+      font-size: 13px; color: var(--muted);
+      border-left: 3px solid var(--rule); padding-left: 12px; margin-top: 24px;
+    }
+    /* Print */
+    @media print {
+      body { max-width: none; padding: 0; }
+      nav.toc { page-break-after: always; }
+      h2 { page-break-before: auto; }
+      figure { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>{{ ctx.title }}</h1>
+  <p class="meta">
+    <strong>Run ID:</strong> <code>{{ ctx.run_id }}</code> ·
+    <strong>Data:</strong> <code>{{ ctx.run_date }}</code> ·
+    <strong>Commit:</strong> <code>{{ ctx.git_commit }}</code>
+  </p>
+  <p>
+    <span class="status-banner {{ ctx.status_class }}">
+      status: {{ ctx.status }}
+    </span>
+  </p>
+</header>
+
+<nav class="toc" aria-label="Indice">
+  <h4>Indice</h4>
+  <ol>
+    <li><a href="#section-0">§ 0 — TL;DR</a></li>
+    <li><a href="#section-1">§ 1 — Cosa stiamo guardando</a></li>
+    <li><a href="#section-2">§ 2 — Curve di training</a></li>
+    <li><a href="#section-3">§ 3 — Metriche di onset</a></li>
+    <li><a href="#section-4">§ 4 — Metriche regressive</a></li>
+    <li><a href="#section-5">§ 5 — Confusion matrix per-bus</a></li>
+    <li><a href="#section-6">§ 6 — Controllo negativo (F-shuffle)</a></li>
+    <li><a href="#section-7">§ 7 — Esempi qualitativi</a></li>
+    <li><a href="#section-8">§ 8 — Iperparametri</a></li>
+    <li><a href="#section-9">§ 9 — Come leggere il report</a></li>
+    {%- if ctx.tier == 2 %}
+    <li><a href="#section-10">§ 10 — Verdetto vs gate</a></li>
+    {%- endif %}
+  </ol>
+</nav>
+
+{# ---------- § 0 TL;DR ---------- #}
+<section id="section-0">
+  <h2>§ 0 — TL;DR</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Voce</th><th class="num">Valore</th>
+        <th class="num">Gate</th><th>Esito</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for row in ctx.tldr %}
+      <tr {% if row.is_summary %}class="gate-row"{% endif %}>
+        <td>{{ row.label }}</td>
+        <td class="num">{{ row.value }}</td>
+        <td class="num">{{ row.gate }}</td>
+        <td><span class="{{ row.verdict_class }}">{{ row.verdict }}</span></td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  {%- if ctx.tldr_note %}
+  <p class="meta">{{ ctx.tldr_note }}</p>
+  {%- endif %}
+</section>
+
+{# ---------- § 1 Cosa stiamo guardando ---------- #}
+<section id="section-1">
+  <h2>§ 1 — Cosa stiamo guardando</h2>
+  <table>
+    <tbody>
+      {%- for k, v in ctx.context_table %}
+      <tr><th>{{ k }}</th><td>{{ v }}</td></tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</section>
+
+{# ---------- § 2 Curve di training ---------- #}
+<section id="section-2">
+  <h2>§ 2 — Curve di training</h2>
+  {%- if ctx.charts.loss_curve %}
+  <figure>
+    {{ ctx.charts.loss_curve | safe }}
+    <figcaption>Loss totale per epoch. Asse X = epoch, Y = loss.</figcaption>
+  </figure>
+  {%- else %}
+  <p class="meta">Nessuna curva disponibile per questo run.</p>
+  {%- endif %}
+</section>
+
+{# ---------- § 3 Metriche di onset ---------- #}
+<section id="section-3">
+  <h2>§ 3 — Metriche di onset</h2>
+
+  <h3>3.1 Tabella per-bus — TRAIN set</h3>
+  {{ ctx.tables.train_per_bus | safe }}
+
+  <h3>3.2 Tabella per-bus — HOLDOUT</h3>
+  {{ ctx.tables.holdout_per_bus | safe }}
+
+  <h3>3.3 Bar chart — F-measure per-bus</h3>
+  <figure>
+    {{ ctx.charts.per_bus_train | safe }}
+    <figcaption>F-measure per-bus sul <strong>train set</strong>.
+      Linea tratteggiata = soglia gate ({{ ctx.gate_f_threshold }}).
+      Bus senza ground-truth marcati "n/a".</figcaption>
+  </figure>
+  <figure>
+    {{ ctx.charts.per_bus_holdout | safe }}
+    <figcaption>F-measure per-bus sul <strong>holdout</strong>.
+      Il gap train→holdout è il diagnostico del generalization.</figcaption>
+  </figure>
+</section>
+
+{# ---------- § 4 Metriche regressive ---------- #}
+<section id="section-4">
+  <h2>§ 4 — Metriche regressive</h2>
+  {%- if ctx.charts.timing_mae_hist %}
+  <figure>
+    {{ ctx.charts.timing_mae_hist | safe }}
+    <figcaption>Distribuzione dei drift temporali (pred − vero) per onset matchati.
+      Bin width ≈ {{ ctx.frame_period_ms }} ms (un frame). Linea verticale = 0.
+      Range ±20 ms = match window MIREX.</figcaption>
+  </figure>
+  {%- else %}
+  <p class="meta">Nessun onset matchato — istogramma omesso.</p>
+  {%- endif %}
+
+  <h3>4.1 HiHat-opening MAE</h3>
+  <table>
+    <thead><tr><th>Sample</th><th class="num">MAE</th><th class="num">Gate</th><th>Esito</th></tr></thead>
+    <tbody>
+      {%- for s in ctx.hihat_mae_table %}
+      <tr>
+        <td>{{ s.key }}</td>
+        <td class="num">{{ '%.3f' | format(s.mae) }}</td>
+        <td class="num">&lt; {{ ctx.gate_hihat_max }}</td>
+        <td><span class="{{ s.verdict_class }}">{{ s.verdict }}</span></td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</section>
+
+{# ---------- § 5 Confusion matrix per-bus ---------- #}
+<section id="section-5">
+  <h2>§ 5 — Confusion matrix per-bus</h2>
+  {%- if ctx.charts.confusion_grid %}
+  <figure>
+    {{ ctx.charts.confusion_grid | safe }}
+    <figcaption>Griglia delle 8 confusion matrix per-bus.
+      Annotazione numerica = conteggi grezzi. Colormap viridis.</figcaption>
+  </figure>
+  {%- else %}
+  <p class="meta">Confusion matrix non disponibile per questo run.</p>
+  {%- endif %}
+</section>
+
+{# ---------- § 6 Controllo negativo F-shuffle ---------- #}
+<section id="section-6">
+  <h2>§ 6 — Controllo negativo (F-shuffle)</h2>
+  <p>
+    F-measure sulle stesse predizioni ma con label di ground-truth
+    <em>shuffate</em> nell'asse temporale. Gap qualitativo = prova che la
+    rete <strong>non</strong> è random. Soglia gate = <code>{{ ctx.gate_shuffle_max }}</code>.
+  </p>
+  <figure>
+    {{ ctx.charts.shuffle_control | safe }}
+    <figcaption>F-measure reale (sinistra) vs F-measure su label shuffate (destra)
+      per ciascun sample dell'holdout.</figcaption>
+  </figure>
+</section>
+
+{# ---------- § 7 Esempi qualitativi ---------- #}
+<section id="section-7">
+  <h2>§ 7 — Esempi qualitativi</h2>
+  {%- if ctx.charts.piano_roll_samples %}
+    {%- for chart, caption in ctx.charts.piano_roll_samples %}
+    <figure>
+      {{ chart | safe }}
+      <figcaption>{{ caption }}</figcaption>
+    </figure>
+    {%- endfor %}
+  {%- else %}
+  <p class="meta">Nessun esempio qualitativo per questo run.</p>
+  {%- endif %}
+</section>
+
+{# ---------- § 8 Iperparametri ---------- #}
+<section id="section-8">
+  <h2>§ 8 — Iperparametri</h2>
+  <table>
+    <thead><tr><th>Chiave</th><th>Valore</th></tr></thead>
+    <tbody>
+      {%- for k, v in ctx.hyperparameters %}
+      <tr><td><code>{{ k }}</code></td><td><code>{{ v }}</code></td></tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</section>
+
+{# ---------- § 9 Come leggere il report ---------- #}
+{% include "_how_to_read.html.j2" %}
+
+{# ---------- § 10 Verdetto vs gate (Tier 2 only) ---------- #}
+{%- if ctx.tier == 2 %}
+<section id="section-10">
+  <h2>§ 10 — Verdetto vs gate</h2>
+  <table>
+    <thead><tr><th>Criterio</th><th>Esito</th></tr></thead>
+    <tbody>
+      {%- for row in ctx.gate_verdict %}
+      <tr>
+        <td>{{ row.criterion }}</td>
+        <td><span class="{{ row.verdict_class }}">{{ row.verdict }}</span></td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  <h3>Decisione del CEO</h3>
+  <p>
+    Data firma: <strong>{{ ctx.signoff_date or '_____________' }}</strong> ·
+    Firma CEO: <strong>{{ ctx.signoff_signature or '___________________' }}</strong>
+  </p>
+</section>
+{%- endif %}
+
+<footer style="margin-top:48px; padding-top:16px; border-top:1px solid var(--rule); color:var(--muted); font-size:12px;">
+  Generato deterministicamente da
+  <code>src/neural/reporter.py</code> ·
+  Spec: <code>04_INTELLIGENCE/MODEL_REPORT_BLUEPRINT.md</code> v{{ ctx.blueprint_version }} ·
+  OP-NEUROTRIGGER · Linear Division
+</footer>
+
+</body>
+</html>

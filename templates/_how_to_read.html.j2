@@ -1,0 +1,147 @@
+{# ------------------------------------------------------------------
+   templates/_how_to_read.html.j2 — SINGLE SOURCE OF TRUTH per la
+   sezione § 9 "Come leggere il report" del MODEL_REPORT_BLUEPRINT.
+
+   Edita questo file per aggiornare la sezione in TUTTI i report
+   futuri. Vincolato dalla spec LIN-DT-RPTBP-001 §2 § 9.
+------------------------------------------------------------------ #}
+<section id="section-9" class="how-to-read">
+  <h2>§ 9 — Come leggere questo report</h2>
+
+  <p class="lead">
+    Questa sezione appare identica in ogni report (single source of truth:
+    <code>templates/_how_to_read.html.j2</code>). Le definizioni che seguono
+    sono sufficienti a interpretare ogni numero di questo documento senza
+    consultare letteratura esterna.
+  </p>
+
+  <h3>9.1 Matrice di confusione — la base di tutto</h3>
+  <p>
+    Per ogni decisione binaria (in questo frame c'è un onset di kick? sì/no)
+    quattro casi possibili:
+  </p>
+  <table class="confusion-key">
+    <thead>
+      <tr><th></th><th>Verità: SÌ</th><th>Verità: NO</th></tr>
+    </thead>
+    <tbody>
+      <tr><th>Predetto: SÌ</th>
+        <td><strong>TP</strong> — vero positivo (preso)</td>
+        <td><strong>FP</strong> — falso positivo (falso allarme)</td></tr>
+      <tr><th>Predetto: NO</th>
+        <td><strong>FN</strong> — falso negativo (mancato)</td>
+        <td><strong>TN</strong> — vero negativo (silenzio confermato)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.2 Precision e Recall</h3>
+  <table class="metric-defs">
+    <thead><tr><th>Metrica</th><th>Formula</th><th>Domanda</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Precision</strong></td>
+        <td class="formula">TP / (TP + FP)</td>
+        <td>Di ciò che ho gridato "onset!", quanto era vero?</td></tr>
+      <tr><td><strong>Recall</strong></td>
+        <td class="formula">TP / (TP + FN)</td>
+        <td>Dei veri onset, quanti ne ho beccati?</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Sono in tensione: massimizzare l'una abbassa l'altra. La regola di lettura
+    qui sotto pesa entrambe (F-measure).
+  </p>
+
+  <h3>9.3 F-measure (= F1)</h3>
+  <p class="formula-block">F1 = 2·P·R / (P+R)</p>
+  <p>
+    <strong>Media armonica</strong> di Precision e Recall, non aritmetica:
+    dominata dal valore peggiore. Non si può ingannare grandi-prevedendo o
+    silenziando — se uno dei due è basso, F1 crolla. Convenzione MIREX
+    (Music Information Retrieval Evaluation eXchange).
+  </p>
+
+  <h3>9.4 F-shuffle — il controllo negativo</h3>
+  <p>
+    F-measure calcolata sulle stesse predizioni ma con le label di
+    <em>ground-truth</em> mischiate nell'asse temporale. Se la rete ha
+    imparato il timing degli eventi, su label shuffate <strong>deve</strong>
+    crollare. Un F-shuffle alto = il modello indovina per caso.
+  </p>
+
+  <h3>9.5 Timing-MAE — accuratezza temporale</h3>
+  <p>
+    Per ogni onset matchato (entro la finestra ±20 ms), il drift in ms tra
+    predetto e vero. La media assoluta di questi drift è la
+    <strong>Timing-MAE</strong>. Misura quanto il modello sa
+    <em>localizzare</em> gli eventi che già rileva.
+  </p>
+
+  <h3>9.6 MAE — per le teste continue</h3>
+  <p>
+    Per le predizioni continue (velocity, microtiming, hihat-opening) usiamo
+    la <strong>Mean Absolute Error</strong>: <code>mean(|pred − vero|)</code>.
+    Robusta ai picchi, espressa nelle unità della variabile.
+  </p>
+
+  <h3>9.7 Match window ±20 ms</h3>
+  <p>
+    Per onset detection il "predetto = vero" non è bit-by-bit ma <em>entro
+    ±20 ms</em>. Standard MIREX. A frame-rate 344.53 Hz corrisponde a
+    ~7 frame di tolleranza. Più stretto sarebbe arbitrariamente severo,
+    più largo sarebbe musicalmente irrilevante.
+  </p>
+
+  <h3>9.8 Soglie di lettura — orientarsi tra i numeri</h3>
+  <table class="threshold-key">
+    <thead>
+      <tr><th>F-measure</th><th>Interpretazione</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="formula">&lt; 0.10</td>
+          <td>Indistinguibile da random — il modello non apprende.</td></tr>
+      <tr><td class="formula">0.10 – 0.40</td>
+          <td>Apprende qualcosa, ma non è utilizzabile.</td></tr>
+      <tr><td class="formula">0.40 – 0.70</td>
+          <td>Statisticamente significativo. Non ancora gate-grade.</td></tr>
+      <tr><td class="formula">0.70 – 0.85</td>
+          <td>Ricerca / publication grade. <strong>Soglia gate L3 = 0.80.</strong></td></tr>
+      <tr><td class="formula">≥ 0.85</td>
+          <td>Studio grade — l'obiettivo finale del progetto al Gate L4.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.9 Trappole comuni</h3>
+  <ul class="caveats">
+    <li>
+      <strong>Accuracy ingannevole.</strong> Su classi sbilanciate (i nostri
+      onset sono ~0.4% dei frame), un modello che predice sempre "no onset"
+      ha <em>accuracy</em> ~99.6%. Inutile. Mai usare accuracy come metrica
+      principale qui.
+    </li>
+    <li>
+      <strong>F=0 per bus senza ground-truth.</strong> Se un bus ha 0 onset
+      veri ma il modello predice qualche FP, F=0 (precision = 0/qualcosa).
+      Non è "non apprende" — è "predice dove non dovrebbe". Va letto con la
+      colonna <code>n_true</code> accanto.
+    </li>
+    <li>
+      <strong>Train ≠ Holdout.</strong> F-measure su train misura la
+      <em>capacità</em> di apprendimento; su holdout misura la
+      <em>generalizzazione</em>. Su mini-dataset (F0-T4b) è atteso un gap
+      grande — la barra ufficiale del progetto si misura al Gate L4 sul
+      dataset completo (E-GMD).
+    </li>
+    <li>
+      <strong>Round-trip ≠ accuratezza.</strong> Il <em>round-trip max|Δ|</em>
+      tra PyTorch e C++ misura solo che la rete esporta correttamente nel
+      motore di inferenza — non dice nulla sull'accuratezza del modello.
+      Sono gate distinti.
+    </li>
+  </ul>
+
+  <p class="meta-note">
+    Tono e contenuto di questa sezione sono <em>fissi</em>: questa è una
+    pagina di riferimento, non di reporting. I numeri del run specifico
+    sono nelle sezioni precedenti.
+  </p>
+</section>

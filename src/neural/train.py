@@ -34,8 +34,22 @@ from neural.data import (
     load_pool,
 )
 from neural.loss import LossConfig, TCNLoss
-from neural.metrics import L3Verdict, evaluate_l3
+from neural.metrics import (
+    FRAME_PERIOD_MS,
+    L3_F_MEASURE_MIN,
+    L3_HIHAT_MAE_MAX,
+    L3_SHUFFLED_F_MAX,
+    L3_TIMING_MAE_MAX_MS,
+    R_TARGET_HZ,
+    L3Verdict,
+    evaluate_l3,
+)
 from neural.model import TCNConfig, TCNModel, count_parameters
+from neural.reporter import (
+    build_default_context,
+    evaluate_sample_for_report,
+    write_training_report,
+)
 
 
 @dataclass(frozen=True)
@@ -116,8 +130,17 @@ def train(
     force_cpu: bool = False,
     log_every: int = 10,
     save_to: Path | None = Path("artifacts/f0t4b_tcn.pt"),
+    report_dir: Path | None = None,
+    run_id: str = "training-run",
+    run_title: str = "Training report",
 ) -> TrainResult:
-    """Run the F0-T4b training. Returns the verdict for the L3 Ocular Proof."""
+    """Run the F0-T4b training. Returns the verdict for the L3 Ocular Proof.
+
+    If ``report_dir`` is given (or :data:`AUTO_REPORT_DEFAULT_DIR` is set), the
+    function also writes a Tier-1 HTML report (LIN-DT-RPTBP-001) summarising
+    every metric of this run. The report path lives at
+    ``<report_dir>/<YYYY-MM-DD>-<run_id>/report.html``.
+    """
     torch.manual_seed(seed)
     np.random.seed(seed)
     device = pick_device(force_cpu)
@@ -215,6 +238,29 @@ def train(
         )
         print(f"[F0-T4b] saved model to {save_to}")
 
+    # ---- Auto-emit the Tier-1 HTML report (LIN-DT-RPTBP-001) ----
+    # Mandato MODEL_REPORT_BLUEPRINT §0: ogni training produce un report HTML
+    # auto-contenuto. Non opzionale.
+    if report_dir is not None:
+        _emit_training_report(
+            model=model,
+            train_samples=train_samples,
+            holdout_samples=holdout_samples,
+            history=history,
+            n_parameters=n_params,
+            config={
+                "epochs": epochs,
+                "crop_samples": crop_samples,
+                "batch_size": batch_size,
+                "lr": lr,
+                "seed": seed,
+                "device": str(device),
+            },
+            run_id=run_id,
+            run_title=run_title,
+            out_root=report_dir,
+        )
+
     return TrainResult(
         config={
             "epochs": epochs,
@@ -246,6 +292,63 @@ def _verdict_to_dict(v: L3Verdict) -> dict[str, Any]:
         "passes_hihat": v.passes_hihat,
         "passes": v.passes,
     }
+
+
+def _emit_training_report(
+    *,
+    model: TCNModel,
+    train_samples: list[GoldSample],
+    holdout_samples: list[GoldSample],
+    history: list[dict[str, float]],
+    n_parameters: int,
+    config: dict[str, Any],
+    run_id: str,
+    run_title: str,
+    out_root: Path,
+) -> Path:
+    """Run the per-sample evaluation and write the Tier-1 HTML report."""
+    import datetime as _dt  # noqa: PLC0415
+
+    cpu_model = model.to("cpu").eval()
+    train_evals: list[dict[str, Any]] = []
+    holdout_evals: list[dict[str, Any]] = []
+    for s in train_samples:
+        ev = evaluate_sample_for_report(cpu_model, s.audio, s.target, n_sample=131072)
+        ev["key"], ev["engine"], ev["mic_config"] = s.key, s.engine, s.mic_config
+        train_evals.append(ev)
+    for s in holdout_samples:
+        ev = evaluate_sample_for_report(cpu_model, s.audio, s.target, n_sample=131072)
+        ev["key"], ev["engine"], ev["mic_config"] = s.key, s.engine, s.mic_config
+        holdout_evals.append(ev)
+
+    hyperparams = {
+        **config,
+        "channels (C)": cpu_model.config.channels,
+        "encoder_strides": list(cpu_model.config.encoder_strides),
+        "trunk_dilations": list(cpu_model.config.trunk_dilations),
+    }
+    today = _dt.date.today().isoformat()
+    ctx = build_default_context(
+        run_id=run_id,
+        run_date=today,
+        title=run_title,
+        history=history,
+        n_parameters=n_parameters,
+        hyperparameters=hyperparams,
+        train_evals=train_evals,
+        holdout_evals=holdout_evals,
+        gate_f_threshold=L3_F_MEASURE_MIN,
+        gate_shuffle_max=L3_SHUFFLED_F_MAX,
+        gate_timing_mae_max=L3_TIMING_MAE_MAX_MS,
+        gate_hihat_max=L3_HIHAT_MAE_MAX,
+        frame_period_ms=FRAME_PERIOD_MS,
+        frame_rate_hz=R_TARGET_HZ,
+        tier=1,
+    )
+    out_dir = Path(out_root) / f"{today}-{run_id}"
+    out = write_training_report(ctx, out_dir)
+    print(f"[F0-T4b] wrote training report to {out}")
+    return out
 
 
 def _write_report(result: TrainResult, path: Path) -> None:
@@ -283,6 +386,24 @@ def main() -> None:
         "--report-to", type=Path, default=Path("artifacts/f0t4b_report.json"),
         help="JSON report path",
     )
+    parser.add_argument(
+        "--html-report-dir", type=Path, default=Path("reports"),
+        help="Root directory for the Tier-1 HTML report (LIN-DT-RPTBP-001). "
+             "Defaults to ./reports; use --no-html-report to skip.",
+    )
+    parser.add_argument(
+        "--no-html-report", action="store_true",
+        help="Disable the auto-generated HTML report (NOT recommended — "
+             "the report is mandatory per MODEL_REPORT_BLUEPRINT §0).",
+    )
+    parser.add_argument(
+        "--run-id", default="f0t4b-tcn-c32-seed0",
+        help="Stable run identifier used in the report directory name.",
+    )
+    parser.add_argument(
+        "--run-title", default="Training report — F0-T4b TCN",
+        help="Title shown in the HTML report header.",
+    )
     args = parser.parse_args()
 
     result = train(
@@ -294,6 +415,9 @@ def main() -> None:
         seed=args.seed,
         force_cpu=args.cpu,
         save_to=args.save_to,
+        report_dir=None if args.no_html_report else args.html_report_dir,
+        run_id=args.run_id,
+        run_title=args.run_title,
     )
     _write_report(result, args.report_to)
     print(f"[F0-T4b] wrote report to {args.report_to}")

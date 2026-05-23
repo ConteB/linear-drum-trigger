@@ -14,7 +14,7 @@ related: [LIN-DT-DOCSTD-001]
 > **File generato** da `tools/gen_docs_index.py` (Doc Standard LIN-DT-DOCSTD-001 §5).
 > Non editare a mano — rigenerare. Rilancia lo script dopo ogni modifica al frontmatter.
 
-Documenti indicizzati: **36** · senza frontmatter: **2**.
+Documenti indicizzati: **38** · senza frontmatter: **2**.
 
 ## Documenti
 
@@ -26,6 +26,7 @@ Documenti indicizzati: **36** · senza frontmatter: **2**.
 | `LIN-DT-CHKLST-001` | Master Checklist — OP-NEUROTRIGGER Launchpad | checklist | ACTIVE | cross-cutting | `MASTER_CHECKLIST.md` |
 | `LIN-DT-CHRONOS-001` | Chronos Engine — MIDI Timing Specifications | spec | LOCKED | F4 | `04_INTELLIGENCE/MIDI_CHRONOS_SPEC.md` |
 | `LIN-DT-COMPAN-001` | Analisi della Concorrenza — OP-NeuroTrigger | reference | ACTIVE | cross-cutting | `04_INTELLIGENCE/COMPETITOR_ANALYSIS.md` |
+| `LIN-DT-DCBP-001` | Dataset Card Blueprint (addendum) | spec | LOCKED | F0 | `04_INTELLIGENCE/DATASET_CARD_BLUEPRINT.md` |
 | `LIN-DT-DESIGN-001` | Linear Design Guide — OP-NeuroTrigger | standard | LOCKED | F4 | `04_INTELLIGENCE/UX_UI/LINEAR_DESIGN_GUIDE.md` |
 | `LIN-DT-DIARY-001` | Diario di Presidenza — Drum-Trigger | registro | ACTIVE | cross-cutting | `04_INTELLIGENCE/Diario_Presidenza_OpenPhase.md` |
 | `LIN-DT-DOCSTD-001` | OP-NEUROTRIGGER Doc Standard — Documentation Linking Layer | standard | LOCKED | cross-cutting | `04_INTELLIGENCE/DOC_LINKING_STANDARD.md` |
@@ -47,6 +48,7 @@ Documenti indicizzati: **36** · senza frontmatter: **2**.
 | `LIN-DT-REGAV-001` | Registro Avanzamento Commessa — Drum-Trigger | registro | ACTIVE | cross-cutting | `04_INTELLIGENCE/REGISTRO_AVANZAMENTO.md` |
 | `LIN-DT-ROADMAP-001` | Project Roadmap (ARCHIVIATO — era OP-X) | reference | ARCHIVED | cross-cutting | `PROJECT_ROADMAP.md` |
 | `LIN-DT-ROSTER-F0T1b` | F0-T1b — Survey & Selezione Kit (Roster di Training) | registro | ACTIVE | F0 | `docs/compliance/F0-T1b_KIT_ROSTER_SURVEY.md` |
+| `LIN-DT-RPTBP-001` | Model Training Report Blueprint | spec | LOCKED | F0 | `04_INTELLIGENCE/MODEL_REPORT_BLUEPRINT.md` |
 | `LIN-DT-RUNBOOK-F1T1` | Runbook F1-T1 — Setup Azure (per il CEO) | runbook | ACTIVE | F1 | `docs/runbooks/F1-T1_AZURE_SETUP.md` |
 | `LIN-DT-SCHED-001` | Scheduling Doctrine — OP-NEUROTRIGGER | doctrine | ACTIVE | cross-cutting | `04_INTELLIGENCE/SCHEDULING_DOCTRINE.md` |
 | `LIN-DT-SIA-001` | Strategic Infrastructure Audit | reference | ACTIVE | cross-cutting | `04_INTELLIGENCE/STRATEGIC_INFRASTRUCTURE_AUDIT.md` |
@@ -67,6 +69,8 @@ Documenti indicizzati: **36** · senza frontmatter: **2**.
 - **F0-T2a** — `LIN-DT-SPEC-F0T2a`
 - **F0-T4a** — `LIN-DT-SPEC-F0T4a`
 - **F1** — `LIN-DT-RUNBOOK-F1T1`
+- **addendum** — `LIN-DT-DCBP-001`
+- **ai** — `LIN-DT-DCBP-001`, `LIN-DT-RPTBP-001`
 - **arbitrage** — `LIN-DT-SCHED-001`
 - **architecture** — `LIN-DT-DOSSIER-001`
 - **archived** — `LIN-DT-PMINDEX-001`, `LIN-DT-REC-001`, `LIN-DT-ROADMAP-001`, `LIN-DT-SPRINT-001`
@@ -75,7 +79,7 @@ Documenti indicizzati: **36** · senza frontmatter: **2**.
 - **azure** — `LIN-DT-RUNBOOK-F1T1`, `LIN-DT-SIA-001`
 - **backlog** — `LIN-DT-AUGAUDIT-001`
 - **bit-exactness** — `LIN-DT-ENGSTD-001`
-- **blueprint** — `LIN-DT-BLUEPRINT-001`, `LIN-DT-UXBP-001`
+- **blueprint** — `LIN-DT-BLUEPRINT-001`, `LIN-DT-DCBP-001`, `LIN-DT-RPTBP-001`, `LIN-DT-UXBP-001`
 - **budget** — `LIN-DT-SIA-001`
 - **business-case** — `LIN-DT-QMA-001`
 - **ceo-action** — `LIN-DT-RUNBOOK-F1T1`
@@ -86,7 +90,7 @@ Documenti indicizzati: **36** · senza frontmatter: **2**.
 - **compliance** — `LIN-DT-DPL-001`, `LIN-DT-HOLDOUT-F0T1c`, `LIN-DT-LICVER-F0T1`, `LIN-DT-ROSTER-F0T1b`
 - **consistency** — `LIN-DT-AUDIT-001`
 - **data-contract** — `LIN-DT-SPEC-F0T2a`
-- **dataset** — `LIN-DT-AUGAUDIT-001`
+- **dataset** — `LIN-DT-AUGAUDIT-001`, `LIN-DT-DCBP-001`
 - **decisions** — `LIN-DT-DIARY-001`
 - **demo** — `LIN-DT-MKTOCULAR-001`
 - **dependencies** — `LIN-DT-ENGSTD-001`
@@ -130,6 +134,7 @@ Documenti indicizzati: **36** · senza frontmatter: **2**.
 - **recipe** — `LIN-DT-SPEC-F0T2a`
 - **recovery** — `LIN-DT-ONBOARD-001`
 - **registro** — `LIN-DT-BLUEPRINT-001`, `LIN-DT-DIARY-001`, `LIN-DT-HANDOVER-001`, `LIN-DT-REC-001`, `LIN-DT-REGAV-001`
+- **reporting** — `LIN-DT-DCBP-001`, `LIN-DT-RPTBP-001`
 - **roadmap** — `LIN-DT-ROADMAP-001`
 - **scheduling** — `LIN-DT-MSCHED-001`, `LIN-DT-SCHED-001`
 - **setup** — `LIN-DT-RUNBOOK-F1T1`
@@ -145,8 +150,9 @@ Documenti indicizzati: **36** · senza frontmatter: **2**.
 - **tooling** — `LIN-DT-DOCSTD-001`
 - **topology** — `LIN-DT-SPEC-F0T4a`
 - **tracking** — `LIN-DT-MSCHED-001`, `LIN-DT-REGAV-001`
+- **training** — `LIN-DT-RPTBP-001`
 - **ui** — `LIN-DT-DESIGN-001`, `LIN-DT-UXBP-001`
-- **ux** — `LIN-DT-DESIGN-001`, `LIN-DT-UXBP-001`
+- **ux** — `LIN-DT-DCBP-001`, `LIN-DT-DESIGN-001`, `LIN-DT-RPTBP-001`, `LIN-DT-UXBP-001`
 - **validation** — `LIN-DT-ENGSTD-001`, `LIN-DT-HOLDOUT-F0T1c`
 - **webdataset** — `LIN-DT-SPEC-F0T2a`
 
@@ -160,19 +166,20 @@ Documenti indicizzati: **36** · senza frontmatter: **2**.
 | `LIN-DT-CHKLST-001` | `LIN-DT-MSCHED-001`, `LIN-DT-SCHED-001`, `LIN-DT-DOSSIER-001` | `LIN-DT-AUDIT-001`, `LIN-DT-DOSSIER-001`, `LIN-DT-ENGSTD-001`, `LIN-DT-GOV-001`, `LIN-DT-HOLDOUT-F0T1c`, `LIN-DT-MKTOCULAR-001`, `LIN-DT-MSCHED-001`, `LIN-DT-SCHED-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a`, `LIN-DT-TESTDOC-001` |
 | `LIN-DT-CHRONOS-001` | `LIN-DT-DOSSIER-001`, `LIN-DT-SPEC-F0T4a` | — |
 | `LIN-DT-COMPAN-001` | `LIN-DT-TCAUDIT-001`, `LIN-DT-QMA-001`, `LIN-DT-MKTSTRAT-001` | `LIN-DT-MKTSTRAT-001`, `LIN-DT-QMA-001`, `LIN-DT-TCAUDIT-001` |
+| `LIN-DT-DCBP-001` | `LIN-DT-RPTBP-001`, `LIN-DT-ENGSTD-001`, `LIN-DT-DOSSIER-001` | `LIN-DT-RPTBP-001` |
 | `LIN-DT-DESIGN-001` | `LIN-DT-UXBP-001` | `LIN-DT-UXBP-001` |
 | `LIN-DT-DIARY-001` | `LIN-DT-REGAV-001`, `LIN-DT-AUDIT-001` | `LIN-DT-REGAV-001` |
 | `LIN-DT-DOCSTD-001` | `LIN-DT-MSCHED-001`, `LIN-DT-SCHED-001`, `LIN-DT-TESTDOC-001` | `LIN-DT-AUDIT-001`, `LIN-DT-MSCHED-001`, `LIN-DT-PMINDEX-001` |
-| `LIN-DT-DOSSIER-001` | `LIN-DT-CHKLST-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a`, `LIN-DT-AUGAUDIT-001` | `LIN-DT-AUDIT-001`, `LIN-DT-AUGAUDIT-001`, `LIN-DT-CHKLST-001`, `LIN-DT-CHRONOS-001`, `LIN-DT-ENGSTD-001`, `LIN-DT-HOLDOUT-F0T1c`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a` |
+| `LIN-DT-DOSSIER-001` | `LIN-DT-CHKLST-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a`, `LIN-DT-AUGAUDIT-001` | `LIN-DT-AUDIT-001`, `LIN-DT-AUGAUDIT-001`, `LIN-DT-CHKLST-001`, `LIN-DT-CHRONOS-001`, `LIN-DT-DCBP-001`, `LIN-DT-ENGSTD-001`, `LIN-DT-HOLDOUT-F0T1c`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a` |
 | `LIN-DT-DPL-001` | `LIN-DT-LICVER-F0T1`, `LIN-DT-ROSTER-F0T1b`, `LIN-DT-HOLDOUT-F0T1c` | `LIN-DT-HOLDOUT-F0T1c`, `LIN-DT-LICVER-F0T1`, `LIN-DT-ROSTER-F0T1b` |
-| `LIN-DT-ENGSTD-001` | `LIN-DT-DOSSIER-001`, `LIN-DT-CHKLST-001`, `LIN-DT-TESTDOC-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a` | — |
+| `LIN-DT-ENGSTD-001` | `LIN-DT-DOSSIER-001`, `LIN-DT-CHKLST-001`, `LIN-DT-TESTDOC-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a` | `LIN-DT-DCBP-001`, `LIN-DT-RPTBP-001` |
 | `LIN-DT-GOV-001` | `LIN-DT-TESTDOC-001`, `LIN-DT-CHKLST-001` | `LIN-DT-PII-001`, `LIN-DT-TESTDOC-001` |
 | `LIN-DT-HANDOVER-001` | `LIN-DT-MSCHED-001`, `LIN-DT-REGAV-001` | — |
 | `LIN-DT-HOLDOUT-F0T1c` | `LIN-DT-DPL-001`, `LIN-DT-DOSSIER-001`, `LIN-DT-CHKLST-001` | `LIN-DT-DPL-001` |
 | `LIN-DT-LICVER-F0T1` | `LIN-DT-DPL-001`, `LIN-DT-ROSTER-F0T1b` | `LIN-DT-DPL-001` |
 | `LIN-DT-MKTOCULAR-001` | `LIN-DT-MKTSTRAT-001`, `LIN-DT-CHKLST-001` | `LIN-DT-MKTSTRAT-001` |
 | `LIN-DT-MKTSTRAT-001` | `LIN-DT-MKTOCULAR-001`, `LIN-DT-QMA-001`, `LIN-DT-COMPAN-001` | `LIN-DT-COMPAN-001`, `LIN-DT-MKTOCULAR-001`, `LIN-DT-QMA-001` |
-| `LIN-DT-MSCHED-001` | `LIN-DT-SCHED-001`, `LIN-DT-CHKLST-001`, `LIN-DT-DOCSTD-001` | `LIN-DT-BLUEPRINT-001`, `LIN-DT-CHKLST-001`, `LIN-DT-DOCSTD-001`, `LIN-DT-HANDOVER-001`, `LIN-DT-ONBOARD-001`, `LIN-DT-REGAV-001`, `LIN-DT-ROADMAP-001`, `LIN-DT-RUNBOOK-F1T1`, `LIN-DT-SCHED-001`, `LIN-DT-SIA-001`, `LIN-DT-SPRINT-001` |
+| `LIN-DT-MSCHED-001` | `LIN-DT-SCHED-001`, `LIN-DT-CHKLST-001`, `LIN-DT-DOCSTD-001` | `LIN-DT-BLUEPRINT-001`, `LIN-DT-CHKLST-001`, `LIN-DT-DOCSTD-001`, `LIN-DT-HANDOVER-001`, `LIN-DT-ONBOARD-001`, `LIN-DT-REGAV-001`, `LIN-DT-ROADMAP-001`, `LIN-DT-RPTBP-001`, `LIN-DT-RUNBOOK-F1T1`, `LIN-DT-SCHED-001`, `LIN-DT-SIA-001`, `LIN-DT-SPRINT-001` |
 | `LIN-DT-ONBOARD-001` | `LIN-DT-MSCHED-001` | — |
 | `LIN-DT-PII-001` | `LIN-DT-GOV-001` | — |
 | `LIN-DT-PMINDEX-001` | `LIN-DT-DOCSTD-001` | — |
@@ -181,6 +188,7 @@ Documenti indicizzati: **36** · senza frontmatter: **2**.
 | `LIN-DT-REGAV-001` | `LIN-DT-MSCHED-001`, `LIN-DT-DIARY-001` | `LIN-DT-DIARY-001`, `LIN-DT-HANDOVER-001`, `LIN-DT-REC-001` |
 | `LIN-DT-ROADMAP-001` | `LIN-DT-MSCHED-001` | — |
 | `LIN-DT-ROSTER-F0T1b` | `LIN-DT-DPL-001`, `LIN-DT-SPEC-F0T2a` | `LIN-DT-DPL-001`, `LIN-DT-LICVER-F0T1` |
+| `LIN-DT-RPTBP-001` | `LIN-DT-DCBP-001`, `LIN-DT-ENGSTD-001`, `LIN-DT-MSCHED-001` | `LIN-DT-DCBP-001` |
 | `LIN-DT-RUNBOOK-F1T1` | `LIN-DT-MSCHED-001`, `LIN-DT-INFRA-001` | — |
 | `LIN-DT-SCHED-001` | `LIN-DT-MSCHED-001`, `LIN-DT-CHKLST-001` | `LIN-DT-CHKLST-001`, `LIN-DT-DOCSTD-001`, `LIN-DT-MSCHED-001`, `LIN-DT-SIA-001` |
 | `LIN-DT-SIA-001` | `LIN-DT-MSCHED-001`, `LIN-DT-SCHED-001` | — |

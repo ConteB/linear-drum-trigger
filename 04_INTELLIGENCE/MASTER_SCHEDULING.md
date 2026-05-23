@@ -598,6 +598,19 @@ stop compute + push HDD · **$10** → chiudi tutto.
     `tail_s = 0.5 s` uniforme (F0-T2a §3.8), `last_onset_s` dal target builder,
     trim/pad post-render. Supersedes la coda `_DRUMGIZMO_TAIL_S = 5.0 s` hardcoded.
     Oracoli L1: pack del tail uniforme cross-engine su mini-batch L2.
+    ☑ **FATTO (2026-05-23):** `last_onset_seconds()` in `target_builder.py` (anchor
+    della policy); `TAIL_S = 0.5`, `n_sample_target()` e `standardize_audio_tail()`
+    in `orchestrate.py` (fail-loud, trim/pad C-contiguous, pad-zero anti-shortcut);
+    `build_gold_sample` cuce la pipeline (compute `last_onset_s` → render con
+    tail naturale catturato → trim/pad a `n_sample_target` → target `duration_s`
+    coerente). `_DRUMGIZMO_TAIL_S` rinominato `_DRUMGIZMO_RENDER_TAIL_S` (resta
+    interno al CLI DGZ, non più verità del Gold). `build_dna_json` registra
+    `audio.last_onset_s` e `audio.tail_s`; `GoldSampleResult` espone entrambi.
+    Oracoli L1: **20 nuovi test verdi** (6 `n_sample_target` + formula
+    engine-agnostica + rifiuti negativi · 6 `standardize_audio_tail` trim/pad/exact/
+    non-2D/non-positive · 5 `last_onset_seconds` · 2 `dna_trace` §3.8 + rifiuti
+    negativi · 1 cross-engine identical-shape property). **Suite F0: 226 passed,
+    7 skipped, 0 failed.** `ruff` + `mypy --strict` puliti sui moduli toccati.
   - **T1-prep-C · `ShardWriter` modulo** — implementazione di
     `src/data_engineering/gold/shard_writer.py` per F0-T5 §7 (pack-on-fill atomico
     1 GB, manifest, resume). Test-first.

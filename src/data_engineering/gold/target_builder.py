@@ -158,6 +158,43 @@ def _extract_onsets(midi_path: Path) -> list[_Onset]:
     return onsets
 
 
+def last_onset_seconds(
+    midi_path: str | Path, *, bus_mapping: BusMapping, allow_empty: bool = False
+) -> float:
+    """Time of the last mapped drum onset in ``midi_path``, in seconds.
+
+    The reference signal for tail standardization (F0-T2a §3.8): the standardised
+    Gold-sample duration is ``last_onset_s + tail_s`` (uniform across engines).
+    Only mapped GM drum notes count — non-drum / unmapped notes are ignored so
+    the resulting ``last_onset_s`` is a pure function of the recipe's logical
+    transcription content.
+
+    Args:
+        midi_path: Drum MIDI file to inspect.
+        bus_mapping: GM-note -> 8-bus mapping (notes outside it are ignored).
+        allow_empty: When ``False`` (default) a MIDI with no mapped onsets fails
+            loud; set ``True`` for deliberate silence scenarios (returns ``0.0``).
+
+    Returns:
+        ``max(onset.time_s)`` over mapped onsets, or ``0.0`` if ``allow_empty``
+        and no mapped onsets exist.
+
+    Raises:
+        TargetBuilderError: On an unreadable/malformed MIDI, or — unless
+            ``allow_empty`` — a MIDI carrying no mapped drum events.
+    """
+    onsets = _extract_onsets(Path(midi_path))
+    mapped = [o for o in onsets if o.note in bus_mapping.gm_to_bus]
+    if not mapped:
+        if allow_empty:
+            return 0.0
+        raise TargetBuilderError(
+            f"MIDI {midi_path} carries no GM drum notes in the bus mapping — "
+            "cannot derive last_onset_s (set allow_empty to override)"
+        )
+    return max(o.time_s for o in mapped)
+
+
 def build_target(
     midi_path: str | Path,
     *,

@@ -21,6 +21,7 @@ from data_engineering.gold.target_builder import (
     BusMapping,
     TargetBuilderError,
     build_target,
+    last_onset_seconds,
     load_bus_mapping,
 )
 
@@ -268,3 +269,49 @@ def test_build_target_is_deterministic(tmp_path: Path, bus_mapping: BusMapping) 
     first = build_target(midi, duration_s=2.0, bus_mapping=bus_mapping)
     second = build_target(midi, duration_s=2.0, bus_mapping=bus_mapping)
     assert np.array_equal(first, second)
+
+
+# --------------------------------------------------------------------------
+# last_onset_seconds — F0-T2a §3.8 (tail standardization anchor)
+# --------------------------------------------------------------------------
+def test_last_onset_seconds_returns_the_last_mapped_event(
+    tmp_path: Path, bus_mapping: BusMapping
+) -> None:
+    """``last_onset_seconds`` is the time of the latest mapped onset, in seconds."""
+    # Kick @ 0 ticks, Snare @ 960 ticks (= 1.0 s at 120 BPM / 480 TPB).
+    midi = _make_midi(tmp_path / "g.mid", [(0, _KICK, 100), (960, _SNARE, 90)])
+    assert last_onset_seconds(midi, bus_mapping=bus_mapping) == pytest.approx(1.0, abs=1e-6)
+
+
+def test_last_onset_seconds_ignores_unmapped_notes(
+    tmp_path: Path, bus_mapping: BusMapping
+) -> None:
+    """An unmapped note later in time is NOT the last onset — only mapped events count."""
+    # Kick at 0 (mapped), pitch 60 at 1920 ticks (= 2.0 s, not in drum map).
+    midi = _make_midi(tmp_path / "g.mid", [(0, _KICK, 100), (1920, 60, 100)])
+    assert last_onset_seconds(midi, bus_mapping=bus_mapping) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_last_onset_seconds_empty_midi_fails_loud(
+    tmp_path: Path, bus_mapping: BusMapping
+) -> None:
+    """A MIDI with no mapped drum onsets cannot anchor the tail — fail loud by default."""
+    midi = _make_midi(tmp_path / "g.mid", [(0, 60, 100)])  # non-drum only
+    with pytest.raises(TargetBuilderError, match="last_onset_s"):
+        last_onset_seconds(midi, bus_mapping=bus_mapping)
+
+
+def test_last_onset_seconds_empty_midi_allowed_explicitly(
+    tmp_path: Path, bus_mapping: BusMapping
+) -> None:
+    """Deliberate silence scenarios get ``0.0`` when ``allow_empty=True``."""
+    midi = _make_midi(tmp_path / "g.mid", [(0, 60, 100)])
+    assert last_onset_seconds(midi, bus_mapping=bus_mapping, allow_empty=True) == 0.0
+
+
+def test_last_onset_seconds_missing_midi_fails_loud(
+    tmp_path: Path, bus_mapping: BusMapping
+) -> None:
+    """An unreadable MIDI fails loud — never silently returns a default."""
+    with pytest.raises(TargetBuilderError, match="MIDI file not found"):
+        last_onset_seconds(tmp_path / "absent.mid", bus_mapping=bus_mapping)

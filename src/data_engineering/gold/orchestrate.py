@@ -41,17 +41,94 @@ from data_engineering.gold.render import (
     RenderError,
     SfizzRenderer,
 )
-from data_engineering.gold.target_builder import BusMapping, build_target
+from data_engineering.gold.target_builder import (
+    BusMapping,
+    build_target,
+    last_onset_seconds,
+)
 
 #: Repo root, resolved from ``src/data_engineering/gold/orchestrate.py``.
 REPO_ROOT = Path(__file__).resolve().parents[3]
 #: The versioned GM <-> 8-bus mapping table (F0-T2a §1.1).
 DEFAULT_BUS_MAPPING_PATH = REPO_ROOT / "docs" / "specs" / "midi_mapping_table.yaml"
-#: Tail appended to a DrumGizmo render so cymbal / ambience decay is captured —
-#: DrumGizmo needs the output length up front (the CLI ``--endpos``).
-_DRUMGIZMO_TAIL_S = 5.0
+#: Standardized tail after the last mapped onset (F0-T2a §3.8, Decision Lock
+#: 2026-05-23). Uniform across engines — anti-shortcut against the model
+#: learning ``tail signature -> engine``.
+TAIL_S = 0.5
+#: Tail appended to a DrumGizmo render so the cymbal / ambience decay is captured
+#: in the renderer's output before being trimmed to :data:`TAIL_S`. DrumGizmo
+#: needs the output length up front (CLI ``--endpos``); Sfizz stops on its own,
+#: so this value is engine-internal — it does NOT leak to the Gold sample, the
+#: standardisation in :func:`standardize_audio_tail` is the source of truth.
+_DRUMGIZMO_RENDER_TAIL_S = 5.0
 #: Velocity-jitter ordinal for the barcode ``MIDIALT`` segment (F0-T2a §4.1).
 _VELOCITY_JITTER_CODE = {"none": 0, "ghost_mask": 1, "gain_shift": 2, "both": 3}
+
+
+def n_sample_target(last_onset_s: float, *, tail_s: float = TAIL_S) -> int:
+    """Gold-sample target audio length in samples (F0-T2a §3.8).
+
+    The same formula for every engine: ``round((last_onset_s + tail_s) *
+    sample_rate)``. This is the only contractually visible duration — the
+    rendered tail beyond it is engine-internal and trimmed away.
+
+    Args:
+        last_onset_s: Time of the last mapped drum onset, in seconds.
+        tail_s: Standardised tail length; defaults to the locked
+            :data:`TAIL_S`.
+
+    Returns:
+        The standardised audio sample count.
+
+    Raises:
+        OrchestrationError: If either argument is negative.
+    """
+    if last_onset_s < 0.0:
+        raise OrchestrationError(f"last_onset_s must be >= 0, got {last_onset_s}")
+    if tail_s < 0.0:
+        raise OrchestrationError(f"tail_s must be >= 0, got {tail_s}")
+    return int(round((last_onset_s + tail_s) * SAMPLE_RATE))
+
+
+def standardize_audio_tail(audio: np.ndarray, n_sample_out: int) -> np.ndarray:
+    """Trim or zero-pad ``audio`` to exactly ``n_sample_out`` samples.
+
+    The engine-uniform writer policy (F0-T2a §3.8, Decision Lock 2026-05-23):
+    every engine renders past the last onset with its own natural decay; the
+    Gold writer crops that decay (or pads with silence when the engine stopped
+    early) so the Gold-sample duration is determined only by the MIDI source.
+
+    Args:
+        audio: A ``[n_mic, n_sample]`` float16 buffer produced by the renderer.
+        n_sample_out: Target sample count (typically from
+            :func:`n_sample_target`).
+
+    Returns:
+        A ``[n_mic, n_sample_out]`` float16 buffer, C-contiguous. The original
+        buffer is returned unchanged when its length already matches.
+
+    Raises:
+        OrchestrationError: If ``audio`` is not 2-D or ``n_sample_out`` is
+            not strictly positive.
+    """
+    if audio.ndim != 2:
+        raise OrchestrationError(
+            f"standardize_audio_tail expects a 2-D buffer, got {audio.ndim}-D"
+        )
+    if n_sample_out <= 0:
+        raise OrchestrationError(
+            f"n_sample_out must be > 0, got {n_sample_out}"
+        )
+    n_mic, n_sample = audio.shape
+    if n_sample == n_sample_out:
+        return np.ascontiguousarray(audio, dtype=np.float16)
+    if n_sample > n_sample_out:
+        return np.ascontiguousarray(audio[:, :n_sample_out], dtype=np.float16)
+    # Renderer stopped before the standardised tail; pad with silence so the
+    # padded region carries no engine signature at all.
+    out = np.zeros((n_mic, n_sample_out), dtype=np.float16)
+    out[:, :n_sample] = audio
+    return out
 
 
 class OrchestrationError(RuntimeError):
@@ -69,9 +146,13 @@ class GoldSampleResult:
         out_dir: Directory holding the ``{key}.audio.f16`` / ``.target.f16`` /
             ``.dna.json`` triple.
         n_mic: Microphone channel count of the ``audio`` buffer.
-        n_sample: Samples per channel of the ``audio`` buffer.
+        n_sample: Samples per channel of the ``audio`` buffer (= ``round(
+            (last_onset_s + tail_s) * sample_rate)``, F0-T2a §3.8).
         n_frame: Frame count of the ``target`` matrix.
         audio_peak: Largest absolute audio amplitude (strictly ``> 0``).
+        last_onset_s: Time of the last mapped drum onset in the MIDI source,
+            in seconds — the anchor of the engine-uniform tail standardisation.
+        tail_s: Standardised tail length (F0-T2a §3.8) — uniform across engines.
     """
 
     key: str
@@ -82,6 +163,8 @@ class GoldSampleResult:
     n_sample: int
     n_frame: int
     audio_peak: float
+    last_onset_s: float
+    tail_s: float
 
 
 def _digit_token(text: str) -> str:
@@ -205,7 +288,7 @@ def _render(recipe: Recipe, midi_path: Path, kit_path: Path, wav_path: Path) -> 
         midimap_path=midimap,
         midi_path=midi_path,
         wav_path=wav_path,
-        duration_s=midi_len + _DRUMGIZMO_TAIL_S,
+        duration_s=midi_len + _DRUMGIZMO_RENDER_TAIL_S,
         channel_map=DRSKIT_MULTITRACK8,
     )
 
@@ -247,6 +330,13 @@ def build_gold_sample(
     if not kit_path.is_file():
         raise OrchestrationError(f"recipe render kit not found: {kit_path}")
 
+    # Tail standardization (F0-T2a §3.8): derive last_onset_s from the MIDI and
+    # crop/pad the renderer's natural tail to a uniform value — engine-agnostic
+    # by construction.
+    last_onset_s = last_onset_seconds(midi_path, bus_mapping=bus_mapping)
+    n_sample_out = n_sample_target(last_onset_s, tail_s=TAIL_S)
+    duration_s = n_sample_out / SAMPLE_RATE
+
     with tempfile.TemporaryDirectory(prefix="orchestrate_") as tmp:
         wav_path = Path(tmp) / "render.wav"
         try:
@@ -255,7 +345,9 @@ def build_gold_sample(
             raise OrchestrationError(
                 f"render failed for recipe {recipe.recipe_id}: {exc}"
             ) from exc
-        audio, duration_s = wav_to_audio_buffer(wav_path)
+        rendered, _ = wav_to_audio_buffer(wav_path)
+
+    audio = standardize_audio_tail(rendered, n_sample_out)
 
     target = build_target(
         midi_path,
@@ -266,7 +358,14 @@ def build_gold_sample(
 
     barcode = derive_barcode(recipe)
     key = encode_barcode(barcode)
-    dna = build_dna_json(barcode=barcode, recipe=recipe, audio=audio, target=target)
+    dna = build_dna_json(
+        barcode=barcode,
+        recipe=recipe,
+        audio=audio,
+        target=target,
+        last_onset_s=last_onset_s,
+        tail_s=TAIL_S,
+    )
 
     written_dir = write_gold_sample(out_dir, key, audio=audio, target=target, dna=dna)
     validate_dna_json(dna, audio=audio, target=target)
@@ -280,4 +379,6 @@ def build_gold_sample(
         n_sample=int(audio.shape[1]),
         n_frame=int(target.shape[0]),
         audio_peak=float(np.abs(audio.astype(np.float32)).max()),
+        last_onset_s=last_onset_s,
+        tail_s=TAIL_S,
     )

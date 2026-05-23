@@ -229,3 +229,35 @@ def test_validate_dna_json_rejects_block_without_shape(sample_barcode, sample_re
     del dna["audio"]["shape"]
     with pytest.raises(DnaTraceError, match="shape"):
         validate_dna_json(dna, audio=audio, target=target)
+
+
+# --------------------------------------------------------------------------
+# F0-T2a §3.8 — tail standardisation parameters in dna.json
+# --------------------------------------------------------------------------
+def test_dna_json_records_tail_standardization(sample_barcode, sample_recipe,
+                                                make_audio, make_target) -> None:
+    """The tail-policy parameters live under the audio block (F0-T2a §3.8)."""
+    dna = build_dna_json(
+        barcode=sample_barcode, recipe=sample_recipe,
+        audio=make_audio(), target=make_target(),
+        last_onset_s=4.273, tail_s=0.5,
+    )
+    assert dna["audio"]["last_onset_s"] == pytest.approx(4.273)
+    assert dna["audio"]["tail_s"] == pytest.approx(0.5)
+
+
+def test_dna_json_rejects_negative_last_onset_or_tail(sample_barcode, sample_recipe,
+                                                       make_audio, make_target) -> None:
+    """Negative ``last_onset_s`` / ``tail_s`` violate the contract — fail loud."""
+    with pytest.raises(DnaTraceError, match="last_onset_s"):
+        build_dna_json(
+            barcode=sample_barcode, recipe=sample_recipe,
+            audio=make_audio(), target=make_target(),
+            last_onset_s=-0.1, tail_s=0.5,
+        )
+    with pytest.raises(DnaTraceError, match="tail_s"):
+        build_dna_json(
+            barcode=sample_barcode, recipe=sample_recipe,
+            audio=make_audio(), target=make_target(),
+            last_onset_s=1.0, tail_s=-0.01,
+        )

@@ -15,10 +15,14 @@ import pytest
 import soundfile as sf  # type: ignore[import-untyped]
 
 from data_engineering.gold.dna_trace import decode_barcode, encode_barcode
+from data_engineering.gold.gold_writer import SAMPLE_RATE
 from data_engineering.gold.orchestrate import (
+    TAIL_S,
     OrchestrationError,
     _resolve_drumgizmo_midimap,
     derive_barcode,
+    n_sample_target,
+    standardize_audio_tail,
     wav_to_audio_buffer,
 )
 from data_engineering.gold.recipe import Engine, Recipe
@@ -148,3 +152,106 @@ def test_midimap_absent_file_fails_loud(tmp_path: Path) -> None:
     kit.write_text("<kit/>", encoding="utf-8")
     with pytest.raises(OrchestrationError, match="MIDI map not found"):
         _resolve_drumgizmo_midimap(kit)
+
+
+# --------------------------------------------------------------------------
+# n_sample_target — F0-T2a §3.8 (tail standardization)
+# --------------------------------------------------------------------------
+def test_tail_s_is_locked_at_half_a_second() -> None:
+    """The standardised tail is the F0-T2a §3.8 Decision Lock value (0.5 s)."""
+    assert TAIL_S == 0.5
+
+
+def test_n_sample_target_formula_matches_the_contract() -> None:
+    """``round((last_onset_s + tail_s) * 44100)`` — same for every engine."""
+    assert n_sample_target(0.0) == round(0.5 * SAMPLE_RATE)
+    assert n_sample_target(2.0) == round(2.5 * SAMPLE_RATE)
+    # Custom tail_s for forward-compat with future tail policies.
+    assert n_sample_target(2.0, tail_s=0.0) == round(2.0 * SAMPLE_RATE)
+
+
+def test_n_sample_target_rejects_negative_inputs() -> None:
+    """Negative last_onset_s / tail_s violate the contract — fail loud."""
+    with pytest.raises(OrchestrationError, match="last_onset_s"):
+        n_sample_target(-0.1)
+    with pytest.raises(OrchestrationError, match="tail_s"):
+        n_sample_target(1.0, tail_s=-0.01)
+
+
+def test_n_sample_target_is_independent_of_engine_choice() -> None:
+    """The whole point of §3.8: same MIDI -> same length, regardless of engine."""
+    # Two notional renders of the same MIDI (last_onset_s = 4.273) produce the
+    # exact same standardised duration — there is no engine input to the formula.
+    assert n_sample_target(4.273) == n_sample_target(4.273)
+
+
+# --------------------------------------------------------------------------
+# standardize_audio_tail
+# --------------------------------------------------------------------------
+def test_standardize_trims_a_longer_render() -> None:
+    """A render longer than ``n_sample_out`` is cropped to exact length."""
+    rng = np.random.default_rng(7)
+    long = rng.uniform(-0.5, 0.5, size=(4, 200_000)).astype(np.float16)
+    out = standardize_audio_tail(long, 110_250)
+    assert out.shape == (4, 110_250)
+    assert out.dtype == np.float16
+    assert out.flags["C_CONTIGUOUS"]
+    # Cropped head is preserved bit-for-bit.
+    np.testing.assert_array_equal(out, long[:, :110_250])
+
+
+def test_standardize_pads_a_shorter_render_with_zeros() -> None:
+    """A render shorter than ``n_sample_out`` is zero-padded — no engine signature."""
+    rng = np.random.default_rng(11)
+    short = rng.uniform(-0.5, 0.5, size=(3, 1024)).astype(np.float16)
+    out = standardize_audio_tail(short, 4096)
+    assert out.shape == (3, 4096)
+    assert out.dtype == np.float16
+    np.testing.assert_array_equal(out[:, :1024], short)
+    # Pad region is exactly zero (anti-shortcut: no engine-specific signal).
+    assert np.all(out[:, 1024:] == np.float16(0.0))
+
+
+def test_standardize_preserves_exact_match() -> None:
+    """A render already at the target length passes through unchanged in value."""
+    rng = np.random.default_rng(13)
+    same = rng.uniform(-0.5, 0.5, size=(2, 2048)).astype(np.float16)
+    out = standardize_audio_tail(same, 2048)
+    assert out.shape == (2, 2048)
+    np.testing.assert_array_equal(out, same)
+
+
+def test_standardize_rejects_non_2d_buffer() -> None:
+    """A 1-D or 3-D buffer violates the F0-T2a §3.2 audio contract — fail loud."""
+    with pytest.raises(OrchestrationError, match="2-D"):
+        standardize_audio_tail(np.zeros(1024, dtype=np.float16), 512)
+
+
+def test_standardize_rejects_non_positive_target() -> None:
+    """``n_sample_out`` must be strictly positive — a zero-length sample is junk."""
+    with pytest.raises(OrchestrationError, match="n_sample_out"):
+        standardize_audio_tail(np.zeros((2, 1024), dtype=np.float16), 0)
+    with pytest.raises(OrchestrationError, match="n_sample_out"):
+        standardize_audio_tail(np.zeros((2, 1024), dtype=np.float16), -10)
+
+
+def test_standardize_is_engine_agnostic_at_equal_last_onset() -> None:
+    """Anti-shortcut: two engines with same MIDI -> identical Gold length.
+
+    The full §3.8 property: ``standardize_audio_tail`` only knows ``n_sample_out``;
+    it does not see the engine. Two "renders" of the same MIDI (different
+    natural tails, here represented by two random buffers of different length)
+    produce two ``audio`` buffers of identical shape.
+    """
+    last_onset_s = 4.273
+    n_out = n_sample_target(last_onset_s)
+
+    rng = np.random.default_rng(17)
+    # Pretend DrumGizmo render: longer natural decay.
+    drumgizmo = rng.uniform(-0.5, 0.5, size=(8, n_out + 50_000)).astype(np.float16)
+    # Pretend Sfizz render: shorter natural decay.
+    sfizz = rng.uniform(-0.5, 0.5, size=(8, n_out - 20_000)).astype(np.float16)
+
+    out_dgz = standardize_audio_tail(drumgizmo, n_out)
+    out_sfz = standardize_audio_tail(sfizz, n_out)
+    assert out_dgz.shape == out_sfz.shape == (8, n_out)

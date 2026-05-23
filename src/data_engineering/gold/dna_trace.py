@@ -161,27 +161,37 @@ def build_dna_json(
     recipe: Recipe,
     audio: np.ndarray,
     target: np.ndarray,
+    last_onset_s: float = 0.0,
+    tail_s: float = 0.5,
     generated_at: str | None = None,
 ) -> dict[str, Any]:
     """Build the ``dna.json`` "Libretto Sanitario" for one Gold sample.
 
     The document permits full reverse-engineering of the sample (F0-T2a §4.2):
     lineage, render/augmentation parameters, and the ``sha256`` + ``n_nonfinite``
-    of both buffers (F0-T2a §3.7).
+    of both buffers (F0-T2a §3.7). Records the tail-standardisation parameters
+    that anchor the engine-uniform sample duration (F0-T2a §3.8).
 
     Args:
         barcode: The sample's six-segment barcode.
         recipe: The validated recipe that produced the sample.
         audio: The ``audio`` buffer, shape ``[n_mic, n_sample]``.
         target: The ``target`` matrix, shape ``[n_frame, 25]``.
+        last_onset_s: Time of the last mapped drum onset in the MIDI source.
+        tail_s: Standardised tail length (F0-T2a §3.8) — uniform across engines.
         generated_at: ISO-8601 timestamp; defaults to the current UTC time.
 
     Returns:
         The ``dna.json`` document as a plain, JSON-serialisable dict.
 
     Raises:
-        DnaTraceError: If the barcode is malformed (via :func:`encode_barcode`).
+        DnaTraceError: If the barcode is malformed (via :func:`encode_barcode`),
+            or ``last_onset_s`` / ``tail_s`` is negative.
     """
+    if last_onset_s < 0.0:
+        raise DnaTraceError(f"last_onset_s must be >= 0, got {last_onset_s}")
+    if tail_s < 0.0:
+        raise DnaTraceError(f"tail_s must be >= 0, got {tail_s}")
     key = encode_barcode(barcode)
     return {
         "dna_version": DNA_VERSION,
@@ -216,7 +226,11 @@ def build_dna_json(
                 "saboteur": recipe.augmentation.saboteur,
             },
         },
-        "audio": _buffer_integrity(audio),
+        "audio": {
+            **_buffer_integrity(audio),
+            "last_onset_s": last_onset_s,
+            "tail_s": tail_s,
+        },
         "target": {
             **_buffer_integrity(target),
             "layout": "flat-25",

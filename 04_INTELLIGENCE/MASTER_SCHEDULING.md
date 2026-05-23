@@ -614,6 +614,22 @@ stop compute + push HDD · **$10** → chiudi tutto.
   - **T1-prep-C · `ShardWriter` modulo** — implementazione di
     `src/data_engineering/gold/shard_writer.py` per F0-T5 §7 (pack-on-fill atomico
     1 GB, manifest, resume). Test-first.
+    ☑ **FATTO (2026-05-23):** `ShardWriter` implementato — pack-on-fill su byte
+    threshold (`TARGET_SHARD_BYTES = 1 << 30` esatto), tar PAX_FORMAT con header
+    normalizzato (`mtime/uid/gid/mode` fissati → bit-deterministic, ENG_STD §1),
+    ordine lessicografico interno (F0-T5 §5.2), atomicità via `.tmp` + `os.rename`,
+    `manifest.json` per split (schema F0-T5 §5.5 — `manifest_version`, `split`,
+    `recipe_matrix_seed`, `target_shard_bytes`, `tail_s`, `n_shard`, `n_sample`,
+    `total_bytes`, `shards[{index, filename, n_sample, n_bytes, sha256,
+    key_range}]`), resume da manifest esistente (`next_index = manifest.n_shard`),
+    cleanup `.tmp` orfani all'init (split-isolated), fail-loud su key duplicate /
+    dotted / triple incomplete / split-mismatch / manifest corrotto, `close()`
+    idempotente. **31 oracoli verdi:** L1 unit (naming + construction + add
+    validation + rotation + tar lex-order + determinismo bit-per-bit + atomicity +
+    manifest schema + sha256 match + resume + edge cases) + L2 property
+    (Hypothesis: determinismo cross-run su input shuffled, ogni sample appare
+    esattamente in 1 shard, pack-on-fill no-drop no-duplicate). **Suite F0:
+    257 passed, 0 failed.** `ruff` + `mypy --strict` puliti.
   - **T1-prep-D · Provisioning compute Azure** — VM `Standard_D8s_v3` (~$0.38/h),
     image con `sfizz_render` + `drumgizmo`, mount/upload Blob via SDK,
     `dvc remote = azure` già pronto (F1-T2 ☑).

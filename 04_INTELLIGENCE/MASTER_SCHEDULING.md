@@ -103,15 +103,28 @@ architettura, gated solo da L2); il **training** è spesa a rischio (gated da L3
   rimanda a un piano post-credito. **Il credito non si perde mai** — si converte in
   dataset, che resta su Azure Blob fino al teardown F2 (poi: asset-only sull'SSD CEO).
 
-## 5. Allocazione Budget Indicativa ($200)
+## 5. Allocazione Budget Indicativa ($200) — riallineato 2026-05-23 (sessione T1-prep-D, italynorth)
 
-| Voce | Stima | Note |
-| :-- | :-- | :-- |
-| Storage Blob LRS 1.5 TB (~1 mese) | ~$30 | |
-| Render compute (CPU VM, Sfizz/DrumGizmo) | ~$55 | spend a basso rischio |
-| Augmentation + Demucs (GPU) | ~$25 | |
-| Training A100 Spot | ~$80 | spend a rischio (gate L3) |
-| Buffer / egress | ~$10 | |
+Decision Lock CEO 2026-05-23: la sottoscrizione ha `Standard_D*_v3`
+`NotAvailableForSubscription` in entrambe italynorth e westeurope. In italynorth
+sono disponibili `Standard_M*` (memory-optimised) e `NC*ads_A100_v4`. Restiamo in
+italynorth perché l'A100 è listata qui, non in westeurope. Spot pricing usato
+ovunque possibile (-70 %) con resume-safe runner.
+
+| Voce | SKU | Stima Spot | Stima On-demand |
+| :-- | :-- | :-- | :-- |
+| Storage Blob LRS 4.5 TB Cool (~1 mese) | — | ~$32 | ~$99 (Hot tier) |
+| Render compute F2-T1 (M16ms 14h) | `Standard_M16ms` | **~$9.4** | ~$31 |
+| Augmentation + Demucs F2-T2 (~6h mix) | `M16ms` + `NC24ads_A100_v4` | ~$5.9 | ~$20 |
+| Training A100 Tier 1 F2-T3 (12h, 1 run) | `Standard_NC24ads_A100_v4` | **~$15.6** | ~$52 |
+| Egress finale (~30 GB asset → SSD CEO) | — | ~$2.6 | ~$2.6 |
+| Buffer imprevisti | — | ~$5 | ~$10 |
+| **TOTALE Scenario GREEN (spot + cool)** | | **~$70** | n/a |
+| **TOTALE Scenario RED (on-demand + hot)** | | n/a | **~$215** |
+
+→ Scenario GREEN → **margine residuo ~$130** per Tier 2/3 (training extra,
+sweep iperparametri, ensemble).
+→ Scenario RED → +$15 sopra budget, gestibile riducendo training a 8h o `k=1`.
 
 Soglie di monitoraggio (il CEO controlla il saldo): **$100** → valutazione · **$40** →
 stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chiudi tutto.

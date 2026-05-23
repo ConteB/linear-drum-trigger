@@ -34,8 +34,8 @@ Run::
         --state-file /opt/neurotrigger/state.json \\
         --master-seed $NTG_MASTER_SEED \\
         --vm-name    "$AZ_VM" \\
-        --vm-size    Standard_D16s_v3 \\
-        --vm-hourly-usd 0.77 \\
+        --vm-size    Standard_M16ms \\
+        --vm-hourly-usd 0.66 \\
         --dvc-push-every 8
 
     # Smoke locally (no DVC push, no real engine if you point to mini-batch):
@@ -373,9 +373,9 @@ def main() -> int:
                         help="Path to write state.json for the monitor.")
     parser.add_argument("--master-seed", type=int, required=True,
                         help="Recipe-matrix master seed (anchors manifest replay).")
-    parser.add_argument("--vm-name", type=str, default="vm-render-d16s")
-    parser.add_argument("--vm-size", type=str, default="Standard_D16s_v3")
-    parser.add_argument("--vm-hourly-usd", type=float, default=0.77)
+    parser.add_argument("--vm-name", type=str, default="vm-render-m16ms")
+    parser.add_argument("--vm-size", type=str, default="Standard_M16ms")
+    parser.add_argument("--vm-hourly-usd", type=float, default=0.66)
     parser.add_argument("--dvc-push-every", type=int, default=8,
                         help="Run `dvc push` every N finalised shards. 0 disables.")
     parser.add_argument("--no-dvc-push", action="store_true",

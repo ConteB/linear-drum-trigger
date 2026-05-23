@@ -28,9 +28,9 @@ from pathlib import Path
 DEFAULT_TOTAL_RECIPES = 210
 DEFAULT_TOTAL_SHARDS = 30
 DEFAULT_TARGET_BYTES = int(30 * 1024**3)  # ~30 GB for the mock
-DEFAULT_VM_HOURLY = 0.77
-DEFAULT_VM_NAME = "vm-render-d16s"
-DEFAULT_VM_SIZE = "Standard_D16s_v3"
+DEFAULT_VM_HOURLY = 0.66  # M16ms spot in italynorth (Decision Lock CEO 2026-05-23)
+DEFAULT_VM_NAME = "vm-render-m16ms"
+DEFAULT_VM_SIZE = "Standard_M16ms"
 
 _GMD_NAMES = ("rock", "funk", "afro", "metal", "jazz", "latin", "blues")
 _KITS = ("DRSKit", "CrocellKit", "Frankensnare", "UnrulyDrums", "BigRustyDrums")

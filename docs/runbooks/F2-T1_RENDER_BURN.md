@@ -51,30 +51,44 @@ Avvio F2-T1 ≤ 2026-05-30 (CP-1) è la finestra GREEN.
 - [ ] **`tools/provision_render_vm.sh`** committato nel branch `develop`.
 - [ ] **`AZ_RG`, `AZ_VM`** decisi (suggeriti: `rg-neurotrigger`, `vm-render-d16s`).
 
-## 2. Decisione di scala — VM size
+## 2. Decisione di scala — VM size (italynorth)
 
-**Default raccomandato:** **`Standard_D16s_v3`** (16 vCPU, 64 GB RAM, ~$0.77/h).
-Calibrazione L2 estesa con la recipe matrix ×3:
+**Default raccomandato:** **`Standard_M16ms` spot** (16 vCPU, 437 GB RAM,
+~$0.66/h spot · $2.20/h on-demand) — Decision Lock CEO 2026-05-23
+(sessione T1-prep-D, riallineamento post-`SkuNotAvailable` D-series).
 
-| VM | Wall-clock 4.5 TB | Costo | Note |
-| :-- | :-- | :-- | :-- |
-| **`Standard_D16s_v3`** ✅ | ~14h | ~$10.8 | semplicità + min wall-clock |
-| 2× `D8s_v3` parallele | ~14h | ~$10.6 | doppia coordinazione shard |
-| 1× `D8s_v3` | ~28h | ~$10.6 | più lento, perde margine pre-CP-1 |
+> La sottoscrizione ha `Standard_D*_v3` come `NotAvailableForSubscription`
+> sia in italynorth che in westeurope. In italynorth sono disponibili
+> `M-series` (memory-optimised, RAM esuberante ma vCPU OK) e
+> `NC*_A100_v4` (training F2-T3). Restiamo in italynorth: l'A100 per il
+> training è listata qui, non in westeurope.
 
-Se ti senti più sicuro a partire con un giro di test su `D2s_v2` (~$0.10/h)
-per validare il provisioning senza spendere su una D16, va benissimo —
-profilo `smoke` del provisioning script gira anche su 2 vCPU in ~15 min.
+Calibrazione L2 estesa con la recipe matrix ×3 (4.5 TB):
+
+| VM | Wall-clock | Costo spot | Costo on-demand | Note |
+| :-- | :-- | :-- | :-- | :-- |
+| **`Standard_M16ms` spot** ✅ | ~14h | **~$9.4** | $31 | semplice, min wall-clock |
+| `Standard_M8ms` spot | ~28h | ~$9.4 | $31 | più lento, doppio rischio eviction |
+| `Standard_DC16as_v6` on-demand | ~14h | n/a (no spot) | ~$15-18 | Confidential Compute premium, fallback se spot RED |
+
+**Rischio spot eviction:** Azure può rilasciare la VM con 30s di preavviso.
+Il runner è **resume-safe** (manifest + ShardWriter persistenti); un'eviction
+perde max ~8 shard (~$1 di lavoro), ripresa automatica al re-launch.
+Probabilità tipica < 5 % su 14h.
+
+**Smoke pre-burn:** `Standard_M8ms` spot per 15 min ($0.08) — il profilo
+`smoke` del provisioning scarica solo 2 kit (~5 GB) e fa render di 2
+campioni end-to-end.
 
 ## 3. Comandi Azure CLI (copia-incolla)
 
 ### 3.1 Variabili — settale una volta sola
 
 ```bash
-export AZ_RG="rg-neurotrigger"
-export AZ_VM="vm-render-d16s"
-export AZ_VM_SIZE="Standard_D16s_v3"
-export AZ_REGION="westeurope"          # stessa regione del Blob (F1-T1)
+export AZ_RG="rg-neurotrigger-prod"
+export AZ_VM="vm-render-m16ms"
+export AZ_VM_SIZE="Standard_M16ms"
+export AZ_REGION="italynorth"          # stessa regione del Blob (F1-T1)
 export NTG_REPO_URL="https://github.com/<USER>/drum-trigger-fresh.git"
 export NTG_REPO_BRANCH="develop"
 export NTG_BLOB_SAS='<la connection string SAS di F1-T2>'
@@ -88,20 +102,24 @@ export NTG_MASTER_SEED=20260524        # qualsiasi non-negativo; va nel manifest
 ### 3.2 Smoke prima del burn — VM piccola, 15 min
 
 ```bash
-# 1) Crea la VM smoke (Ubuntu 22.04 LTS, $0.10/h)
+# 1) Crea la VM smoke spot (Ubuntu 22.04 LTS, M8ms ~$0.33/h spot)
 az vm create \
     --resource-group "$AZ_RG" \
     --name "${AZ_VM}-smoke" \
-    --image Ubuntu2204 \
-    --size Standard_D2s_v2 \
+    --location "$AZ_REGION" \
+    --image "Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest" \
+    --size Standard_M8ms \
+    --priority Spot --max-price -1 --eviction-policy Delete \
     --admin-username azureuser \
     --generate-ssh-keys \
-    --custom-data tools/provision_render_vm.sh \
+    --custom-data /tmp/cloud-init-smoke.sh \
+    --os-disk-size-gb 64 \
     --output table
 
 # 2) Tail dei log cloud-init (apre SSH, segue /var/log/cloud-init-output.log)
-az ssh vm --resource-group "$AZ_RG" --name "${AZ_VM}-smoke" \
-    -- "sudo tail -f /var/log/cloud-init-output.log"
+VM_IP=$(az vm show --resource-group "$AZ_RG" --name "${AZ_VM}-smoke" \
+    --show-details --query publicIps -o tsv)
+ssh azureuser@$VM_IP "sudo tail -f /var/log/cloud-init-output.log"
 
 # 3) Quando vedi 'smoke OK — VM is READY' → spegnila
 az vm delete --resource-group "$AZ_RG" --name "${AZ_VM}-smoke" --yes
@@ -109,7 +127,12 @@ az vm delete --resource-group "$AZ_RG" --name "${AZ_VM}-smoke" --yes
 
 Il provisioning script (env `NTG_KIT_PROFILE=smoke`) scarica solo 2 kit
 DrumGizmo (~5 GB) + tutti gli SFZ (~3 GB), per validare la pipeline senza
-attendere i ~13 GB dei kit manifest-only restanti. Costo smoke: ~$0.03.
+attendere i ~13 GB dei kit manifest-only restanti. Costo smoke: ~$0.08.
+
+`--priority Spot --max-price -1` significa "spot, paga fino al prezzo
+on-demand" (rare eviction). `--eviction-policy Delete` rilascia la VM
+se evicted invece di lasciarla "stopped, deallocated" (zero risk di
+billing residuo).
 
 ### 3.3 Burn vero — D16s_v3, 14h
 
@@ -144,17 +167,20 @@ ogni recipe completata; il monitor TUI (§3.4) lo legge in real-time.
 az vm create \
     --resource-group "$AZ_RG" \
     --name "$AZ_VM" \
-    --image Ubuntu2204 \
+    --location "$AZ_REGION" \
+    --image "Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest" \
     --size "$AZ_VM_SIZE" \
+    --priority Spot --max-price -1 --eviction-policy Delete \
     --admin-username azureuser \
-    --ssh-key-values ~/.ssh/id_rsa.pub \
-    --custom-data tools/provision_render_vm.sh \
+    --generate-ssh-keys \
+    --custom-data /tmp/cloud-init-burn.sh \
     --os-disk-size-gb 256 \
     --output table
 
 # Tail dei log (puoi staccarti, il job continua sulla VM)
-az ssh vm --resource-group "$AZ_RG" --name "$AZ_VM" \
-    -- "tail -f /opt/neurotrigger/provision.log"
+VM_IP=$(az vm show --resource-group "$AZ_RG" --name "$AZ_VM" \
+    --show-details --query publicIps -o tsv)
+ssh azureuser@$VM_IP "tail -f /opt/neurotrigger/provision.log"
 ```
 
 ### 3.4 Monitor TUI — barra di avanzamento real-time

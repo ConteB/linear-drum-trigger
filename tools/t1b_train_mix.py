@@ -30,6 +30,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from neural.data import discover_gold_keys  # noqa: E402
+from neural.loss import LossConfig  # noqa: E402
 from neural.train import train  # noqa: E402
 
 #: Default mix Gold directory produced by mix_dataset + render_mix_chunked.
@@ -76,13 +77,81 @@ def main() -> int:
     parser.add_argument("--html-report-dir", type=Path,
                         default=Path("reports"))
     parser.add_argument("--no-html-report", action="store_true")
+    parser.add_argument(
+        "--lookahead-frames", type=int, default=0,
+        help="Audio look-ahead in frames (frame = 128 samples ≈ 2.9 ms). "
+             "F0-T4a §3 prescribes ~100 ms = 35 frames; default 0 keeps the "
+             "current strict-causal behaviour.",
+    )
+    parser.add_argument(
+        "--include-keys-file", type=Path, default=None,
+        help="Path to a JSON file containing the list of sample keys to include "
+             "(everything else is dropped from the pool). Used for the Opzione A "
+             "diagnostic experiments (e.g. drop the 30 chaos grooves).",
+    )
+    # ---- Loss-config overrides (Opzione A · Step 1 diagnostic experiments) ----
+    parser.add_argument(
+        "--pos-weight", type=float, default=None,
+        help="LossConfig.pos_weight override (default = LossConfig() = 50.0)",
+    )
+    parser.add_argument(
+        "--w-onset", type=float, default=None,
+        help="LossConfig.w_onset override (default = 1.0)",
+    )
+    parser.add_argument(
+        "--w-velocity", type=float, default=None,
+        help="LossConfig.w_velocity override (default = 0.5)",
+    )
+    parser.add_argument(
+        "--w-microtiming", type=float, default=None,
+        help="LossConfig.w_microtiming override (default = 0.5)",
+    )
+    parser.add_argument(
+        "--w-hihat", type=float, default=None,
+        help="LossConfig.w_hihat override (default = 1.0)",
+    )
     args = parser.parse_args()
+    # Build LossConfig with any provided overrides; None == keep default.
+    _default_lc = LossConfig()
+    loss_config = LossConfig(
+        w_onset=args.w_onset if args.w_onset is not None else _default_lc.w_onset,
+        w_velocity=args.w_velocity if args.w_velocity is not None else _default_lc.w_velocity,
+        w_microtiming=(
+            args.w_microtiming
+            if args.w_microtiming is not None
+            else _default_lc.w_microtiming
+        ),
+        w_hihat=args.w_hihat if args.w_hihat is not None else _default_lc.w_hihat,
+        focal_gamma=_default_lc.focal_gamma,
+        fp_to_fn_ratio=_default_lc.fp_to_fn_ratio,
+        pos_weight=args.pos_weight if args.pos_weight is not None else _default_lc.pos_weight,
+        onset_mask_threshold=_default_lc.onset_mask_threshold,
+    )
 
     if not args.pool.exists():
         print(f"FATAL: pool dir {args.pool} does not exist", file=sys.stderr)
         return 1
 
+    include_keys: tuple[str, ...] | None = None
+    if args.include_keys_file is not None:
+        import json as _json  # noqa: PLC0415
+        keys_list = _json.loads(args.include_keys_file.read_text())
+        if not isinstance(keys_list, list) or not all(isinstance(k, str) for k in keys_list):
+            raise SystemExit(
+                f"FATAL: --include-keys-file {args.include_keys_file} "
+                "must be a JSON list of strings"
+            )
+        include_keys = tuple(sorted(set(keys_list)))
+        print(f"[T1-B] include_keys = {len(include_keys)} keys "
+              f"(from {args.include_keys_file})")
+
     holdout_keys = _pick_holdout(args.pool, args.holdout_n, _HOLDOUT_SEED)
+    # Make sure holdout_keys is a subset of include_keys, else the deterministic
+    # holdout picker may select keys that the filter will drop. Re-pick from
+    # the filtered set.
+    if include_keys is not None:
+        rng = random.Random(_HOLDOUT_SEED)
+        holdout_keys = tuple(sorted(rng.sample(list(include_keys), args.holdout_n)))
     print(f"[T1-B] pool       = {args.pool}")
     print(f"[T1-B] holdout    = {len(holdout_keys)} keys (seed={_HOLDOUT_SEED})")
     print(f"[T1-B] epochs     = {args.epochs}, batch_size = {args.batch_size}")
@@ -105,6 +174,14 @@ def main() -> int:
         run_id=args.run_id,
         run_title=args.run_title,
         tcn_channels=args.channels,
+        loss_config=loss_config,
+        include_keys=include_keys,
+        lookahead_frames=args.lookahead_frames,
+    )
+    print(
+        f"[T1-B] loss_cfg  = pos_w={loss_config.pos_weight} "
+        f"w_on={loss_config.w_onset} w_vel={loss_config.w_velocity} "
+        f"w_mt={loss_config.w_microtiming} w_hh={loss_config.w_hihat}"
     )
 
     # Save the JSON summary side-by-side (the train() loop already wrote the
@@ -118,6 +195,10 @@ def main() -> int:
         "holdout_keys_count": len(result.holdout_keys),
         "wall_time_s": result.wall_time_s,
         "final_train_loss": result.final_train_loss,
+        # Full per-epoch history (Opzione A · Step 1 — per-head loss tracking).
+        # Each entry: {epoch, train_loss, loss_onset, loss_velocity,
+        # loss_microtiming, loss_hihat}.
+        "history": result.history,
         "holdout_verdicts": {
             k: {
                 "passes": bool(v.passes),

@@ -188,6 +188,7 @@ class GoldDataset(Dataset[dict[str, torch.Tensor]]):
         *,
         crop_samples: int,
         rng: np.random.Generator | None = None,
+        lookahead_frames: int = 0,
     ) -> None:
         if not samples:
             raise GoldDataError("GoldDataset requires at least one sample")
@@ -196,12 +197,23 @@ class GoldDataset(Dataset[dict[str, torch.Tensor]]):
                 f"crop_samples must be a positive multiple of {ENCODER_STRIDE}, "
                 f"got {crop_samples}"
             )
+        if lookahead_frames < 0:
+            raise GoldDataError(
+                f"lookahead_frames must be >= 0, got {lookahead_frames}"
+            )
         crop_frames = crop_samples // ENCODER_STRIDE
+        # With look-ahead L, the audio window must extend L frames past the
+        # target window — so each sample must have at least
+        # (crop_frames + L) * ENCODER_STRIDE audio samples and (crop_frames)
+        # target frames (the target stays its original length, what shifts is
+        # which audio frames feed each target frame).
+        min_audio_samples = (crop_frames + lookahead_frames) * ENCODER_STRIDE
         for s in samples:
-            if s.audio.shape[1] < crop_samples:
+            if s.audio.shape[1] < min_audio_samples:
                 raise GoldDataError(
                     f"sample {s.key!r} has {s.audio.shape[1]} samples "
-                    f"< crop_samples {crop_samples}"
+                    f"< min_audio_samples {min_audio_samples} "
+                    f"(crop_frames={crop_frames} + lookahead={lookahead_frames})"
                 )
             if s.target.shape[0] < crop_frames:
                 raise GoldDataError(
@@ -211,6 +223,7 @@ class GoldDataset(Dataset[dict[str, torch.Tensor]]):
         self.samples = list(samples)
         self.crop_samples = crop_samples
         self.crop_frames = crop_frames
+        self.lookahead_frames = lookahead_frames
         self.rng = rng if rng is not None else np.random.default_rng(0)
 
     def __len__(self) -> int:  # pragma: no cover — trivial
@@ -218,14 +231,27 @@ class GoldDataset(Dataset[dict[str, torch.Tensor]]):
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         s = self.samples[index]
-        max_start_sample = s.audio.shape[1] - self.crop_samples
-        # Quantise the random start to the encoder stride so the target slice
-        # stays frame-aligned with the audio crop.
-        max_start_frame = max_start_sample // ENCODER_STRIDE
-        start_frame = int(self.rng.integers(0, max_start_frame + 1))
-        start_sample = start_frame * ENCODER_STRIDE
-        end_sample = start_sample + self.crop_samples
+        # Look-ahead semantics: the strict-causal model sees ``L`` extra audio
+        # frames past the target window's end, so output[t] depends on
+        # input[<= t + L] — equivalent to running the same causal stack with
+        # ``L`` samples of latency. Implementation: shift the audio crop
+        # forward by ``L * ENCODER_STRIDE`` samples; the target crop stays at
+        # its original frame range.
+        L = self.lookahead_frames  # noqa: N806
+        total_audio_frames = s.audio.shape[1] // ENCODER_STRIDE
+        max_target_start_frame = (
+            min(s.target.shape[0], total_audio_frames - L) - self.crop_frames
+        )
+        if max_target_start_frame < 0:
+            raise GoldDataError(
+                f"sample {s.key!r} too short for crop_frames={self.crop_frames} "
+                f"+ lookahead={L}"
+            )
+        start_frame = int(self.rng.integers(0, max_target_start_frame + 1))
         end_frame = start_frame + self.crop_frames
+        # Audio window is shifted forward by ``L`` frames.
+        start_sample = (start_frame + L) * ENCODER_STRIDE
+        end_sample = start_sample + self.crop_samples
 
         audio = s.audio[:, start_sample:end_sample]
         target = s.target[start_frame:end_frame]

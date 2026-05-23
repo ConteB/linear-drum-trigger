@@ -96,18 +96,31 @@ def evaluate_holdout(
     *,
     device: torch.device,
     crop_samples: int,
+    lookahead_frames: int = 0,
 ) -> dict[str, L3Verdict]:
     """Evaluate the model on each holdout sample (deterministic crop = head of the file)."""
     model.eval()
     out: dict[str, L3Verdict] = {}
     with torch.no_grad():
         for s in holdout:
-            # Use a fixed crop = leading window. Holdout metrics are reproducible.
-            n_sample = min(s.audio.shape[1], crop_samples)
-            # Round down to a multiple of ENCODER_STRIDE for frame alignment.
-            n_sample = (n_sample // ENCODER_STRIDE) * ENCODER_STRIDE
-            n_frame = n_sample // ENCODER_STRIDE
-            audio = torch.from_numpy(s.audio[:, :n_sample]).unsqueeze(0).to(device)
+            # Same look-ahead semantics as training: feed an audio window
+            # shifted forward by ``L`` frames; compare the prediction with the
+            # target window covering frames [0, n_frame).
+            L = lookahead_frames  # noqa: N806
+            crop_frames = crop_samples // ENCODER_STRIDE
+            total_audio_frames = s.audio.shape[1] // ENCODER_STRIDE
+            n_frame = min(crop_frames, s.target.shape[0], total_audio_frames - L)
+            n_frame = max(0, n_frame)
+            if n_frame == 0:
+                # Sample too short — emit a placeholder zero verdict.
+                out[s.key] = evaluate_l3(
+                    np.zeros((1, 25), dtype=np.float32),
+                    s.target[:1].astype(np.float32),
+                )
+                continue
+            start_sample = L * ENCODER_STRIDE
+            end_sample = start_sample + n_frame * ENCODER_STRIDE
+            audio = torch.from_numpy(s.audio[:, start_sample:end_sample]).unsqueeze(0).to(device)
             pred = model(audio).squeeze(0).cpu().numpy()  # [T, 25]
             target = s.target[:n_frame]
             out[s.key] = evaluate_l3(pred, target)
@@ -134,6 +147,9 @@ def train(
     run_id: str = "training-run",
     run_title: str = "Training report",
     tcn_channels: int = 32,
+    loss_config: LossConfig | None = None,
+    include_keys: tuple[str, ...] | None = None,
+    lookahead_frames: int = 0,
 ) -> TrainResult:
     """Run the F0-T4b training. Returns the verdict for the L3 Ocular Proof.
 
@@ -148,6 +164,13 @@ def train(
     print(f"[F0-T4b] device = {device}")
 
     samples = load_pool(pool_root)
+    if include_keys is not None:
+        # Diagnostic filter — restrict the pool to a curated subset (e.g. drop
+        # the 90 'chaos' grooves whose target is structurally uncorrelated
+        # from the audio — Opzione A · Step 2 finding).
+        include_set = set(include_keys)
+        samples = [s for s in samples if s.key in include_set]
+        print(f"[F0-T4b] include_keys filter applied: pool -> {len(samples)} samples")
     train_samples, holdout_samples = split_train_holdout(samples, holdout_keys=holdout_keys)
     print(
         f"[F0-T4b] train = {len(train_samples)} samples, "
@@ -158,6 +181,7 @@ def train(
         train_samples,
         crop_samples=crop_samples,
         rng=np.random.default_rng(seed),
+        lookahead_frames=lookahead_frames,
     )
     train_loader = DataLoader(
         train_ds,
@@ -170,7 +194,7 @@ def train(
     model = TCNModel(TCNConfig(channels=tcn_channels)).to(device)
     n_params = count_parameters(model)
     print(f"[F0-T4b] parameters = {n_params:,}")
-    loss_fn = TCNLoss(LossConfig()).to(device)
+    loss_fn = TCNLoss(loss_config or LossConfig()).to(device)
     optim = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
 
     # MPS autocast is supported as of PyTorch 2.x; CPU autocast adds little.
@@ -184,9 +208,13 @@ def train(
     history: list[dict[str, float]] = []
     t0 = time.perf_counter()
     final_loss = math.nan
+    # Heads tracked separately so per-head contribution to the total is visible
+    # epoch by epoch (Opzione A · Step 1 — diagnostica per-head loss).
+    head_keys = ("onset", "velocity", "microtiming", "hihat")
     for epoch in range(1, epochs + 1):
         model.train()
         epoch_total = 0.0
+        epoch_heads = dict.fromkeys(head_keys, 0.0)
         n_steps = 0
         for batch in train_loader:
             audio = batch["audio"].to(device, non_blocking=True)
@@ -198,18 +226,39 @@ def train(
             losses["total"].backward()
             optim.step()
             epoch_total += float(losses["total"].detach())
+            for k in head_keys:
+                epoch_heads[k] += float(losses[k].detach())
             n_steps += 1
         epoch_mean = epoch_total / max(n_steps, 1)
+        head_means = {k: epoch_heads[k] / max(n_steps, 1) for k in head_keys}
         final_loss = epoch_mean
-        history.append({"epoch": float(epoch), "train_loss": epoch_mean})
+        history.append({
+            "epoch": float(epoch),
+            "train_loss": epoch_mean,
+            **{f"loss_{k}": head_means[k] for k in head_keys},
+        })
         if epoch % log_every == 0 or epoch == 1:
-            print(f"[F0-T4b]   epoch {epoch:4d}  train_loss={epoch_mean:.4f}")
+            # Print the weighted contribution of each head (loss_k × w_k) to the
+            # total — surfaces the actual gradient driver, not the raw head loss.
+            wcfg = loss_fn.config
+            wcontrib = {
+                "onset": head_means["onset"] * wcfg.w_onset,
+                "velocity": head_means["velocity"] * wcfg.w_velocity,
+                "microtiming": head_means["microtiming"] * wcfg.w_microtiming,
+                "hihat": head_means["hihat"] * wcfg.w_hihat,
+            }
+            print(
+                f"[F0-T4b]   epoch {epoch:4d}  total={epoch_mean:.4f} | "
+                f"on={wcontrib['onset']:.4f} vel={wcontrib['velocity']:.4f} "
+                f"mt={wcontrib['microtiming']:.4f} hh={wcontrib['hihat']:.4f}"
+            )
 
     wall = time.perf_counter() - t0
     print(f"[F0-T4b] training done in {wall:.1f} s")
 
     verdicts = evaluate_holdout(
-        model, holdout_samples, device=device, crop_samples=crop_samples
+        model, holdout_samples, device=device, crop_samples=crop_samples,
+        lookahead_frames=lookahead_frames,
     )
     for k, v in verdicts.items():
         print(

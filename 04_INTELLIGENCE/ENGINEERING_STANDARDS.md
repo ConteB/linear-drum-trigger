@@ -138,6 +138,11 @@ fortunata (confirmation bias). Integra — non sostituisce — la
   da uno script; il gate apre sul *parsing* di quei numeri, mai sull'ispezione visiva di
   un grafico (coerente con l'Ocular Proof).
 
+> **Spec operativa.** I principi sopra sono tradotti in test concreti, soglie numeriche
+> e moduli di esecuzione da [`F0-T17 — Statistical Test Plan`](../docs/methodology/F0-T17_STATISTICAL_TEST_PLAN.md)
+> (LOCKED 2026-05-23). I gate operativi pre-F2-T3 (`split_consistency`,
+> `anti_leak_audit`) e il gate L4 (`evaluation_suite`) sono definiti lì.
+
 <a id="execution-robustness"></a>
 ## 6. Robustezza d'esecuzione
 

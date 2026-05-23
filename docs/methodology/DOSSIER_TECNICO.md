@@ -255,8 +255,36 @@ Per scongiurare l'overfitting e garantire la vendibilità Studio-Grade, il datas
 Usato esclusivamente per aggiornare i pesi della TCN.
 - **Anti-Overfitting Ritmico:** Per impedire alla rete di imparare a memoria il "groove" musicale umano, il 5-10% del Training Set è generato stocasticamente. Il modulo **"Machine-Gun / Chaos"** inserisce blast-beat a 300 BPM, sovrapposizioni fisicamente impossibili (8 tamburi colpiti nello stesso frame) e note randomiche fuori griglia. Questo forza la rete a valutare l'evento acustico fisico, non il pattern musicale.
 
+<a id="validation-set"></a>
 ### 10.2 Validation Set (10%)
-Usato per il monitoraggio "Early Stopping" durante il training su Azure. Contiene sessioni GMD e kit DrumGizmo volutamente esclusi dal Training Set.
+Usato per il monitoraggio "Early Stopping" durante il training su Azure.
+
+**Policy di partizione kit-wise — Decision Lock CEO 2026-05-23 (Opzione B).** Il Val Gold
+deve misurare la **generalizzazione cross-kit**, non solo cross-session. Il prodotto
+finale vivrà sui kit del cliente, mai visti al training: il Val deve simulare lo stesso
+scenario. Due kit del roster F0-T1b sono quindi tenuti **interamente fuori dal Training
+Set** e formano il Val Gold; gli altri 8 vanno in training (con uno split session-wise
+GMD all'interno del Train per la varietà ritmica). Insieme al **pairing forzato
+MIDI×Engine** (`F0-T2a` §[3.8](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#tail-standardization))
+e alla **tail standardization** (stessa sezione), la partizione kit-wise chiude il
+canale di shortcut timbrico.
+
+| Set | Kit DrumGizmo | Kit SFZ |
+| :-- | :-- | :-- |
+| **Train** (8 kit) | DRSKit · CrocellKit · MuldjordKit · Aasimonster | Frankensnare · Unruly Drums · Big Rusty Drums · VSCO-2 CE (accessorie) |
+| **Val** (2 kit "vergini") | **ShittyKit** | **Swirly Drums** |
+
+Razionale della scelta: ShittyKit e Swirly Drums sono timbri "fuori standard" rispetto
+agli altri 8 — kit lo-fi/vintage (ShittyKit) e atmospheric/effettato (Swirly). Testano
+se la rete riconosce un onset anche su un kit che non assomiglia a quelli di training.
+La barra finale resta comunque l'**Holdout reale E-GMD** (§10.3) — il Val Gold è il
+sensore di processo durante il training, non l'arbitro del Gate L4.
+
+> **Statistical gate pre-F2-T3.** La consistenza distribuzionale train↔val viene
+> verificata numericamente prima del training (KS test su feature continue, χ² sui
+> categoriali, MIDI-leakage check). Spec dettagliata in
+> [`F0-T17 — Statistical Test Plan` §3.2](F0-T17_STATISTICAL_TEST_PLAN.md#modules);
+> il gate è bloccante per il lancio del training A100.
 
 <a id="holdout"></a>
 ### 10.3 The Holdout Test Set (10% - La Prova del Mondo Reale)
@@ -264,6 +292,12 @@ Questo set non viene mai processato in fase di training. È l'arbitro finale del
 - **Holdout reale (E-GMD):** *(ridisegnato 2026-05-20, F0-T1c)* — E-GMD, Expanded Groove MIDI Dataset (CC-BY 4.0): 444 h di performance di batteria **umane reali**, 43 kit, con ground-truth MIDI di timing e velocity allineato ±2 ms. Sostituisce ENST-Drums (escluso — dottrina compliance §1.1 di `DATA_PROVENANCE_LOG.md`). ⚠️ Limite noto: E-GMD è registrato su modulo Roland TD-17 — performance umana vera, ma l'audio non cattura microfoni acustici in stanza né il bleed reale: i claim numerici a L4 vanno formulati di conseguenza.
 - **Test Stealth-Mix (Slakh-Mix via Slakh2100):** *(ridisegnato 2026-05-20, F0-T1c)* — su Slakh2100 (CC-BY 4.0) l'IA genera un MIDI dal full-mix che deve coincidere col MIDI ottenuto (thresholding standard) dallo stem batteria isolato dello stesso brano. Sostituisce il Franken-Mix/MedleyDB (escluso — clausola NonCommercial).
 - **L'Ultimo Miglio (Ocular Proof):** Il plugin pilota un suono percussivo estraneo (es. Woodblock) riprodotto in controfase sulla registrazione originale. Il test è superato solo se l'orecchio umano non percepisce "flam" (sdoppiamento temporale) sull'attacco dei transienti.
+
+> **Evaluation Suite L4.** Le metriche numeriche del Gate L4 (per-bus F-score con
+> tolerance ±25 ms, bootstrap CI 95 %, confusion matrix inter-bus, calibration curve,
+> sliced metrics per velocity / tempo / kit-OOD) sono definite in
+> [`F0-T17 — Statistical Test Plan` §3.4](F0-T17_STATISTICAL_TEST_PLAN.md#modules)
+> con soglie pre-dichiarate (`per_bus_f_min = 0.80`, `f_macro_min = 0.85`).
 
 <a id="licensing"></a>
 ## 11. Security & Licensing Architecture (Soft-DRM)

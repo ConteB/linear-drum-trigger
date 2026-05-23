@@ -538,6 +538,26 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Non sul percorso critico di F0* — augmentation e training-data sono F2. **Dovrebbe
   precedere F2-T2 e F2-T3.** Da schedulare dopo la chiusura del critico verso L2.
 
+**F0-T17 · Statistical Test Plan — Data Audit + Evaluation Suite (STRP-001) · `[C]`/`[F]` `P1`**
+- *📚 Letture:* [`ENGINEERING_STANDARDS §5 — validazione statistica`](ENGINEERING_STANDARDS.md#statistical-validation) · [`DOSSIER §10 — Validation Protocol`](../docs/methodology/DOSSIER_TECNICO.md#validation) · [`F0-T4a — soglia L3`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md#l3-threshold) · [`F0-T2a §3.8 — tail std`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#tail-standardization).
+- *Origine:* osservazione del CEO (2026-05-23, sessione T1-prep) — `ENGINEERING_STANDARDS §5`
+  fissa i *principi* della validazione statistica ma non c'è una **spec operativa** dei
+  test specifici da girare sul Gold prima del training A100 (~$80/run). Mancano: (a) data
+  audit pre-training (class imbalance, distribuzione velocity/tempo/durata, articolazioni
+  HH); (b) test inferenziali train↔val↔Holdout (Kolmogorov-Smirnov, chi-quadrato, OOD);
+  (c) verifica numerica dei Decision Lock A+C anti-shortcut engine (durata-engine
+  independence, MI(audio; engine) ≈ 0); (d) evaluation suite post-training (per-bus
+  F-score, bootstrap CI, calibration, sliced metrics per velocity/tempo/kit-OOD).
+- *Azioni:* applicare STRP-001; spec di dettaglio del piano statistico (test, soglie,
+  tool); implementare `src/evaluation/` (data_audit + evaluation_suite); harness L1/L2.
+- *DoD:* Executive Briefing approvato dal CEO; spec archiviata; tool girabile su
+  mini-batch Gold (F0-T2e) → report JSON verde. **Gate operativo:** girato *prima* di
+  F2-T3 (training A100) → da non saltare quando arriva il clock Azure.
+- *Costo Azure:* **$0** — data audit gira sul Gold post F2-T1; evaluation gira a fine
+  F2-T3 fuori dal training loop.
+- *Sblocca/de-rischia:* F2-T3 (Gate L4 — claim pubblici falsificabili), F2-T2
+  (sanity check pre-augmentation).
+
 **F0-T16 · Pipeline di augmentation — build & test in locale · `[F]` `P2`**
 - *📚 Letture:* [`AUGMENTATION_AUDIT_BACKLOG`](../docs/methodology/AUGMENTATION_AUDIT_BACKLOG.md) · [`DOSSIER §3 — augmentation`](../docs/methodology/DOSSIER_TECNICO.md#aug-prerender) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`TESTING_DOCTRINE §6`](TESTING_DOCTRINE.md#f0-test-plan) · [`ENGINEERING_STANDARDS §1 — determinismo`](ENGINEERING_STANDARDS.md#determinism) · [`§6 — robustezza`](ENGINEERING_STANDARDS.md#execution-robustness).
 - *Origine:* osservazione del CEO (2026-05-23) — il render aveva i sotto-task locali
@@ -593,7 +613,11 @@ stop compute + push HDD · **$10** → chiudi tutto.
     2026-05-23 — anti shortcut durata↔engine). Ogni MIDI sorgente della GMD è
     renderizzato con tutti gli engine attivi del roster (Sfizz multi-kit + DrumGizmo
     multi-kit, F0-T1b). Pre-shuffle deterministico con seed registrato in
-    `manifest.json` (F0-T5 §5.5).
+    `manifest.json` (F0-T5 §5.5). **Partizione kit-wise train/val** (Decision Lock
+    CEO 2026-05-23 — Opzione B, DOSSIER §10.2): train = 8 kit (DRSKit, CrocellKit,
+    MuldjordKit, Aasimonster · Frankensnare, Unruly Drums, Big Rusty Drums, VSCO-2 CE),
+    val = 2 kit "vergini" (ShittyKit, Swirly Drums) → misura generalizzazione
+    cross-kit, non solo cross-session. Holdout esterno = E-GMD (§10.3, F0-T1c).
   - **T1-prep-B · Tail standardization** in `orchestrate.py` — implementare
     `tail_s = 0.5 s` uniforme (F0-T2a §3.8), `last_onset_s` dal target builder,
     trim/pad post-render. Supersedes la coda `_DRUMGIZMO_TAIL_S = 5.0 s` hardcoded.
@@ -707,6 +731,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T14 | Mapping documentale dei task (campo Letture) | F0 | ☑ | — | — |
 | F0-T15 | Audit augmentation & agnosticità d'ingresso (STRP-001) | F0 | ☐ | — *(non critico — pre F0-T16/F2-T2)* | — |
 | F0-T16 | Augmentation — build & test in locale | F0 | ☐ | F0-T2e, F0-T15 | — |
+| F0-T17 | Statistical Test Plan (STRP-001) | F0 | ◐ | — *(spec LOCKED 2026-05-23 — implementazione `src/evaluation/` in 2-3 sessioni; gate pre-F2-T3)* | — |
 | F1-T1 | Setup Azure | F1 | ☑ | — *(2026-05-23 — CEO offline runbook)* | — |
 | F1-T2 | dvc remote Azure | F1 | ☑ | — *(2026-05-23 — `dvc push` smoke verde)* | — |
 | F2-T1 | Render Gold 1.5 TB | F2 | ☐ | — *(sbloccato 2026-05-23 — F1-T1 ☑)* | — |

@@ -1,0 +1,5 @@
+[core]
+    analytics = false
+    remote = azure
+['remote "azure"']
+    url = azure://gold/dvc

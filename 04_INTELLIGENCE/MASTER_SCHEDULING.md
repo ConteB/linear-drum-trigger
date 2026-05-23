@@ -372,6 +372,11 @@ stop compute + push HDD · **$10** → chiudi tutto.
   ([`DOSSIER_TECNICO` §9.2](../docs/methodology/DOSSIER_TECNICO.md#medallion)) e la strategia di **sharding WebDataset** del layer Gold
   (shard ~1 GB tracciati da DVC, non micro-file); senza remote.
 - *DoD:* `dvc status` pulito, struttura committata.
+- ◐ **PARZIALMENTE FATTO (2026-05-23):** `dvc init` eseguito in concomitanza con
+  F1-T2 (era prerequisito tecnico per `dvc remote add`); scaffold `.dvc/` tracked
+  in repo. Rimane da definire la **strategia di sharding WebDataset** del layer
+  Gold (~1 GB per shard, tracciati da DVC non come micro-file). Non critico ora —
+  si finalizza prima di F2-T1 (render), quando si sa il numero di scenari.
 
 **F0-T6 · `audit_dsp_rigor.py` (predisposizione) · `[C]` `P2`**
 - *📚 Letture:* [`MASTER_CHECKLIST §3 — DSP`](../MASTER_CHECKLIST.md#dsp) · [`ENGINEERING_STANDARDS §3 — codifica`](ENGINEERING_STANDARDS.md#coding-standards) · [`TESTING_DOCTRINE §5 — test DSP`](TESTING_DOCTRINE.md#dsp-tests).
@@ -559,6 +564,14 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Azioni:* configurare il remote `dvc` sul Blob Container.
 - *DoD:* `dvc push` di prova riuscito (log).
 - ⛔ F1-T1.
+- ☑ **FATTO (2026-05-23):** scaffold DVC inizializzato (`.dvc/` tracked: `config`,
+  `.gitignore`, `.dvcignore`; il secret SAS-bearing **connection string** vive in
+  `.dvc/config.local` gitignored, ENGINEERING_STANDARDS §6). Remote di default
+  **`azure://gold/dvc`** sull'Account `stneurotrigger22`. `dvc push` di prova
+  riuscito (1 file, 48 B, MD5 `649dcfcfd0cc7e52a60aff5e479f76f1`); blob
+  verificato via `azure-storage-blob` SDK su `gold/dvc/files/md5/64/9dcfcf...`.
+  Pacchetto in `.dvc/`; SAS valido fino al **2026-08-21** (3 mesi). Sblocca
+  l'upload del Gold a F2-T1.
 
 ### Fase F2 — Burn Compute · gate d'ingresso: F1 completa
 
@@ -626,7 +639,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T3 | Validazione Gate L2 | F0 | ☑ | — | **L2** *(superato 2026-05-23)* |
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☑ | F0-T3, F0-T4a | **L3** *(superato 2026-05-23 — opzione A, Decision Lock CEO)* |
-| F0-T5 | DVC + struttura Medallion | F0 | ☐ | — | — |
+| F0-T5 | DVC + struttura Medallion | F0 | ◐ | — *(dvc init ☑ · sharding spec da finalizzare pre-F2-T1)* | — |
 | F0-T6 | audit_dsp_rigor.py (predisp.) | F0 | ☐ | — | — |
 | F0-T7 | Classi JUCE (opz.) | F0 | ☐ | — | — |
 | F0-T8 | Model Artifact — spec export | F0 | ☐ | — | — |
@@ -639,9 +652,9 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T14 | Mapping documentale dei task (campo Letture) | F0 | ☑ | — | — |
 | F0-T15 | Audit augmentation & agnosticità d'ingresso (STRP-001) | F0 | ☐ | — *(non critico — pre F0-T16/F2-T2)* | — |
 | F0-T16 | Augmentation — build & test in locale | F0 | ☐ | F0-T2e, F0-T15 | — |
-| F1-T1 | Setup Azure | F1 | ☐ | — *(sbloccato 2026-05-23 — L2 superato)* | — |
-| F1-T2 | dvc remote Azure | F1 | ⊘ | F1-T1 | — |
-| F2-T1 | Render Gold 1.5 TB | F2 | ⊘ | F1-T1 | — |
+| F1-T1 | Setup Azure | F1 | ☑ | — *(2026-05-23 — CEO offline runbook)* | — |
+| F1-T2 | dvc remote Azure | F1 | ☑ | — *(2026-05-23 — `dvc push` smoke verde)* | — |
+| F2-T1 | Render Gold 1.5 TB | F2 | ☐ | — *(sbloccato 2026-05-23 — F1-T1 ☑)* | — |
 | F2-T2 | Augmentation + Demucs — *scale-only* | F2 | ⊘ | F2-T1, F0-T16 | — |
 | F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1 *(F0-T4b ☑)* | **L4** |
 | F2-T4 | Credit-soak | F2 | ⊘ | CP-3 | — |

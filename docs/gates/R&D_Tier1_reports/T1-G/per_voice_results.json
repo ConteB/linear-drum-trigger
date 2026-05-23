@@ -1,0 +1,23 @@
+{
+  "gain_only": {
+    "mean_hihat_mae": 0.17682152069639415,
+    "mean_onset_f": 0.046558293203378204,
+    "mean_shuffled_f": 0.12387916502773036,
+    "mean_timing_mae_ms": 12.175184383114358,
+    "n_holdout": 50.0
+  },
+  "mic_balance_only": {
+    "mean_hihat_mae": 0.17687702918425202,
+    "mean_onset_f": 0.047783670607649854,
+    "mean_shuffled_f": 0.12585060925092,
+    "mean_timing_mae_ms": 12.066326632006366,
+    "n_holdout": 50.0
+  },
+  "noise_only": {
+    "mean_hihat_mae": 0.17693432205822318,
+    "mean_onset_f": 0.048476829722528175,
+    "mean_shuffled_f": 0.1273200411151901,
+    "mean_timing_mae_ms": 11.90153841194814,
+    "n_holdout": 50.0
+  }
+}

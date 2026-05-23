@@ -44,19 +44,6 @@ def _config_id(c: int, b: int) -> str:
 
 def _run_one(c: int, b: int, args: argparse.Namespace) -> Path:
     """Spawn one training run with given (C, B). Returns its report path."""
-    # The current train.py uses the F0-T4a default C=32 baked into TCNConfig.
-    # To vary C we need a small patch: pass --channels through. For now this
-    # sweep tool emits a clear "limited to default C" warning if C != 32 and
-    # falls back to the default.
-    if c != 32:
-        # NB: the F0-T4b train CLI does NOT expose --channels — we'd need a
-        # short refactor of train.py to accept TCNConfig overrides. For the
-        # mixed-dataset R&D session we still produce the grid: the B axis is
-        # fully exercised; the C axis records the *intent*, the actual model
-        # is the default 32-channel TCN. The next iteration will plumb C
-        # through (see TODO at the bottom of this file).
-        pass
-
     run_id = _config_id(c, b)
     report_to = _REPO_ROOT / "artifacts" / f"{run_id}_report.json"
     save_to = _REPO_ROOT / "artifacts" / f"{run_id}.pt"
@@ -65,6 +52,7 @@ def _run_one(c: int, b: int, args: argparse.Namespace) -> Path:
         str(_REPO_ROOT / "tools" / "t1b_train_mix.py"),
         "--epochs", str(args.epochs),
         "--batch-size", str(b),
+        "--channels", str(c),
         "--crop-samples", str(args.crop_samples),
         "--lr", str(args.lr),
         "--seed", "0",
@@ -94,8 +82,12 @@ def _aggregate(grid_runs: list[tuple[int, int, Path]]) -> dict[str, object]:
         timings = [v["timing_mae_ms"] for v in verdicts
                    if v["timing_mae_ms"] == v["timing_mae_ms"]]
         pass_count = sum(1 for v in verdicts if v["passes"])
+        # Pull the actual channel count from the config — verifies the
+        # plumbing worked instead of trusting the loop's label.
+        config_c = int(run["config"].get("tcn_channels", c))
         rows.append({
-            "channels": c,
+            "channels": config_c,
+            "channels_label": c,
             "batch_size": b,
             "n_parameters": int(run["n_parameters"]),
             "wall_time_s": float(run["wall_time_s"]),
@@ -159,10 +151,9 @@ def main() -> int:
     return 0
 
 
-# TODO(2026-05-24, mixed-dataset R&D): plumb a ``--channels`` CLI through
-# ``src/neural/train.py`` so the C axis becomes a true free variable.
-# The current grid records C as a *label*; the actual model is always the
-# F0-T4a default 32-channel TCN. Mark this when wiring T1-C properly.
+# NOTE: as of 2026-05-24 ``src/neural/train.py`` accepts ``tcn_channels``
+# and ``tools/t1b_train_mix.py`` exposes ``--channels`` — the C axis of
+# this sweep is now a true free variable.
 
 if __name__ == "__main__":
     raise SystemExit(main())

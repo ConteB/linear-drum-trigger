@@ -133,6 +133,7 @@ def train(
     report_dir: Path | None = None,
     run_id: str = "training-run",
     run_title: str = "Training report",
+    tcn_channels: int = 32,
 ) -> TrainResult:
     """Run the F0-T4b training. Returns the verdict for the L3 Ocular Proof.
 
@@ -166,7 +167,7 @@ def train(
         drop_last=False,
     )
 
-    model = TCNModel(TCNConfig()).to(device)
+    model = TCNModel(TCNConfig(channels=tcn_channels)).to(device)
     n_params = count_parameters(model)
     print(f"[F0-T4b] parameters = {n_params:,}")
     loss_fn = TCNLoss(LossConfig()).to(device)
@@ -268,6 +269,7 @@ def train(
             "batch_size": batch_size,
             "lr": lr,
             "seed": seed,
+            "tcn_channels": tcn_channels,
             "device": str(device),
         },
         n_parameters=n_params,

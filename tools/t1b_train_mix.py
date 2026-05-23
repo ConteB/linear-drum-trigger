@@ -62,6 +62,8 @@ def main() -> int:
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=0,
                         help="model + loader seed (HOLDOUT seed is fixed at 42)")
+    parser.add_argument("--channels", type=int, default=32,
+                        help="TCN channel width C (F0-T4a default = 32)")
     parser.add_argument("--holdout-n", type=int, default=_DEFAULT_HOLDOUT_N)
     parser.add_argument("--cpu", action="store_true")
     parser.add_argument("--run-id", default="t1b-mix-baseline")
@@ -102,6 +104,7 @@ def main() -> int:
         report_dir=None if args.no_html_report else args.html_report_dir,
         run_id=args.run_id,
         run_title=args.run_title,
+        tcn_channels=args.channels,
     )
 
     # Save the JSON summary side-by-side (the train() loop already wrote the

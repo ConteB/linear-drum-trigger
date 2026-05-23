@@ -132,7 +132,41 @@ az ssh vm --resource-group "$AZ_RG" --name "$AZ_VM" \
     -- "tail -f /opt/neurotrigger/provision.log"
 ```
 
-### 3.4 Monitor spesa (consigliato: ogni 2 ore)
+### 3.4 Monitor TUI — barra di avanzamento real-time
+
+Apri un secondo terminale e lancia:
+
+```bash
+# Su Mac: pubblicizza l'IP della VM via az
+VM_IP=$(az vm show --resource-group "$AZ_RG" --name "$AZ_VM" \
+        --show-details --query publicIps -o tsv)
+
+# Apre la TUI a tutto schermo — Ctrl-C per uscire (la VM continua)
+python tools/f2_t1_monitor.py \
+    --source ssh \
+    --ssh-target "azureuser@${VM_IP}" \
+    --interval 30
+```
+
+Cosa mostra:
+
+- **phase** corrente (provisioning / smoke / rendering / packing / done)
+- **progress bar** ricette (X/Y) + shard (X/Y) + volume cumulativo
+- **now rendering** — quale recipe sta girando in questo istante
+- **cost estimate** — spent live (elapsed × $/h), proiezione full-burn, **budget left** colorato verde/giallo/rosso secondo le soglie §5
+- **log tail** ultime ~8 righe dal renderer
+
+Fail-soft: una SSH glitch transitoria → mostra `⚠ poll failed`, mantiene
+l'ultimo stato visibile. Una JSON corrotta → idem. Niente crash.
+
+Per testarlo in locale **senza VM** (smoke):
+
+```bash
+python tools/gen_mock_state.py --tick 1 --total 50 &
+python tools/f2_t1_monitor.py --source mock --interval 1
+```
+
+### 3.5 Monitor spesa CLI (legacy, ogni 2 ore)
 
 ```bash
 # Vedi le ultime 5 voci di consumo
@@ -144,7 +178,7 @@ az consumption usage list --top 5 --output table
 - **$40 residui** → stop compute, push HDD
 - **$10 residui** → chiudi tutto (`./tools/azure_kill.sh nuclear`)
 
-### 3.5 Kill switch — emergenze
+### 3.6 Kill switch — emergenze
 
 ```bash
 # Stop billing immediato (compute spento, dati preservati)

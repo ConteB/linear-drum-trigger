@@ -4,10 +4,31 @@ Asset vendorizzati per **`ENGINEERING_STANDARDS §4`**: copia locale dei binari 
 render e delle librerie di campioni (SFZ + kit DrumGizmo), così la sparizione di un
 repository a monte non rende il dataset Gold non riproducibile.
 
-I binari pesanti sono **git-ignored** (vedi `/.gitignore`). Questo manifest è il
-record di re-fetch: chiunque può ricostruire `vendor/` dagli URL + checksum qui sotto.
+I binari pesanti sono **git-ignored** (vedi `/.gitignore`). Questo manifest è il record
+di re-fetch: chiunque (sviluppatore locale, VM Azure di F2-T1, futuro maintainer) può
+ricostruire `vendor/` dagli URL + checksum qui sotto.
 
-## `vendor/sfizz/` — CLI di rendering Sfizz
+**Roster operativo (`F0-T1b` v1.1):** 10 kit di batteria (5 DrumGizmo CC-BY-4.0 + 5 SFZ
+CC0). Salamander Drumkit (CC-BY-**SA**-3.0, ShareAlike) e Sommerhack 2016-Kit (non più
+sul wiki drumgizmo.org) **esclusi** all'amendment 2026-05-23 — vedi
+[`docs/compliance/F0-T1b_KIT_ROSTER_SURVEY.md` §8](../docs/compliance/F0-T1b_KIT_ROSTER_SURVEY.md#).
+
+**Partizione train/val** (Decision Lock CEO 2026-05-23 — Opzione B,
+[`DOSSIER §10.2`](../docs/methodology/DOSSIER_TECNICO.md#validation-set)):
+8 kit nel training, **ShittyKit + Swirly Drums** tenuti vergini per il Val Gold.
+
+**Stato locale:**
+
+| Marker | Significato |
+| :-- | :-- |
+| 📦 **localmente vendorizzato** | Estratto in `vendor/` su questo Mac → smoke test render disponibile |
+| 🌐 **manifest-only** | sha256 verificato in streaming (zero disco locale); sarà scaricato su VM Azure al provisioning F2-T1 (sotto-task T1-prep-D) |
+
+---
+
+## Render toolchain
+
+### `vendor/sfizz/` — CLI di rendering Sfizz
 
 | Campo | Valore |
 | :-- | :-- |
@@ -18,21 +39,7 @@ record di re-fetch: chiunque può ricostruire `vendor/` dagli URL + checksum qui
 | Architettura | x86_64 — eseguibile autonomo (solo system libs); gira sotto **Rosetta 2** su Apple Silicon |
 | sha256 (`sfizz_render`) | `db3e788ed38a96d9fb866081215b08b1a195c1068d52700ae8794da064c4a6a5` |
 
-## `vendor/sfz/frankensnare/` — kit SFZ (roster F0-T1b)
-
-| Campo | Valore |
-| :-- | :-- |
-| Kit | Karoryfer — **Frankensnare v2.100** |
-| Sorgente | `https://github.com/sfzinstruments/karoryfer.frankensnare/releases/download/v2.100/Frankensnare_2100.zip` |
-| Licenza | **CC0-1.0** (public domain — nessuna attribuzione richiesta) |
-| sha256 (zip) | `03defbfbc5232a5eafa69e839e43b33f8e0746ea9a098fc2b4f411e8112a732a` |
-| Contenuto | 309 file `.sfz` (`Programs/`), `Samples/`, `Presets/` — snare su GM key **38** |
-
-Roster completo dei kit approvati: `docs/compliance/F0-T1b_KIT_ROSTER_SURVEY.md` §3.
-Gli altri kit SFZ del roster (Unruly/Big Rusty/Swirly Drums) si vendorano alla
-bisogna — Frankensnare è il primo, scelto come kit di sviluppo per F0-T2b.
-
-## `drumgizmo` — CLI di rendering DrumGizmo (F0-T2c)
+### `drumgizmo` — CLI di rendering DrumGizmo
 
 | Campo | Valore |
 | :-- | :-- |
@@ -42,27 +49,158 @@ bisogna — Frankensnare è il primo, scelto come kit di sviluppo per F0-T2b.
 | Licenza | LGPL-3.0 (DrumGizmo) |
 | Architettura | arm64 (VM Linux) |
 
-**Non vendorizzato come file**: a differenza di Sfizz, DrumGizmo non ha un prebuilt
-macOS. Gira su **Linux** — parità d'ambiente col render F2 su Azure — provisionato via
-`apt` (versione pinnata sopra). L'adapter `DrumGizmoRenderer` lo risolve su `PATH`; gli
-oracoli §6.3 skippano dove il binario è assente (host macOS) e girano dentro OrbStack.
+A differenza di Sfizz, DrumGizmo non ha un prebuilt macOS. Gira su **Linux** — parità
+d'ambiente col render F2 su Azure — provisionato via `apt` (versione pinnata sopra).
+L'adapter `DrumGizmoRenderer` lo risolve su `PATH`; gli oracoli §6.3 skippano dove il
+binario è assente (host macOS) e girano dentro OrbStack.
 
-## `vendor/drumgizmo/DRSKit/` — kit multi-mic (roster F0-T1b)
+---
+
+## Kit SFZ — Sfizz
+
+### `vendor/sfz/frankensnare/` 📦 **localmente vendorizzato**
+
+| Campo | Valore |
+| :-- | :-- |
+| Kit | Karoryfer — **Frankensnare v2.100** |
+| Sorgente | `https://github.com/sfzinstruments/karoryfer.frankensnare/releases/download/v2.100/Frankensnare_2100.zip` |
+| Licenza | **CC0-1.0** (public domain — nessuna attribuzione richiesta) |
+| sha256 (zip) | `03defbfbc5232a5eafa69e839e43b33f8e0746ea9a098fc2b4f411e8112a732a` |
+| Contenuto | 309 file `.sfz` (`Programs/`), `Samples/`, `Presets/` — snare su GM key **38** |
+| Ruolo | Varietà snare; kit di sviluppo F0-T2b · Train Gold |
+
+### `vendor/sfz/unruly-drums/` 📦 **localmente vendorizzato**
+
+| Campo | Valore |
+| :-- | :-- |
+| Kit | Karoryfer — **Unruly Drums v1.100** |
+| Sorgente | `https://github.com/sfzinstruments/karoryfer.unruly-drums/releases/download/v1.100/Unruly_Drums_1100.zip` |
+| Licenza | **CC0-1.0** |
+| sha256 (zip, 645 MB) | `8d8d8075570088658cfce5de6cc6df1fa1340cac9ec808da130e19b1463b1f90` |
+| Contenuto | `Programs/01-kit-sticks.sfz`, `02-kit-brushes.sfz`, `03-kit-complete.sfz`, `04-kick.sfz`, kit dispatcher · `Samples/`, 10 round-robin |
+| Ruolo | Kit batteria multi-mic completo · Train Gold |
+
+### `vendor/sfz/big-rusty-drums/` 📦 **localmente vendorizzato**
+
+| Campo | Valore |
+| :-- | :-- |
+| Kit | Karoryfer — **Big Rusty Drums v1.100** |
+| Sorgente | `https://github.com/sfzinstruments/karoryfer.big-rusty-drums/releases/download/v1.100/Big_Rusty_Drums_1100.zip` |
+| Licenza | **CC0-1.0** |
+| sha256 (zip, 591 MB) | `d4a9990acd19376d91ce446dae415c81428728b5adebb6a88eddbb3a6aac8744` |
+| Contenuto | `Programs/01-full.sfz`, `02-basic.sfz`, kick/snare alternates · `Samples/`, drumkit vintage rusty timbre |
+| Ruolo | Kit batteria vintage (timbro distinto da Unruly/Frankensnare) · Train Gold |
+
+### `vendor/sfz/swirly-drums/` 🌐 **manifest-only**
+
+| Campo | Valore |
+| :-- | :-- |
+| Kit | Karoryfer — **Swirly Drums v1.104** |
+| Sorgente | `https://github.com/sfzinstruments/karoryfer.swirly-drums/releases/download/v1.104/Swirly.Drums_1104.zip` |
+| Licenza | **CC0-1.0** |
+| sha256 (zip, 828 MB) | `c709acc76260e559d8fd542d2c92b0ec6e3d507efc20fbb5d213427c49fb474a` |
+| Ruolo | **Val Gold (kit "vergine")** — Decision Lock CEO 2026-05-23 Opzione B · timbro atmospheric/effettato, fuori standard rispetto al training |
+| Provisioning | da scaricare su VM Azure in T1-prep-D (zero disco locale) |
+
+### `vendor/sfz/vsco-2-ce/` 📦 **localmente vendorizzato**
+
+| Campo | Valore |
+| :-- | :-- |
+| Kit | **VSCO-2 Community Edition v1.1.0** (Versilian Studios Chamber Orchestra) |
+| Sorgente | `https://github.com/sgossner/VSCO-2-CE/archive/refs/tags/1.1.0.zip` (source archive — repo completo) |
+| Licenza | **CC0-1.0** |
+| sha256 (zip, 2.30 GB) | `4a4446628df0e1a12aaee58e9f65f8fa7cde51971e961abb1b43083a6d3a8ab7` |
+| Contenuto | Orchestra completa; per il progetto Drum Trigger interessano `Percussion/`, `VSCO 1 Percussion/`, `GM-StylePerc.sfz` |
+| Ruolo | Percussioni accessorie sintetiche ([`DOSSIER §3.4`](../docs/methodology/DOSSIER_TECNICO.md#aug-l3)) · Train Gold |
+
+---
+
+## Kit DrumGizmo (multi-mic)
+
+### `vendor/drumgizmo/DRSKit/` 📦 **localmente vendorizzato**
 
 | Campo | Valore |
 | :-- | :-- |
 | Kit | DrumGizmo — **DRSKit v2.1** |
 | Sorgente | `https://drumgizmo.org/kits/DRSKit/DRSKit2_1.zip` |
 | Licenza | **CC-BY-4.0** (uso commerciale con attribuzione) |
-| sha256 (zip) | `529f2dcad836593167d0cab218f125f591cd71199748fa681e05e3866667f090` |
+| sha256 (zip, 2.6 GB) | `529f2dcad836593167d0cab218f125f591cd71199748fa681e05e3866667f090` |
 | md5 (zip) | `8c4d4b61ad9d354b3b845edd5da9c133` (fonte: drumgizmo.org) |
-| Contenuto | kit XML (`DRSKit_full/basic/minimal/no_whiskers`) + midimap + `Samples/` |
+| Contenuto | kit XML (`DRSKit_full/basic/minimal/no_whiskers`) + midimap (`Midimap_<variant>.xml`) + `Samples/` |
 | Canali mic | **13** — AmbL/R, Kdrum back/front, Hihat, OHL/R, Ride, Snare top/bottom, Tom1-3 |
+| Ruolo | Kit di sviluppo F0-T2c · Train Gold |
 
-Lo zip (2.6 GB) **non è conservato**: estratto in `vendor/drumgizmo/DRSKit/`, è la
-sorgente del bleed reale. Re-fetch: scaricare lo zip dall'URL, verificare lo sha256,
-estrarre. Kit di sviluppo per F0-T2c — gli altri 5 kit DrumGizmo del roster si
-vendorano alla bisogna (in F2, render dell'intero dataset).
+### `vendor/drumgizmo/MuldjordKit3/` 📦 **localmente vendorizzato**
+
+| Campo | Valore |
+| :-- | :-- |
+| Kit | DrumGizmo — **MuldjordKit v3** (Tama Superstar moderno) |
+| Sorgente | `https://drumgizmo.org/kits/MuldjordKit/MuldjordKit3.zip` |
+| Licenza | **CC-BY-4.0** — attribution: *"Drum samples provided by DrumGizmo.org"* |
+| sha256 (zip, 2.42 GB) | `db94f910913185ee17c5abb77d285a27476dee979db0ccebdc7ed68404514c96` |
+| md5 (zip) | `8a66a3e90bbf15687b2d34fd355024f2` (fonte: drumgizmo.org) |
+| Contenuto | `MuldjordKit3.xml` (kit principale, **non variant-suffixed**) + `Midimap.xml` singolo + `Samples/` |
+| Ruolo | Kit Tama Superstar moderno (timbro production-grade) · Train Gold |
+| ⚠️ Nota integrazione | Convenzione di naming `Midimap.xml` (no variant suffix) — `DrumGizmoRenderer._resolve_drumgizmo_midimap` va esteso in T1-prep-A per supportare entrambe le convenzioni (`Midimap_<variant>.xml` per DRSKit, `Midimap.xml` per MuldjordKit). |
+
+### `vendor/drumgizmo/CrocellKit/` 🌐 **manifest-only**
+
+| Campo | Valore |
+| :-- | :-- |
+| Kit | DrumGizmo — **CrocellKit v1.1** |
+| Sorgente | `https://drumgizmo.org/kits/CrocellKit/CrocellKit1_1.zip` |
+| Licenza | **CC-BY-4.0** |
+| sha256 (zip, **5.5 GB**) | `65d6f3aab56bcf357c6d636990e1b4e56f78513c0e8031ce80c284c9c677813d` |
+| Ruolo | Kit DrumGizmo grande, multi-mic ricchi · Train Gold |
+| Provisioning | da scaricare su VM Azure in T1-prep-D (zero disco locale) |
+
+### `vendor/drumgizmo/Aasimonster/` 🌐 **manifest-only**
+
+| Campo | Valore |
+| :-- | :-- |
+| Kit | DrumGizmo — **The Aasimonster v2.1** |
+| Sorgente | `https://drumgizmo.org/kits/Aasimonster/aasimonster2_1.zip` |
+| Licenza | **CC-BY-4.0** |
+| sha256 (zip, 2.3 GB) | `cdbaf1cae57e479845c12e2f935a3dec1179bfa26fbfe9905deb9bae7070f987` |
+| Ruolo | Kit DrumGizmo multi-mic, timbro distinto · Train Gold |
+| Provisioning | da scaricare su VM Azure in T1-prep-D |
+
+### `vendor/drumgizmo/ShittyKit/` 🌐 **manifest-only**
+
+| Campo | Valore |
+| :-- | :-- |
+| Kit | DrumGizmo — **ShittyKit v1.2** |
+| Sorgente | `https://drumgizmo.org/kits/ShittyKit/ShittyKit1_2.zip` |
+| Licenza | **CC-BY-4.0** |
+| sha256 (zip) | `383673954af91c88a7044e17cbc5eeed67e815fcbff574a55278e33efb9afd77` |
+| md5 (zip) | `cbab008a3a4413c6e85b1439d36fe63f` (fonte: drumgizmo.org) |
+| Ruolo | **Val Gold (kit "vergine")** — Decision Lock CEO 2026-05-23 Opzione B · timbro lo-fi/vintage, fuori standard rispetto al training |
+| Provisioning | da scaricare su VM Azure in T1-prep-D |
+| Nota | Usa formato drumkit più datato (velocity-group fissi), ma compatibile con DrumGizmo 0.9.20 |
+
+---
+
+## Riepilogo manifest
+
+| # | Kit | Engine | Licenza | sha256 (zip) | Stato locale | Split |
+| --: | :-- | :-- | :-- | :-- | :-- | :-- |
+| 1 | Frankensnare v2.100 | Sfizz | CC0 | `03defbfb…2a732a` | 📦 | Train |
+| 2 | Unruly Drums v1.100 | Sfizz | CC0 | `8d8d8075…3b1f90` | 📦 | Train |
+| 3 | Big Rusty Drums v1.100 | Sfizz | CC0 | `d4a9990a…aac8744` | 📦 | Train |
+| 4 | Swirly Drums v1.104 | Sfizz | CC0 | `c709acc7…9fb474a` | 🌐 | **Val** |
+| 5 | VSCO-2 CE v1.1.0 | Sfizz | CC0 | `4a444662…3a8ab7` | 📦 | Train (accessorie) |
+| 6 | DRSKit v2.1 | DrumGizmo | CC-BY-4.0 | `529f2dca…667f090` | 📦 | Train |
+| 7 | MuldjordKit v3 | DrumGizmo | CC-BY-4.0 | `db94f910…4514c96` | 📦 | Train |
+| 8 | CrocellKit v1.1 | DrumGizmo | CC-BY-4.0 | `65d6f3aa…77813d` | 🌐 | Train |
+| 9 | Aasimonster v2.1 | DrumGizmo | CC-BY-4.0 | `cdbaf1ca…070f987` | 🌐 | Train |
+| 10 | ShittyKit v1.2 | DrumGizmo | CC-BY-4.0 | `383673954af9…afd77` | 🌐 | **Val** |
+
+**Volume locale totale:** ~8 GB (DRSKit 2.6 + Frankensnare 50 MB + Unruly 790 MB + Big
+Rusty 707 MB + VSCO-2 3.0 GB + MuldjordKit 3.6 GB). Volume manifest-only su Azure
+T1-prep-D: ~8.6 GB aggiuntivi (CrocellKit 5.5 + Aasimonster 2.3 + Swirly 828 MB +
+ShittyKit ~800 MB stimato).
+
+---
 
 ## Verifica della catena (render di prova)
 
@@ -86,3 +224,9 @@ drumgizmo -s -i midifile -I file=<probe.mid>,midimap=DRSKit/Midimap_full.xml \
 → 13 WAV mono (`out{Canale}-{idx}.wav`), 44.1 kHz, non-silent; bleed inter-canale
 confermato (correlazione di inviluppo Snare→OH ≈ 0.93). Catena **verificata
 2026-05-22** dentro la VM OrbStack.
+
+Render di prova su MuldjordKit3 / Unruly Drums / Big Rusty Drums / VSCO-2 CE — da
+eseguire come parte di T1-prep-A (recipe matrix) — verificherà che (a) i nuovi kit
+si caricano correttamente, (b) il resolver `_resolve_drumgizmo_midimap` accetta la
+convenzione `Midimap.xml` di MuldjordKit, (c) la diversità timbrica è reale (peak,
+spectral centroid attesi diversi).

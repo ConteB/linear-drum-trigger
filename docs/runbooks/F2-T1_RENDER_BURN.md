@@ -113,6 +113,31 @@ attendere i ~13 GB dei kit manifest-only restanti. Costo smoke: ~$0.03.
 
 ### 3.3 Burn vero — D16s_v3, 14h
 
+Il `provision_render_vm.sh` lascia la VM in stato READY. Per lanciare il
+burn vero della recipe matrix completa, accedi via SSH e lancia:
+
+```bash
+az ssh vm --resource-group "$AZ_RG" --name "$AZ_VM" \
+    -- "cd /opt/neurotrigger/drum-trigger-fresh && \
+        source /opt/neurotrigger/venv/bin/activate && \
+        nohup python tools/run_f2_t1_render.py \
+            --recipe-dir recipes/f2-t1 \
+            --gold-dir   data/gold \
+            --state-file /opt/neurotrigger/state.json \
+            --master-seed $NTG_MASTER_SEED \
+            --vm-name $AZ_VM \
+            --vm-size $AZ_VM_SIZE \
+            --vm-hourly-usd 0.77 \
+            --dvc-push-every 8 \
+            > /opt/neurotrigger/runner.log 2>&1 &"
+```
+
+`nohup ... &` lancia il runner in background — può tu staccarti
+dall'SSH e il rendering continua. Lo state.json viene aggiornato dopo
+ogni recipe completata; il monitor TUI (§3.4) lo legge in real-time.
+
+### 3.3.bis VM creation iniziale
+
 ```bash
 # Crea la VM render. Custom-data = provisioning script. La VM si auto-provisiona
 # in ~30 min, poi lancia il burn.

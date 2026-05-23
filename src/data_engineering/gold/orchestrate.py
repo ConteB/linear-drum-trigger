@@ -305,6 +305,7 @@ def build_gold_sample(
     out_dir: str | Path,
     bus_mapping: BusMapping,
     repo_root: str | Path = REPO_ROOT,
+    midi_path_override: str | Path | None = None,
 ) -> GoldSampleResult:
     """Run one recipe end-to-end and write its Gold sample triple.
 
@@ -318,6 +319,15 @@ def build_gold_sample(
         bus_mapping: GM-note -> 8-bus mapping for the target builder.
         repo_root: Root the recipe's relative ``midi_source.file`` and
             ``render.kit_path`` are resolved against.
+        midi_path_override: Use this MIDI file for render/target/duration
+            instead of ``recipe.midi_source.file``. Intended for the F2-T1
+            runner, which applies :mod:`data_engineering.midi_augment` to
+            the source MIDI and saves a transient jittered file. The
+            ``dna.json`` still records the *original* ``recipe.midi_source.file``
+            as the lineage anchor — the augmentation is encoded in the
+            recipe's ``midi_jitter.variant_idx`` and ``jitter_seed``, which
+            already flow into the barcode and the ``midi_jitter`` lineage
+            block; bit-replay is preserved.
 
     Returns:
         A :class:`GoldSampleResult` describing the written, verified sample.
@@ -329,10 +339,18 @@ def build_gold_sample(
             sample is written.
     """
     root = Path(repo_root)
-    midi_path = root / recipe.midi_source.file
+    source_midi = root / recipe.midi_source.file
+    if not source_midi.is_file():
+        raise OrchestrationError(f"recipe MIDI source not found: {source_midi}")
+    if midi_path_override is not None:
+        midi_path = Path(midi_path_override)
+        if not midi_path.is_file():
+            raise OrchestrationError(
+                f"midi_path_override not found: {midi_path}"
+            )
+    else:
+        midi_path = source_midi
     kit_path = root / recipe.render.kit_path
-    if not midi_path.is_file():
-        raise OrchestrationError(f"recipe MIDI source not found: {midi_path}")
     if not kit_path.is_file():
         raise OrchestrationError(f"recipe render kit not found: {kit_path}")
 

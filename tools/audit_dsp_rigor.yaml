@@ -1,0 +1,129 @@
+# F0-T6 — AUDIT DSP RIGOR — Layer-S gate config
+#
+# Pattern proibiti nel thread audio C++ (mandato Zero-Allocation,
+# ENGINEERING_STANDARDS §2 + §3.2 + MASTER_CHECKLIST §3).
+# Modificare richiede Decision Lock CEO (TESTING_DOCTRINE §2 — Layer-S).
+#
+# Una violazione = una riga di codice che match-a un pattern E vive dentro un
+# blocco scoped come "audio thread". Il blocco si dichiara con marker espliciti
+# `// @audio_thread` ... `// @audio_thread_end` (o `// AUDIO-THREAD-BEGIN`/
+# `// AUDIO-THREAD-END`) oppure è una funzione JUCE riconosciuta
+# euristicamente (processBlock / getNextAudioBlock / audioDeviceIOCallback).
+#
+# Severity:
+#   "error" — il commit è respinto (gate fail-loud)
+#   "warn"  — appare in report ma non blocca (placement-new, ad esempio)
+#
+# Spec: 04_INTELLIGENCE/TESTING_DOCTRINE.md §2 / ENGINEERING_STANDARDS §2
+
+scope:
+  # Marker espliciti — case-insensitive, riconosciuti come line-comment C/C++.
+  begin_markers:
+    - "// @audio_thread"
+    - "// AUDIO-THREAD-BEGIN"
+  end_markers:
+    - "// @audio_thread_end"
+    - "// AUDIO-THREAD-END"
+  # Identificatori di funzioni JUCE che — per contratto del framework — girano
+  # SEMPRE sul thread audio. Si attivano dall'header della funzione fino alla
+  # graffa di chiusura (matching {}).
+  juce_audio_callbacks:
+    - "processBlock"
+    - "processBlockBypassed"
+    - "getNextAudioBlock"
+    - "audioDeviceIOCallback"
+    - "audioDeviceIOCallbackWithContext"
+
+rules:
+  # Allocazione dinamica diretta — proibita in qualsiasi forma.
+  - id: heap_alloc_new
+    pattern: '(?<![A-Za-z_])new[ \t]+[A-Za-z_:<]'
+    severity: error
+    description: "operator new — allocazione dinamica vietata (RAII pre-allocato)"
+
+  - id: heap_alloc_delete
+    pattern: '(?<![A-Za-z_])delete[ \t]*(\[[ \t]*\])?[ \t]+[A-Za-z_]'
+    severity: error
+    description: "operator delete / delete[] — accoppiato a new"
+
+  - id: heap_alloc_malloc_family
+    pattern: '\b(malloc|calloc|realloc|free)[ \t]*\('
+    severity: error
+    description: "malloc/calloc/realloc/free — C-style heap alloc"
+
+  - id: smart_pointer_construction
+    pattern: '\bstd::make_(shared|unique)[ \t]*<'
+    severity: error
+    description: "std::make_shared / std::make_unique — alloca su heap"
+
+  # std::vector — mutazione che può riallocare.
+  - id: vector_push_back
+    pattern: '\.push_back[ \t]*\('
+    severity: error
+    description: "vector::push_back — può riallocare il buffer interno"
+
+  - id: vector_emplace_back
+    pattern: '\.emplace_back[ \t]*\('
+    severity: error
+    description: "vector::emplace_back — può riallocare"
+
+  - id: vector_resize
+    pattern: '\.resize[ \t]*\('
+    severity: error
+    description: "vector::resize — può riallocare; usa array fisso o boost::static_vector"
+
+  - id: vector_insert
+    pattern: '\.insert[ \t]*\('
+    severity: error
+    description: "vector::insert — può riallocare"
+
+  # std::string — qualsiasi mutazione tipicamente allocata.
+  - id: string_concat
+    pattern: 'std::string[A-Za-z_ ]*\+'
+    severity: error
+    description: "std::string concatenazione — alloca; usa juce::String/buffer fisso"
+
+  - id: string_assign_op
+    pattern: '\.append[ \t]*\(|\+=[ \t]*"'
+    severity: error
+    description: "std::string::append / += — alloca"
+
+  # I/O stream — bloccanti.
+  - id: iostream_cout
+    pattern: 'std::(cout|cerr|clog)[ \t]*<<'
+    severity: error
+    description: "std::cout/cerr/clog — I/O bloccante nel thread audio"
+
+  - id: stdio_printf
+    pattern: '\b(printf|fprintf|sprintf|fputs|puts)[ \t]*\('
+    severity: error
+    description: "printf-family — I/O bloccante"
+
+  - id: stdio_file
+    pattern: '\b(fopen|fclose|fread|fwrite|getline)[ \t]*\('
+    severity: error
+    description: "I/O su file — syscall + alloc"
+
+  # Lock bloccanti — proibiti.
+  - id: blocking_mutex_lock
+    pattern: '\.lock[ \t]*\(\)|std::lock_guard[ \t]*<|std::unique_lock[ \t]*<|std::scoped_lock[ \t]*<'
+    severity: error
+    description: "mutex.lock / lock_guard — priorità inversa, può bloccare il thread audio"
+
+  # Exception — alloca per costruire l'exception object + stack unwind costoso.
+  - id: throw_statement
+    pattern: '(?<![A-Za-z_])throw[ \t]+'
+    severity: error
+    description: "throw — alloca exception object; usa error code"
+
+  # Tempo — alcune clock_now possono fare syscall.
+  - id: chrono_system_clock
+    pattern: 'std::chrono::system_clock'
+    severity: warn
+    description: "system_clock::now può fare syscall; preferire steady_clock o juce::Time"
+
+  # Logging di JUCE che alloca.
+  - id: juce_logger
+    pattern: '\bDBG[ \t]*\(|juce::Logger::'
+    severity: error
+    description: "juce::Logger / DBG — alloca + bloccante (ammesso solo in debug guardato da #ifdef)"

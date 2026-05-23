@@ -1,0 +1,55 @@
+# F0-T17 STATISTICAL VALIDATION THRESHOLDS — LOCKED 2026-05-23.
+#
+# Decision Lock CEO (Executive Briefing STRP-001, 2026-05-23) — Risoluzione 3:
+# "Soglie pre-dichiarate, versionate, modifica = nuovo Decision Lock CEO".
+# Modificare qualsiasi valore senza nuovo Decision Lock è una violazione di
+# processo (ENGINEERING_STANDARDS §5 — soglia d'errore esplicita).
+#
+# Spec: docs/methodology/F0-T17_STATISTICAL_TEST_PLAN.md §4.
+
+data_audit:
+  # A bus carrying < 5 % of total onsets is "minority" → loss reweighting
+  # required in F2-T3 (informative, not blocking).
+  bus_minority_pct: 5.0
+  bpm_min: 40
+  bpm_max: 240
+  velocity_n_bin: 20
+  duration_n_bin: 30
+
+split_consistency:
+  # KS p-value floor: train ↔ val must be statistically indistinguishable on
+  # velocity, duration, timing per bus.
+  ks_p_min: 0.05
+  # Chi-square p-value floor: train ↔ val must be indistinguishable on
+  # engine / kit / mic_config categorical distributions.
+  chi2_p_min: 0.05
+  # MIDI-source overlap between train and val must be exactly zero
+  # (sha256 set intersection of the source MIDI files).
+  midi_leakage_max: 0
+
+anti_leak_audit:
+  # H0: audio_duration_bin ⫫ engine. We need p ≥ 0.95 to confirm independence
+  # (i.e., NO association detectable) — the high bar is on purpose: any rejected
+  # H0 means the tail-standardization Decision Lock C did not close the shortcut.
+  duration_engine_chi2_p_min: 0.95
+  # Mutual information between the first 1 s of audio (RMS+centroid+ZCR
+  # features) and the engine label, in bits. The model must not be able to
+  # infer the engine from a short audio window.
+  mi_audio_engine_max_bits: 0.10
+  # For each MIDI source paired across engines in the recipe matrix
+  # (Decision Lock A — pairing forzato), n_sample must match exactly.
+  cross_engine_match_pct_min: 100.0
+
+evaluation_suite:
+  # Stricter than the MIR default (±50 ms) — coerente col precision-first del
+  # prodotto (DOSSIER §2.2). Decision Lock CEO Risoluzione 6.
+  onset_tolerance_ms: 25.0
+  # scipy.stats.bootstrap resamples for the 95 % CI of per-bus F-score.
+  bootstrap_n_resamples: 1000
+  # A bootstrap CI wider than 0.05 (i.e., F95 - F5 > 0.05) signals an unstable
+  # model — fails the gate even if the central F-score crosses the threshold.
+  bootstrap_ci_max_width: 0.05
+  # Per-bus F-measure floor (mir_eval, ±onset_tolerance_ms) — Gate L4.
+  per_bus_f_min: 0.80
+  # Macro F-measure floor (mean over 8 buses) — Gate L4.
+  f_macro_min: 0.85

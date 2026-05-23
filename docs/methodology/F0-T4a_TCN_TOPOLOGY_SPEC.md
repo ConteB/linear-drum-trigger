@@ -135,6 +135,7 @@ L'**Input-Agnostic Projection** (Conv1D k=1) impara a estrarre la "verità" indi
 dalla densità informativa ([`DOSSIER §2.1`](DOSSIER_TECNICO.md#input-agnostic)). L'assegnazione dei mic reali agli slot in fase
 di plugin (UI) è materia di **F4**; qui si fissa solo il contratto del tensore.
 
+<a id="pdc"></a>
 ## 5. Non-causalità / Look-ahead / PDC
 
 - Il trunk è **causale**: nessun receptive field futuro intrinseco.
@@ -143,8 +144,9 @@ di plugin (UI) è materia di **F4**; qui si fissa solo il contratto del tensore.
   rete al frame `t` dispone dell'audio fino a `t + ~100 ms`. È la **stessa delay-line**
   del Chronos Engine già bloccato — nessuna superficie nuova.
 - **Budget look-ahead:** ≤ 100 ms (≤ 4410 sample @ 44.1 kHz ≈ 34 frame @ 344.53 Hz).
-- `latency_samples` **esatto** misurato da F0-T4b e scritto nell'header del Model Artifact
-  (`F0-T8`); target di progetto = 4410 sample (100 ms), badge UI "MODE: MIXING GRADE ONLY".
+- `latency_samples` **esatto** misurato da F0-T4b e scritto nell'header del
+  [Model Artifact (`F0-T8`)](F0-T8_MODEL_ARTIFACT_SPEC.md#header-json); target di
+  progetto = 4410 sample (100 ms), badge UI "MODE: MIXING GRADE ONLY".
 
 ## 6. Loss & Ground Truth
 

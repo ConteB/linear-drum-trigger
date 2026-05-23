@@ -20,11 +20,12 @@ markers = [
     "property: Layer-2 — property-based oracle (§2)",
     "fuzz: Layer-3 — hostile-input oracle (§2, §6.4)",
     "acceptance: §6.3 — per-subtask acceptance (needs render engine)",
+    "evaluation: F0-T17 — statistical validation suite (data_audit / split_consistency / anti_leak_audit / evaluation_suite)",
 ]
 
 [tool.coverage.run]
 branch = true
-source = ["src/data_engineering/gold"]
+source = ["src/data_engineering/gold", "src/evaluation"]
 
 [tool.coverage.report]
 show_missing = true

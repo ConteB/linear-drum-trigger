@@ -93,6 +93,38 @@ def test_distinct_recipes_yield_distinct_keys(sample_recipe: Recipe) -> None:
     assert sfizz != drumgizmo
 
 
+def test_barcode_jittervar_distinguishes_variants(sample_recipe: Recipe) -> None:
+    """Two jittered variants with identical MidiJitter params but distinct
+    ``variant_idx`` must produce distinct barcode keys — regression test
+    for the F2-T1 prep bug found 2026-05-23 (local R&D dataset lost 33 %
+    of samples because ``variant_idx`` did not propagate into the
+    ``jittervar`` segment from the script that built the recipes).
+    """
+    v0 = derive_barcode(
+        dataclasses.replace(
+            sample_recipe,
+            midi_jitter=dataclasses.replace(sample_recipe.midi_jitter, variant_idx=0),
+        )
+    )
+    v1 = derive_barcode(
+        dataclasses.replace(
+            sample_recipe,
+            midi_jitter=dataclasses.replace(sample_recipe.midi_jitter, variant_idx=1),
+        )
+    )
+    v2 = derive_barcode(
+        dataclasses.replace(
+            sample_recipe,
+            midi_jitter=dataclasses.replace(sample_recipe.midi_jitter, variant_idx=2),
+        )
+    )
+    assert v0.jittervar == "J00"
+    assert v1.jittervar == "J01"
+    assert v2.jittervar == "J02"
+    # Keys are pairwise distinct — no silent collision on disk.
+    assert len({encode_barcode(v0), encode_barcode(v1), encode_barcode(v2)}) == 3
+
+
 # --------------------------------------------------------------------------
 # wav_to_audio_buffer
 # --------------------------------------------------------------------------

@@ -407,6 +407,27 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 - *Azioni:* implementare lo script che fa grep dei pattern proibiti nel thread audio
   (`new`, `malloc`, resizing `std::vector`, manipolazione stringhe) — gate manuale.
 - *DoD:* lo script gira su un file di prova ed emette un report.
+- ☑ **FATTO (2026-05-23):** `tools/audit_dsp_rigor.py` (script Python ~330
+  righe, zero nuove dipendenze) + `tools/audit_dsp_rigor.yaml` (regole
+  LOCKED, modifica richiede Decision Lock CEO). **16 regole** (12 error +
+  1 warn): allocazione (`new`/`delete`/`malloc-family`/`make_shared`/
+  `make_unique`), `std::vector` (`push_back`/`emplace_back`/`resize`/
+  `insert`), `std::string` (`+`/`append`/`+=`), I/O (`std::cout`/`printf`-
+  family/file ops), lock (`mutex.lock`/`lock_guard`/`unique_lock`/
+  `scoped_lock`), `throw`, `juce::Logger`/`DBG`, `system_clock` (warn).
+  Due meccanismi di scoping: marker espliciti `// @audio_thread` /
+  `// @audio_thread_end` + euristica JUCE (auto-scope di `processBlock`,
+  `getNextAudioBlock`, `audioDeviceIOCallback`). Preprocessing: stripping
+  di commenti `//`/`/* */` e string-literal `"..."` con preservazione di
+  line/col (no falsi positivi su pattern dentro commenti/stringhe).
+  Output: stdout human + JSON deterministico sortato (per CI). Fixture
+  `tests/fixtures/dsp_rigor/good.cpp` (RT-safe — 0 violazioni, exit 0) +
+  `bad.cpp` (11 violazioni canoniche, exit 1). **Oracoli §6 verdi: 22
+  test** (config loader fail-loud + audit fixture + scope edge cases +
+  CLI exit codes + JSON determinismo + directory scanning). Suite F0:
+  **458 passed, 3 skipped, 0 failed** (+22 vs sessione F0-T8). `ruff` +
+  `mypy --strict` puliti. **Gate operativo applicato in F4** su ogni
+  commit del core DSP (`cpp/dsp/**`); strumento già pronto.
 
 **F0-T7 · Track parallelo opzionale (non bloccante) · `[F]` `P3`**
 - *📚 Letture:* [`LINEAR_DESIGN_GUIDE`](UX_UI/LINEAR_DESIGN_GUIDE.md) · [`UX_BLUEPRINT`](UX_UI/UX_BLUEPRINT_STRP-001.md) · [`ENGINEERING_STANDARDS §3 — codifica`](ENGINEERING_STANDARDS.md#coding-standards).
@@ -421,6 +442,39 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 - *Azioni:* dettagliare la spec dell'exporter (riuso del round-trip di F0-T4b) e dello
   schema di cifratura/header. Implementazione in **F4**.
 - *DoD:* spec archiviata. Decisione di design, eseguibile in parallelo.
+- ☑ **FATTO (2026-05-23):** spec compilata in
+  `docs/methodology/F0-T8_MODEL_ARTIFACT_SPEC.md` — STRP-001 fasi 4-5 chiuse,
+  direzione D3 (2026-05-20) dettagliata. Decision Lock CEO ratificato 7
+  raccomandazioni B1-B7. Sintesi: estensione `.opna`, magic `OPNA` (distinto
+  da `OPNT` payload F0-T4b), header JSON in chiaro (20 campi, byte-deterministico
+  sortato) + IV 12 byte + ciphertext AES-256-GCM + auth tag 16 byte; AAD =
+  header_bytes (lega header al payload). Chiave a 256 bit derivata via
+  **HKDF-SHA256** da master seed **Poisoned** — ricostruito a runtime da 4
+  costanti integer **realmente usate nel hot path d'inferenza** (sparse in
+  tcn_dsp.cpp / tcn_latency.cpp / tcn_loss.cpp), salt random per file, info
+  `OPNA/v1/<model_id>/<version>`. Versioning: `artifact_schema_version` per
+  wrapper + `payload_format "OPNT/N"` per payload + `runtime_compat_min/max`
+  + `model_id` identità + semver `MAJOR.MINOR.PATCH` per modello. Loader
+  fail-loud su ogni mismatch, niente fallback automatico. Tooling Python
+  in F0-T8b (sotto-task `[F]` P3): `tools/build_model_artifact.py` +
+  `tools/verify_model_artifact.py`; dipendenza nuova `cryptography ≥ 41`
+  in `requirements.txt`. Costo Azure $0. Loader C++ stimato 1-2 settimane in
+  F4 con `mbedtls` (Apache-2.0) vendorizzato — `juce::AES` scartato
+  (CBC-only nelle versioni di JUCE supportate). Doc Update fase 6 propagato:
+  link F0-T4a §5 → spec, anchor `pdc` aggiunto.
+
+**F0-T8b · Implementazione tooling Model Artifact · `[F]` `P3`**
+- *📚 Letture:* [`F0-T8 §5 — schema binario`](../docs/methodology/F0-T8_MODEL_ARTIFACT_SPEC.md#5-tech-implementation-matrix) · [`F0-T8 §9 — note operative`](../docs/methodology/F0-T8_MODEL_ARTIFACT_SPEC.md#9-note-operative--implementazione-per-f0-t8b-fuori-scope-qui) · [`F0-T4b/export_bin`](../src/neural/export_bin.py).
+- *Azioni:* implementare `tools/build_model_artifact.py` (PyTorch checkpoint →
+  `.opna` cifrato) + `tools/verify_model_artifact.py` (apre, decifra, verifica
+  round-trip su input deterministico). Aggiungere `cryptography ≥ 41` in
+  `requirements.txt`. Harness `pytest` Layer 1+2 (oracoli di determinismo,
+  fail-loud su tampering header / payload, GCM auth tag mismatch).
+- *DoD:* tooling girabile sul checkpoint `artifacts/f0t4b_tcn.pt` esistente
+  → `.opna` prodotto e ri-verificato verde; oracoli §6 verdi.
+- *Costo Azure:* **$0** (gira sul Mac M5, tooling locale).
+- ⛔ F0-T8 ☑. Non sul percorso critico — utile a F2-T3 (artifact prodotto a
+  fine training) e a F4 (loader C++ ha già il file su cui testare).
 
 **F0-T9a · Testing & QA Doctrine (STRP-001) · `[C]` `P1`**
 - *Origine:* osservazione del CEO (2026-05-20) — il progetto non aveva alcuna strategia
@@ -574,6 +628,22 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
   → `status: SUPERSEDED`.
 - *DoD:* Executive Briefing approvato; `DOSSIER §3.2–§3.4` aggiornato.
 - ⛔ — *nessuno*. **Sblocca F0-T16-post, gate di F2-T2.**
+- ◐ **STRP-001 IN REVIEW (2026-05-23):** spec compilata in
+  `docs/methodology/F0-T15-post_AUDIO_AUGMENTATION_SPEC.md` — 6 fasi del
+  Mandato Operativo applicate. **8 raccomandazioni numerate (B1..B8)** pronte
+  per Executive Briefing: voci nuove (codec, hum, hiss, gating, master
+  limiting, mix-balance, click bleed, mono collapse, DC offset, delay/reverb
+  algoritmico, sidechain), pipeline composta 11-stadi, vincolo mix-balance
+  proxy `g_spread ≤ 18 dB` (escluso `mic_config ∈ {mono, solo_stereo}`),
+  agnosticità d'ingresso (conteggi {1..8} sbilanciati sul caso 8, permutazione
+  canali shuffle uniforme, channel masking 20%, amendment F0-T4a §4), 3
+  regole guardia (R1 no time-stretch, R2 masking-bound, R3
+  attenuation-bound), tooling `audiomentations + pedalboard + demucs`,
+  DNA-Trace 7→8 segmenti, `k_audio_aug=3` (×3 sample → ~72k training),
+  storage post-burn ~4.5 TB. **Costo Azure stimato F2-T2: $5–$8 spot
+  CPU+GPU** (dentro allocazione). Pronto per Decision Lock CEO — fase 6
+  (Docs Update di DOSSIER §3 / F0-T4a §4 / backlog SUPERSEDED) a valle
+  dell'approvazione.
 
 **F0-T17 · Statistical Test Plan — Data Audit + Evaluation Suite (STRP-001) · `[C]`/`[F]` `P1`**
 - *📚 Letture:* [`ENGINEERING_STANDARDS §5 — validazione statistica`](ENGINEERING_STANDARDS.md#statistical-validation) · [`DOSSIER §10 — Validation Protocol`](../docs/methodology/DOSSIER_TECNICO.md#validation) · [`F0-T4a — soglia L3`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md#l3-threshold) · [`F0-T2a §3.8 — tail std`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#tail-standardization).
@@ -594,6 +664,34 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
   F2-T3 fuori dal training loop.
 - *Sblocca/de-rischia:* F2-T3 (Gate L4 — claim pubblici falsificabili), F2-T2
   (sanity check pre-augmentation).
+- ☑ **FATTO (2026-05-23):** quattro moduli `src/evaluation/` (`data_audit`,
+  `split_consistency`, `anti_leak_audit`, `evaluation_suite`) + `common.py` +
+  `thresholds.yaml` LOCKED (F0-T17 §4) + orchestratore `tools/run_evaluation_gate.sh`.
+  Stack: `mir_eval 0.8.2` + `scipy 1.17.1` + `scikit-learn 1.8.0` + `matplotlib`
+  (zero framework UI-heavy, §2 della spec). Output dual JSON+PNG monocromo
+  "Laboratory Precision" per ogni modulo. **104 nuovi oracoli verdi:** 20
+  common (thresholds loader + scanner) + 16 data_audit (onset count
+  strict-local-max, HH segmenti, histogram, fail-loud) + 19 split_consistency
+  (KS identità↔differenza, χ² categorical, MIDI leakage sha256) + 18 anti_leak
+  (chi² duration-engine, MI sklearn, cross-engine pairing, tail-zero per
+  engine) + 22 evaluation_suite (mir_eval F-measure, bootstrap CI, confusion
+  matrix, calibration, sliced, McNemar) + 5 property Hypothesis (determinismo
+  byte-per-byte, F-measure invarianti, bootstrap mean-CI, monotonia soglia) +
+  4 acceptance (orchestratore + 3 moduli sul mini-batch F0-T2e). **Suite F0:
+  436 passed, 3 skipped, 0 failed** (+104 oracoli vs T1-prep-D). `ruff` +
+  `mypy --strict` puliti sui 6 moduli `src/evaluation/`. **Decision Lock CEO
+  in fase di implementazione** (deviazione vs spec §7): `data_audit` reso
+  *strict-informativo* — empty/minority bus surfaced come `warnings`, mai in
+  `failures` (allineato letteralmente alla riga "⚠️ informativo" della
+  tabella gate; lo split/anti-leak restano bloccanti). **Smoke su mini-batch
+  F0-T2e:** orchestratore verde end-to-end (3 JSON + 3 PNG), tail-zero
+  DrumGizmo median 0.00036 ≪ 0.01 soglia → policy Decision Lock C già
+  rispettata dal pre-T1-prep-B output (la pad-zero esplicita di T1-prep-B
+  rinforza, non corregge). **`evaluation_suite` (Gate L4) testato in unit con
+  prediction-fixture sintetiche** (l'artefatto reale arriverà a fine F2-T3).
+  Gate operativo pronto per il post-F2-T1: `tools/run_evaluation_gate.sh
+  <gold-dir>`. Mini-batch warning surfaced: buses 3, 5, 7 con 0 onset (grooves
+  sintetici sparse F0-T2e — atteso, sparirà su MIDI GMD reale).
 
 **F0-T16 · Pipeline di augmentation — build & test in locale**
 - *Stato:* **SPLIT** in F0-T16-pre (MIDI, gate di F2-T1) + F0-T16-post (audio, gate di
@@ -661,11 +759,20 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 ### Fase F1 — Provisioning Azure · gate d'ingresso: L2 superato
 
 **F1-T1 · Setup Azure · `[A]` `P1`**
-- *📚 Letture:* [`STRATEGIC_INFRASTRUCTURE_AUDIT §7.1`](STRATEGIC_INFRASTRUCTURE_AUDIT.md#azure-spend-plan) · [`§4 — Scala del credito`](#credit-scale).
+- *📚 Letture:* [`STRATEGIC_INFRASTRUCTURE_AUDIT §7.1`](STRATEGIC_INFRASTRUCTURE_AUDIT.md#azure-spend-plan) · [`§4 — Scala del credito`](#credit-scale) · [`runbook quota CEO`](../docs/runbooks/F2-T1_AZURE_SUPPORT_ENABLEMENT.md).
 - *Azioni:* Resource Group; Blob Container (LRS); SAS token scoped; Soft Delete + WORM
   su tier Bronze; alert di spesa a $100 e $160.
 - *DoD:* portale Azure mostra risorse attive + alert configurati.
 - ⛔ F0-T3.
+- ☑ **FATTO (2026-05-23):** RG + Blob Container LRS + SAS token (validità 3 mesi)
+  + alert già configurati nella sessione T1-prep-D.
+- **Quota state (aggiornato 2026-05-23 fine giornata):**
+  - ✅ **`Standard DSv3 Family vCPUs` 16 vCPU APPROVATA** (Italy North) → F2-T1 render
+    sbloccato lato compute.
+  - 🟡 **`Standard NCADS_A100_v4 Family vCPUs` 24 vCPU REJECTED** (richiesta auto-rigettata
+    su sub PAYG nuova) → escalation aperta via ticket Microsoft Support. Tempo
+    atteso 24-72h. In attesa, sviluppo R&D locale prosegue su Mac M5 (vedi nota
+    F0-T15-post / dataset Local R&D 200 grooves).
 
 **F1-T2 · dvc remote Azure · `[A]` `P1`**
 - *📚 Letture:* [`STRATEGIC_INFRASTRUCTURE_AUDIT §7.1`](STRATEGIC_INFRASTRUCTURE_AUDIT.md#azure-spend-plan) · [`DOSSIER §9.2 — Medallion`](../docs/methodology/DOSSIER_TECNICO.md#medallion).
@@ -846,9 +953,10 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☑ | F0-T3, F0-T4a | **L3** *(superato 2026-05-23 — opzione A, Decision Lock CEO)* |
 | F0-T5 | DVC + struttura Medallion + sharding | F0 | ☑ | — *(spec sharding LOCKED 2026-05-23 — F0-T5_GOLD_SHARDING_SPEC.md)* | — |
-| F0-T6 | audit_dsp_rigor.py (predisp.) | F0 | ☐ | — | — |
+| F0-T6 | audit_dsp_rigor.py (predisp.) | F0 | ☑ | — *(2026-05-23 — script + 16 regole YAML LOCKED + fixture good/bad + 22 oracoli, gate operativo in F4)* | — |
 | F0-T7 | Classi JUCE (opz.) | F0 | ☐ | — | — |
-| F0-T8 | Model Artifact — spec export | F0 | ☐ | — | — |
+| F0-T8 | Model Artifact — spec export | F0 | ☑ | — *(2026-05-23 — spec `F0-T8_MODEL_ARTIFACT_SPEC.md` LOCKED, 7 raccomandazioni B1..B7 ratificate, fase 6 propagata)* | — |
+| F0-T8b | Implementazione tooling `build_model_artifact.py` + `verify_model_artifact.py` | F0 | ☐ | F0-T8 ☑ | — |
 | F0-T9a | Testing & QA Doctrine (STRP-001) | F0 | ☑ | — | — |
 | F0-T9b | F0 Pipeline Test Harness | F0 | ☑ | — | — |
 | F0-T10 | Documentation Linking Layer (STRP-001) | F0 | ☑ | — | — |
@@ -857,10 +965,10 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 | F0-T13 | De-referenziazione OP-X (chiusura decoupling) | F0 | ☑ | — | — |
 | F0-T14 | Mapping documentale dei task (campo Letture) | F0 | ☑ | — | — |
 | F0-T15-pre | Audit MIDI augmentation (STRP-001) | F0 | ☑ | — *(2026-05-23 — spec LOCKED, Decision Lock CEO ratificato B1–B4: range Opzione B, k=2 + baseline, DNA-Trace 7-segment, storage ~$90)* | — |
-| F0-T15-post | Audit audio augmentation + agnosticità (STRP-001) | F0 | ☐ | — *(non critico — pre F2-T2)* | — |
+| F0-T15-post | Audit audio augmentation + agnosticità (STRP-001) | F0 | ◐ | — *(2026-05-23 — spec `F0-T15-post_AUDIO_AUGMENTATION_SPEC.md` STRP-001-IN-REVIEW, 8 raccomandazioni pronte per Executive Briefing CEO)* | — |
 | F0-T16-pre | MIDI augmentation pipeline — build & test in locale | F0 | ☑ | — *(2026-05-23 — src/data_engineering/midi_augment/ implementato, 75 oracoli verdi, Ocular Proof in docs/gates/F0-T16-pre_OCULAR_PROOF/)* | — |
 | F0-T16-post | Audio augmentation pipeline — build & test in locale | F0 | ☐ | F0-T2e, F0-T15-post | — |
-| F0-T17 | Statistical Test Plan (STRP-001) | F0 | ◐ | — *(spec LOCKED 2026-05-23 — implementazione `src/evaluation/` in 2-3 sessioni; gate pre-F2-T3)* | — |
+| F0-T17 | Statistical Test Plan (STRP-001) | F0 | ☑ | — *(2026-05-23 — `src/evaluation/` 4 moduli + orchestratore + thresholds LOCKED, 104 oracoli verdi, suite F0 436 passed, smoke mini-batch verde, gate pronto post-F2-T1)* | — |
 | F1-T1 | Setup Azure | F1 | ☑ | — *(2026-05-23 — CEO offline runbook)* | — |
 | F1-T2 | dvc remote Azure | F1 | ☑ | — *(2026-05-23 — `dvc push` smoke verde)* | — |
 | F2-T1 | Render Gold 1.5 TB ×3 (≈4.5 TB) | F2 | ☐ | — *(2026-05-23 — tutti i gate prep chiusi: T1-prep-A/B/C/D ☑ + F0-T15-pre/T16-pre ☑; F2-T1 ora gated solo dall'esecuzione CEO offline — runbook `docs/runbooks/F2-T1_RENDER_BURN.md`)* | — |
@@ -961,6 +1069,17 @@ del DOSSIER §3.1 moltiplica la recipe matrix di F2-T1, non quella di F2-T2).
     sposta gli onset, Ghost Note Masking cambia il timbro, Component Dropping muta
     sezioni → audio diverso). Renderizzare ora senza significherebbe ri-renderizzare
     poi (use-it-or-lose-it §1.1 viola).
+· **2026-05-23 fine giornata — Quota Azure parziale + Local R&D dataset (CEO directive).**
+  Quota `Standard DSv3 16 vCPU` **approvata** (sblocca F2-T1 lato compute);
+  quota `Standard NCADS_A100_v4 24 vCPU` **rejected + ticket di escalation** aperto
+  (24-72h attesi). In attesa, generato dataset Gold locale **200 grooves × 3 jitter
+  variants = 600 sample** su Mac M5 + OrbStack DrumGizmo (~10 min, ~2.2 GB) tramite
+  `tools/generate_local_rnd_dataset.py` — zero Azure consumato, zero audio augmentation.
+  Output `data/gold/local_rnd/`. Mix 6 stili (rock/funk/jazz/hiphop/latin/metal,
+  ~33 grooves ciascuno), BPM 80-160, multitrack_full 8 canali, DRSKit. Sblocca R&D
+  parallelo su **F0-T16-post** (audio aug pipeline) e **F0-T4b extension** (sweep TCN
+  hyperparams) mentre la quota A100 è in attesa.
+
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---

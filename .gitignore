@@ -13,8 +13,16 @@ lib/soundfonts/
 *.wav
 *.sf2
 *.midi
+*.mid
 *.zip
 *.tar.bz2
+
+# Bronze layer downloads — heavy, externally sourced, regenerable via tools
+/bronze/
+
+# Evaluation reports (F0-T17) — generated artefacts (JSON + PNG) per run,
+# regenerable from data/gold via tools/run_evaluation_gate.sh
+/reports/
 
 # IDE & OS
 .DS_Store

@@ -1,0 +1,588 @@
+{
+  "model": {
+    "ckpt": "artifacts/f0t4b_tcn.pt",
+    "n_parameters": 83673,
+    "topology": "F0-T4a (Input-Agnostic Projection \u2192 Strided Encoder Stem \u2192 Dilated Causal TCN Trunk \u2192 4 heads)",
+    "channels": 32
+  },
+  "evaluation": {
+    "n_sample": 131072,
+    "n_frame": 1024,
+    "frame_period_ms": 2.9024943310657596,
+    "r_target_hz": 344.53125
+  },
+  "l3_thresholds": {
+    "f_measure_min": 0.8,
+    "shuffled_f_max": 0.1,
+    "timing_mae_max_ms": 5.0,
+    "hihat_mae_max": 0.15
+  },
+  "bus_names": [
+    "kick",
+    "snare",
+    "hihat",
+    "tom_hi_mid",
+    "floor_tom",
+    "ride",
+    "crash_a",
+    "crash_b_misc"
+  ],
+  "train": [
+    {
+      "key": "GMD002-V0T0-DGZ-R0-L1-NONE",
+      "engine": "drumgizmo",
+      "mic_config": "multitrack_full",
+      "threshold": 0.6,
+      "f_per_bus": [
+        1.0,
+        0.8,
+        0.7272727272727273,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "p_per_bus": [
+        1.0,
+        1.0,
+        0.7272727272727273,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "r_per_bus": [
+        1.0,
+        0.6666666666666666,
+        0.7272727272727273,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "f_mean": 0.6318181818181818,
+      "timing_mae_ms": 4.01883830455259,
+      "hihat_mae": 0.0032044549006968737,
+      "n_pred_total": 16,
+      "n_true_total": 18,
+      "n_matched_total": 13
+    },
+    {
+      "key": "GMD003-V0T0-SFZ-R0-L1-NONE",
+      "engine": "sfizz",
+      "mic_config": "solo_stereo",
+      "threshold": 0.7,
+      "f_per_bus": [
+        0.28571428571428575,
+        1.0,
+        0.5555555555555556,
+        0.0,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "p_per_bus": [
+        0.25,
+        1.0,
+        0.8333333333333334,
+        0.0,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "r_per_bus": [
+        0.3333333333333333,
+        1.0,
+        0.4166666666666667,
+        0.0,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "f_mean": 0.3682539682539683,
+      "timing_mae_ms": 2.9024943310657596,
+      "hihat_mae": 0.08822166919708252,
+      "n_pred_total": 14,
+      "n_true_total": 19,
+      "n_matched_total": 9
+    },
+    {
+      "key": "GMD004-V0T0-DGZ-R0-L1-NONE",
+      "engine": "drumgizmo",
+      "mic_config": "multitrack_full",
+      "threshold": 0.7,
+      "f_per_bus": [
+        1.0,
+        0.8,
+        0.7272727272727274,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "p_per_bus": [
+        1.0,
+        1.0,
+        0.8888888888888888,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "r_per_bus": [
+        1.0,
+        0.6666666666666666,
+        0.6153846153846154,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "f_mean": 0.6318181818181818,
+      "timing_mae_ms": 1.2439261418853256,
+      "hihat_mae": 0.005114766303449869,
+      "n_pred_total": 15,
+      "n_true_total": 21,
+      "n_matched_total": 14
+    },
+    {
+      "key": "GMD005-V0T0-SFZ-R0-L1-NONE",
+      "engine": "sfizz",
+      "mic_config": "solo_stereo",
+      "threshold": 0.7,
+      "f_per_bus": [
+        0.75,
+        1.0,
+        0.8799999999999999,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "p_per_bus": [
+        0.75,
+        1.0,
+        0.9166666666666666,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "r_per_bus": [
+        0.75,
+        1.0,
+        0.8461538461538461,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "f_mean": 0.6575,
+      "timing_mae_ms": 1.7073496065092701,
+      "hihat_mae": 0.07738800346851349,
+      "n_pred_total": 19,
+      "n_true_total": 21,
+      "n_matched_total": 17
+    },
+    {
+      "key": "GMD006-V0T0-DGZ-R0-L1-NONE",
+      "engine": "drumgizmo",
+      "mic_config": "multitrack_full",
+      "threshold": 0.7,
+      "f_per_bus": [
+        0.8571428571428571,
+        0.8,
+        0.782608695652174,
+        null,
+        1.0,
+        null,
+        0.0,
+        null
+      ],
+      "p_per_bus": [
+        1.0,
+        1.0,
+        1.0,
+        null,
+        1.0,
+        null,
+        0.0,
+        null
+      ],
+      "r_per_bus": [
+        0.75,
+        0.6666666666666666,
+        0.6428571428571429,
+        null,
+        1.0,
+        null,
+        0.0,
+        null
+      ],
+      "f_mean": 0.6879503105590061,
+      "timing_mae_ms": 2.3219954648526078,
+      "hihat_mae": 0.012635302729904652,
+      "n_pred_total": 15,
+      "n_true_total": 23,
+      "n_matched_total": 15
+    },
+    {
+      "key": "GMD007-V0T0-SFZ-R0-L1-NONE",
+      "engine": "sfizz",
+      "mic_config": "solo_stereo",
+      "threshold": 0.7,
+      "f_per_bus": [
+        0.3333333333333333,
+        1.0,
+        0.47619047619047616,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "p_per_bus": [
+        0.5,
+        1.0,
+        0.8333333333333334,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "r_per_bus": [
+        0.25,
+        1.0,
+        0.3333333333333333,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "f_mean": 0.45238095238095233,
+      "timing_mae_ms": 3.1927437641723353,
+      "hihat_mae": 0.06858332455158234,
+      "n_pred_total": 12,
+      "n_true_total": 24,
+      "n_matched_total": 10
+    },
+    {
+      "key": "GMD008-V0T0-DGZ-R0-L1-NONE",
+      "engine": "drumgizmo",
+      "mic_config": "multitrack_full",
+      "threshold": 0.7,
+      "f_per_bus": [
+        1.0,
+        0.8571428571428571,
+        0.8571428571428571,
+        null,
+        1.0,
+        null,
+        0.0,
+        null
+      ],
+      "p_per_bus": [
+        1.0,
+        1.0,
+        1.0,
+        null,
+        1.0,
+        null,
+        0.0,
+        null
+      ],
+      "r_per_bus": [
+        1.0,
+        0.75,
+        0.75,
+        null,
+        1.0,
+        null,
+        0.0,
+        null
+      ],
+      "f_mean": 0.7428571428571429,
+      "timing_mae_ms": 1.4512471655328798,
+      "hihat_mae": 0.023513227701187134,
+      "n_pred_total": 20,
+      "n_true_total": 26,
+      "n_matched_total": 20
+    },
+    {
+      "key": "GMD009-V0T0-SFZ-R0-L1-NONE",
+      "engine": "sfizz",
+      "mic_config": "solo_stereo",
+      "threshold": 0.7,
+      "f_per_bus": [
+        0.6,
+        1.0,
+        0.2727272727272727,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "p_per_bus": [
+        0.6,
+        1.0,
+        0.6,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "r_per_bus": [
+        0.6,
+        1.0,
+        0.17647058823529413,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "f_mean": 0.4681818181818182,
+      "timing_mae_ms": 3.773242630385488,
+      "hihat_mae": 0.12425020337104797,
+      "n_pred_total": 14,
+      "n_true_total": 27,
+      "n_matched_total": 10
+    },
+    {
+      "key": "GMD010-V0T0-DGZ-R0-L1-NONE",
+      "engine": "drumgizmo",
+      "mic_config": "multitrack_full",
+      "threshold": 0.7,
+      "f_per_bus": [
+        1.0,
+        0.75,
+        0.7407407407407406,
+        null,
+        1.0,
+        null,
+        0.0,
+        null
+      ],
+      "p_per_bus": [
+        1.0,
+        0.75,
+        0.9090909090909091,
+        null,
+        1.0,
+        null,
+        0.0,
+        null
+      ],
+      "r_per_bus": [
+        1.0,
+        0.75,
+        0.625,
+        null,
+        1.0,
+        null,
+        0.0,
+        null
+      ],
+      "f_mean": 0.6981481481481481,
+      "timing_mae_ms": 3.0637440161249687,
+      "hihat_mae": 0.02128342166543007,
+      "n_pred_total": 20,
+      "n_true_total": 26,
+      "n_matched_total": 18
+    },
+    {
+      "key": "GMD011-V0T0-SFZ-R0-L1-NONE",
+      "engine": "sfizz",
+      "mic_config": "solo_stereo",
+      "threshold": 0.6,
+      "f_per_bus": [
+        0.5454545454545454,
+        1.0,
+        0.6857142857142857,
+        null,
+        null,
+        0.0,
+        0.0,
+        null
+      ],
+      "p_per_bus": [
+        0.5,
+        1.0,
+        0.7058823529411765,
+        null,
+        null,
+        0.0,
+        0.0,
+        null
+      ],
+      "r_per_bus": [
+        0.6,
+        1.0,
+        0.6666666666666666,
+        null,
+        null,
+        0.0,
+        0.0,
+        null
+      ],
+      "f_mean": 0.4462337662337662,
+      "timing_mae_ms": 2.596968612006206,
+      "hihat_mae": 0.11570380628108978,
+      "n_pred_total": 31,
+      "n_true_total": 28,
+      "n_matched_total": 19
+    }
+  ],
+  "holdout": [
+    {
+      "key": "GMD000-V0T0-DGZ-R0-L1-NONE",
+      "engine": "drumgizmo",
+      "mic_config": "multitrack_full",
+      "threshold": 0.2,
+      "f_per_bus": [
+        0.08510638297872342,
+        0.08695652173913042,
+        0.12307692307692308,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        null
+      ],
+      "p_per_bus": [
+        0.045454545454545456,
+        0.047619047619047616,
+        0.06611570247933884,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        null
+      ],
+      "r_per_bus": [
+        0.6666666666666666,
+        0.5,
+        0.8888888888888888,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        null
+      ],
+      "f_mean": 0.18501997539925386,
+      "timing_mae_ms": 8.22373393801965,
+      "hihat_mae": 0.3135621249675751,
+      "n_pred_total": 229,
+      "n_true_total": 15,
+      "n_matched_total": 12
+    },
+    {
+      "key": "GMD001-V0T0-SFZ-R0-L1-NONE",
+      "engine": "sfizz",
+      "mic_config": "solo_stereo",
+      "threshold": 0.7,
+      "f_per_bus": [
+        0.0,
+        0.5,
+        0.15384615384615383,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "p_per_bus": [
+        0.0,
+        0.5,
+        0.3333333333333333,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "r_per_bus": [
+        0.0,
+        0.5,
+        0.1,
+        null,
+        null,
+        null,
+        0.0,
+        null
+      ],
+      "f_mean": 0.16346153846153846,
+      "timing_mae_ms": 2.9024943310657596,
+      "hihat_mae": 0.10373879224061966,
+      "n_pred_total": 7,
+      "n_true_total": 16,
+      "n_matched_total": 2
+    }
+  ],
+  "train_per_bus_f_summary": {
+    "kick": {
+      "n_samples_with_truth": 10,
+      "mean_f": 0.7371645021645021,
+      "min_f": 0.28571428571428575,
+      "max_f": 1.0
+    },
+    "snare": {
+      "n_samples_with_truth": 10,
+      "mean_f": 0.9007142857142858,
+      "min_f": 0.75,
+      "max_f": 1.0
+    },
+    "hihat": {
+      "n_samples_with_truth": 10,
+      "mean_f": 0.6705225338268817,
+      "min_f": 0.2727272727272727,
+      "max_f": 0.8799999999999999
+    },
+    "tom_hi_mid": {
+      "n_samples_with_truth": 1,
+      "mean_f": 0.0,
+      "min_f": 0.0,
+      "max_f": 0.0
+    },
+    "floor_tom": {
+      "n_samples_with_truth": 3,
+      "mean_f": 1.0,
+      "min_f": 1.0,
+      "max_f": 1.0
+    },
+    "ride": {
+      "n_samples_with_truth": 1,
+      "mean_f": 0.0,
+      "min_f": 0.0,
+      "max_f": 0.0
+    },
+    "crash_a": {
+      "n_samples_with_truth": 10,
+      "mean_f": 0.0,
+      "min_f": 0.0,
+      "max_f": 0.0
+    },
+    "crash_b_misc": {
+      "n_samples_with_truth": 0,
+      "mean_f": null,
+      "min_f": null,
+      "max_f": null
+    }
+  }
+}

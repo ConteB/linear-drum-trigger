@@ -40,3 +40,12 @@ mutants/
 
 # Audition renders (F0-T2b) — aural proof material, re-generatable.
 /audition/
+
+# F0-T4b — training artefacts (checkpoints, JSON/BIN exports). Re-generatable
+# from the deterministic training run; the L3 Ocular Proof JSONs under
+# docs/gates/L3_OCULAR_PROOF/ are the durable artefacts.
+/artifacts/
+/logs/
+
+# C++ build output — only the source + CMakeLists.txt is tracked.
+/cpp/*/build/

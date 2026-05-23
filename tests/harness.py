@@ -9,12 +9,10 @@ from __future__ import annotations
 import pytest
 
 #: F0 sub-tasks that own each not-yet-implemented module (TESTING_DOCTRINE §6).
-OWNERS: dict[str, str] = {
-    "F0-T2b": "recipe parser / Sfizz render engine",
-    "F0-T2c": "DrumGizmo integration",
-    "F0-T2d": "Gold-tensor writer + DNA-Trace",
-    "F0-T4b": "mic standardisation (data-loader stage)",
-}
+#: Drained: F0-T2b (recipe parser / Sfizz), F0-T2c (DrumGizmo), F0-T2d (writer +
+#: DNA-Trace), F0-T4b (mic standardisation, data-loader stage) — the
+#: self-dismantling scaffold worked as designed.
+OWNERS: dict[str, str] = {}
 
 
 def awaiting(task: str) -> pytest.MarkDecorator:

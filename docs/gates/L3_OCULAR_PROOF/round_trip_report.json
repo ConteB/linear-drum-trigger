@@ -1,0 +1,20 @@
+{
+  "ckpt_path": "artifacts/f0t4b_tcn.pt",
+  "sample_key": "GMD000-V0T0-DGZ-R0-L1-NONE",
+  "input_shape": [
+    8,
+    16384
+  ],
+  "output_shape": [
+    128,
+    25
+  ],
+  "tolerance": 1e-05,
+  "numpy_max_abs_diff": 1.4901161193847656e-06,
+  "numpy_mean_abs_diff": 6.223429238616518e-08,
+  "cpp_max_abs_diff": 1.1920928955078125e-07,
+  "cpp_mean_abs_diff": 4.2867420724235217e-10,
+  "numpy_pass": true,
+  "cpp_pass": true,
+  "round_trip_pass": true
+}

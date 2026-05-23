@@ -13,7 +13,6 @@ from hypothesis import strategies as st
 
 from data_engineering.gold.mic_standardize import MicStandardizeError, standardize_mics
 from data_engineering.gold.recipe import RecipeError, parse_recipe
-from harness import awaiting
 
 pytestmark = pytest.mark.fuzz
 
@@ -45,7 +44,6 @@ def test_recipe_parser_survives_binary_garbage(blob) -> None:
         pass
 
 
-@awaiting("F0-T4b")
 @_FUZZ
 @given(n_mic=st.integers(min_value=-32, max_value=64))
 def test_mic_standardiser_fails_loud_on_bad_channel_count(n_mic) -> None:

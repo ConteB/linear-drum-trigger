@@ -65,16 +65,15 @@ def test_barcode_has_six_ordered_segments() -> None:
     assert fields == dna_trace.BARCODE_SEGMENTS
 
 
-def test_remaining_skeleton_stub_raises_notimplemented(make_audio) -> None:
-    """The one stub still awaiting a sub-task raises ``NotImplementedError``.
+def test_no_skeleton_stubs_remain(make_audio) -> None:
+    """All ``awaiting`` skeletons of the F0 contract are now implemented.
 
-    ``mic_standardize.standardize_mics`` is owned by the data-loader stage
-    (F0-T4b); its ``awaiting`` oracle must keep failing for the *right* reason.
-    The recipe parser (F0-T2b) and the writer / DNA-Trace modules (F0-T2d) are
-    implemented and have dropped off this check — the self-dismantling scaffold
-    working as designed (TESTING_DOCTRINE §6)."""
-    with pytest.raises(NotImplementedError):
-        mic_standardize.standardize_mics(make_audio(), 4)
+    Recipe parser (F0-T2b), DrumGizmo integration (F0-T2c), writer + DNA-Trace
+    (F0-T2d), mini-batch orchestrator (F0-T2e) and mic standardisation (F0-T4b
+    data-loader stage) have all landed; the harness's self-dismantling scaffold
+    has drained its backlog (TESTING_DOCTRINE §6)."""
+    # Smoke-call each module's main entry — none must raise NotImplementedError.
+    mic_standardize.standardize_mics(make_audio(n_mic=4, n_sample=128), 4)
 
 
 def test_xfail_strict_is_enabled(pytestconfig) -> None:

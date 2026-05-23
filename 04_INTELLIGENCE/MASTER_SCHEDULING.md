@@ -517,26 +517,50 @@ stop compute + push HDD · **$10** → chiudi tutto.
   mapping documentale OP-X (TOP-002), costruito sul linking layer del progetto invece che
   su una matrice separata soggetta a drift.
 
-**F0-T15 · Audit augmentation & agnosticità d'ingresso (STRP-001) · `[D]` `P2`**
+**F0-T15 · Audit augmentation & agnosticità d'ingresso (STRP-001) — `[D]` `P1`**
 - *📚 Letture:* [`AUGMENTATION_AUDIT_BACKLOG`](../docs/methodology/AUGMENTATION_AUDIT_BACKLOG.md) · [`DOSSIER §3 — augmentation`](../docs/methodology/DOSSIER_TECNICO.md#aug-prerender) · [`DOSSIER §3.6 — gap`](../docs/methodology/DOSSIER_TECNICO.md#aug-gap) · [`DOSSIER §2.1 — input-agnostic`](../docs/methodology/DOSSIER_TECNICO.md#input-agnostic) · [`F0-T4a §4`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md#input-agnostic-slots).
 - *Origine:* due revisioni del CEO (2026-05-22), coniugate perché stessa famiglia di
-  decisioni — la **varietà dei dati di training** a monte di F2-T2. (1) La dottrina di
+  decisioni — la **varietà dei dati di training** a monte di F2. (1) La dottrina di
   augmentation del `DOSSIER §3` modella implicitamente **un solo input** (batteria
   tracciata e mixata in studio): assi scoperti — codec, noise floor / hum, cattura
   amatoriale, gating, limiting di master, lo-fi / wow & flutter, click come saboteur.
   (2) L'**agnosticità d'ingresso** è oggi solo *parziale* — agnostica al conteggio
   (1–8, zero-fill) ma **non all'assegnazione**: slot a semantica fissa, training solo
   sui conteggi {1,2,4,8} in ordine fisso. Tutto raccolto in `AUGMENTATION_AUDIT_BACKLOG.md`.
-- *Azioni:* applicare STRP-001; auditare (a) l'augmentation **post-render** (`DOSSIER`
-  §3.3–§3.4) e **pre-render** (§3.1 — MIDI Jittering); (b) l'**agnosticità d'ingresso** —
-  augmentation di **permutazione dei canali** + **conteggi variabili {1…8}** in training,
-  così l'input diventa agnostico anche all'ordine/assegnazione; arbitrare valore/costo le
-  voci del backlog; Executive Briefing al CEO.
-- *DoD:* Executive Briefing approvato (Decision Lock); `DOSSIER §3` aggiornato con le voci
-  ratificate; **amendment a `F0-T4a §4`** (la semantica fissa per-slot → "porte"
-  d'ingresso); `AUGMENTATION_AUDIT_BACKLOG.md` → `status: SUPERSEDED`.
-- *Non sul percorso critico di F0* — augmentation e training-data sono F2. **Dovrebbe
-  precedere F2-T2 e F2-T3.** Da schedulare dopo la chiusura del critico verso L2.
+- *Decision Lock CEO 2026-05-23 — split obbligatorio pre-render / post-render.* L'audit
+  originario lumpava MIDI Jittering (pre-render, §3.1) con Studio Mutilation + Inferno
+  (post-render, §3.3–§3.4). Osservazione del CEO in sessione T1-prep-D: il MIDI Jittering
+  per costruzione fisica **moltiplica la recipe matrix di F2-T1** (k varianti jitter ×
+  MIDI × engine) — se F2-T1 parte senza, si ri-renderizza (doctrine §1.1, "use-it-or-
+  lose-it" viola). Split in due sotto-task con gate distinti.
+
+**F0-T15-pre · Audit MIDI augmentation (Time/Velocity/Component) — `[D]` `P1`**
+- *📚 Letture:* [`DOSSIER §3.1 — MIDI Jittering`](../docs/methodology/DOSSIER_TECNICO.md#aug-prerender) · [`AUGMENTATION_AUDIT_BACKLOG`](../docs/methodology/AUGMENTATION_AUDIT_BACKLOG.md) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`F0-T5 — sharding`](../docs/methodology/F0-T5_GOLD_SHARDING_SPEC.md).
+- *Obiettivo:* arbitrare le voci di augmentation **pre-render** (Time Jittering, Velocity
+  Jittering / Ghost Note Masking / Global Gain Shift, Component Dropping) e fissare:
+  (i) range numerici per ogni voce; (ii) `k` jitter-variants per MIDI sorgente; (iii)
+  seed policy + deterministic ordering; (iv) impatto sulla recipe matrix di T1-prep-A
+  (pairing forzato MIDI × Engine × jitter-variant); (v) effetto su `manifest.json`
+  (F0-T5 §5.5) e DNA-Trace lineage (F0-T2a §3.7).
+- *Azioni:* applicare STRP-001 (6 fasi + Executive Briefing); produrre
+  `docs/methodology/F0-T15-pre_MIDI_AUGMENTATION_SPEC.md`.
+- *DoD:* Executive Briefing approvato (Decision Lock); spec archiviata; `DOSSIER §3.1`
+  aggiornato con i parametri ratificati; recipe matrix di T1-prep-A riproiettata.
+- *Costo Azure:* **$0** (gira sul Mac M5, MIDI è leggero).
+- ⛔ — *nessuno*. **Sblocca F0-T16-pre, gate di F2-T1.**
+
+**F0-T15-post · Audit audio augmentation (Studio Mutilation + Inferno + agnosticità) — `[D]` `P2`**
+- *📚 Letture:* [`DOSSIER §3.2–§3.4 — augmentation audio`](../docs/methodology/DOSSIER_TECNICO.md#aug-l1) · [`DOSSIER §3.6 — gap`](../docs/methodology/DOSSIER_TECNICO.md#aug-gap) · [`AUGMENTATION_AUDIT_BACKLOG`](../docs/methodology/AUGMENTATION_AUDIT_BACKLOG.md) · [`DOSSIER §2.1 — input-agnostic`](../docs/methodology/DOSSIER_TECNICO.md#input-agnostic) · [`F0-T4a §4`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md#input-agnostic-slots).
+- *Obiettivo:* arbitrare le voci di augmentation **post-render** (Stem Isolate &
+  Micro-Bleed, Studio Mutilation, Acoustic Environment, Transient Saboteurs) + le
+  voci scoperte del backlog (codec, hum, gating, limiting, lo-fi, click bleed,
+  randomizzazione mix-balance) + **agnosticità d'ingresso** (permutazione canali,
+  conteggi variabili {1…8}).
+- *Azioni:* applicare STRP-001; Executive Briefing al CEO; amendment a `F0-T4a §4`
+  (semantica fissa per-slot → "porte" d'ingresso); `AUGMENTATION_AUDIT_BACKLOG.md`
+  → `status: SUPERSEDED`.
+- *DoD:* Executive Briefing approvato; `DOSSIER §3.2–§3.4` aggiornato.
+- ⛔ — *nessuno*. **Sblocca F0-T16-post, gate di F2-T2.**
 
 **F0-T17 · Statistical Test Plan — Data Audit + Evaluation Suite (STRP-001) · `[C]`/`[F]` `P1`**
 - *📚 Letture:* [`ENGINEERING_STANDARDS §5 — validazione statistica`](ENGINEERING_STANDARDS.md#statistical-validation) · [`DOSSIER §10 — Validation Protocol`](../docs/methodology/DOSSIER_TECNICO.md#validation) · [`F0-T4a — soglia L3`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md#l3-threshold) · [`F0-T2a §3.8 — tail std`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#tail-standardization).
@@ -558,24 +582,66 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Sblocca/de-rischia:* F2-T3 (Gate L4 — claim pubblici falsificabili), F2-T2
   (sanity check pre-augmentation).
 
-**F0-T16 · Pipeline di augmentation — build & test in locale · `[F]` `P2`**
-- *📚 Letture:* [`AUGMENTATION_AUDIT_BACKLOG`](../docs/methodology/AUGMENTATION_AUDIT_BACKLOG.md) · [`DOSSIER §3 — augmentation`](../docs/methodology/DOSSIER_TECNICO.md#aug-prerender) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`TESTING_DOCTRINE §6`](TESTING_DOCTRINE.md#f0-test-plan) · [`ENGINEERING_STANDARDS §1 — determinismo`](ENGINEERING_STANDARDS.md#determinism) · [`§6 — robustezza`](ENGINEERING_STANDARDS.md#execution-robustness).
+**F0-T16 · Pipeline di augmentation — build & test in locale**
+- *Stato:* **SPLIT** in F0-T16-pre (MIDI, gate di F2-T1) + F0-T16-post (audio, gate di
+  F2-T2) — Decision Lock CEO 2026-05-23 (split di F0-T15 in pre/post per simmetria).
+
+**F0-T16-pre · MIDI augmentation pipeline — build & test in locale · `[F]` `P1`**
+- *📚 Letture:* [`F0-T15-pre — spec MIDI augmentation`](../docs/methodology/F0-T15-pre_MIDI_AUGMENTATION_SPEC.md) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`F0-T5 — sharding`](../docs/methodology/F0-T5_GOLD_SHARDING_SPEC.md) · [`TESTING_DOCTRINE §6`](TESTING_DOCTRINE.md#f0-test-plan) · [`ENGINEERING_STANDARDS §1 — determinismo`](ENGINEERING_STANDARDS.md#determinism).
+- *Azioni:* implementare `src/data_engineering/midi_augment/` con ogni voce ratificata
+  da F0-T15-pre (Time Jittering, Velocity Jittering / Ghost Note Masking / Global Gain
+  Shift, Component Dropping); harness `pytest` + Hypothesis coerente con F0-T9b
+  (oracoli su determinismo per-seed, range numerici, DNA-Trace lineage post-jitter,
+  conservazione integrità della Mapping Table); estendere `tools/build_recipe_matrix.py`
+  per emettere la matrix `MIDI × jitter-variant × engine` pre-shuffled.
+- *DoD:* pipeline eseguibile in locale sui MIDI sorgente (GMD + mini-batch L2);
+  oracoli §6 verdi; recipe matrix proiettata e committata; Ocular Proof — diff
+  MIDI pre/post per ≥1 variante per categoria.
+- *Costo Azure:* **$0** (interamente locale).
+- ⛔ F0-T15-pre. **Sblocca F2-T1 — gate operativo prima di T1-prep-D.**
+- ☑ **FATTO (2026-05-23):** modulo `src/data_engineering/midi_augment/` implementato
+  in 4 file (`seed.py`, `jitter.py`, `recipe_matrix.py`, `__init__.py`). API pubblica:
+  `apply_midi_jitter(midi, *, variant_idx, master_seed, source_midi_id)` —
+  pipeline canonica time → flam → velocity → ghost → gain → component; variant 0
+  = identity baseline (RNG consumato comunque per replay-invariance); `derive_jitter_seed`
+  = `sha256(master ‖ id ‖ idx)[:8]`; `build_recipe_matrix_entries` =
+  `|MIDI| × (k+1) × |engine|` con Fisher-Yates shuffle ancorato a `master_seed`.
+  Fail-loud su MIDI malformato (orphan note_on, abs_tick negativi, file senza
+  tracks). Conservazione delle durate sotto Time Jittering (note_off shifta
+  della stessa quantità del note_on). Clausola groove-skeleton sotto Component
+  Dropping (kick+snare mai droppati insieme nella stessa zona 2 s).
+  **Oracoli §6.3 verdi:** 35 unit `seed` (determinismo, sensibilità, range,
+  fail-loud) + 16 unit `jitter` (baseline identity, determinismo, time bounds,
+  velocity range, ghost no-leak, gain global, skeleton, fail-loud) + 14 unit
+  `recipe_matrix` (cardinalità, unicità, determinismo, baseline coverage,
+  fail-loud) + 5 property Hypothesis (replay byte-identical, velocity range,
+  abs_tick≥0, matrix no-drop/no-duplicate, seed derivation match) + 5
+  acceptance sul mini-batch L2 (smoke, baseline identity cross-MIDI, varianti
+  differiscono, range invariants, skeleton inviolato). **Suite F0: 332 passed,
+  7 skipped, 0 failed** (+75 oracoli vs T1-prep-C). `ruff` + `mypy --strict`
+  puliti. **Ocular Proof:** `tools/midi_augment_ocular_proof.py` genera
+  PNG piano-roll a 4 pannelli (source + baseline + 2 jittered) in
+  `docs/gates/F0-T16-pre_OCULAR_PROOF/` — su `groove_00`: baseline 26 eventi
+  (identity), v=1 23 eventi (component dropping ~3), v=2 25 eventi. Sblocca
+  **T1-prep-D (provisioning compute Azure)** — F2-T1 ora gated solo dal
+  provisioning operativo.
+
+**F0-T16-post · Audio augmentation pipeline — build & test in locale · `[F]` `P2`**
+- *📚 Letture:* `F0-T15-post — spec audio augmentation` (da archiviare) · [`AUGMENTATION_AUDIT_BACKLOG`](../docs/methodology/AUGMENTATION_AUDIT_BACKLOG.md) · [`DOSSIER §3.2–§3.4`](../docs/methodology/DOSSIER_TECNICO.md#aug-l1) · [`F0-T2a §3`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`TESTING_DOCTRINE §6`](TESTING_DOCTRINE.md#f0-test-plan) · [`ENGINEERING_STANDARDS §1`](ENGINEERING_STANDARDS.md#determinism) · [`§6`](ENGINEERING_STANDARDS.md#execution-robustness).
 - *Origine:* osservazione del CEO (2026-05-23) — il render aveva i sotto-task locali
-  (F0-T2b/c/d/e) prima dello scale F2-T1; l'augmentation no: `F2-T2` mescolava
-  "scrivi il codice" + "girarlo a 1.5 TB" sul clock Azure, esattamente lo spreco
-  che la doctrine ($200 use-it-or-lose-it) vieta. Sub-task aperto per simmetria.
-- *Azioni:* implementare in `src/data_engineering/augment/` ogni voce ratificata da
-  F0-T15 — convoluzione IR (`pedalboard`, CPU), Machine-Gun Chaos, Studio Mutilation,
-  Transient Saboteurs; smoke-test Demucs AI-Isolation su Mac M5 / MPS su un sotto-set
-  del mini-batch Gold (F0-T2e); harness `pytest` + Hypothesis coerente con F0-T9b
-  (oracoli su determinismo, range FP16, integrità DNA-Trace post-augmentation,
-  ENGINEERING_STANDARDS §1).
+  (F0-T2b/c/d/e) prima dello scale F2-T1; l'augmentation audio no: `F2-T2` mescolava
+  "scrivi il codice" + "girarlo a 1.5 TB" sul clock Azure, esattamente lo spreco che
+  la doctrine ($200 use-it-or-lose-it) vieta. Sub-task aperto per simmetria.
+- *Azioni:* implementare `src/data_engineering/audio_augment/` con ogni voce ratificata
+  da F0-T15-post — convoluzione IR (`pedalboard`, CPU), Machine-Gun Chaos, Studio
+  Mutilation, Transient Saboteurs; smoke-test Demucs AI-Isolation su Mac M5 / MPS;
+  harness `pytest` + Hypothesis (oracoli su determinismo, range FP16, integrità
+  DNA-Trace, ENGINEERING_STANDARDS §1).
 - *DoD:* pipeline eseguibile in locale sul mini-batch Gold; oracoli §6 verdi; smoke
   Demucs su MPS verde su ≥2 campioni; nessun NaN/inf e peak ∈ (0, 1] su tutti i
   campioni augmented; Ocular Proof — PNG waveform pre/post per ≥1 campione. **Costo
   Azure = $0** (interamente locale).
-- ⛔ F0-T2e (mini-batch su cui testare), F0-T15 (la recipe d'augmentation è decisa lì).
-  **Sblocca F2-T2 come *scale-only*.**
+- ⛔ F0-T2e (mini-batch su cui testare), F0-T15-post. **Sblocca F2-T2 come *scale-only*.**
 
 > **Gate d'uscita F0:** L2 superato (~05-28) **e** L3 superato (~06-02).
 
@@ -609,15 +675,18 @@ stop compute + push HDD · **$10** → chiudi tutto.
 - *Azioni:* render del dataset Gold su Azure (Sfizz/DrumGizmo, multi-mic, multi-scenario);
   upload Blob; tracciamento DVC.
 - *Sotto-task di prep (locali, pre-clock-Azure):*
-  - **T1-prep-A · Recipe matrix con pairing forzato MIDI×Engine** (Decision Lock CEO
-    2026-05-23 — anti shortcut durata↔engine). Ogni MIDI sorgente della GMD è
-    renderizzato con tutti gli engine attivi del roster (Sfizz multi-kit + DrumGizmo
-    multi-kit, F0-T1b). Pre-shuffle deterministico con seed registrato in
-    `manifest.json` (F0-T5 §5.5). **Partizione kit-wise train/val** (Decision Lock
-    CEO 2026-05-23 — Opzione B, DOSSIER §10.2): train = 8 kit (DRSKit, CrocellKit,
-    MuldjordKit, Aasimonster · Frankensnare, Unruly Drums, Big Rusty Drums, VSCO-2 CE),
-    val = 2 kit "vergini" (ShittyKit, Swirly Drums) → misura generalizzazione
-    cross-kit, non solo cross-session. Holdout esterno = E-GMD (§10.3, F0-T1c).
+  - **T1-prep-A · Recipe matrix con pairing forzato MIDI×Engine × jitter-variant**
+    (Decision Lock CEO 2026-05-23 — anti shortcut durata↔engine; emendata 2026-05-23
+    sessione T1-prep-D per assorbire le varianti MIDI di F0-T15-pre). Ogni MIDI sorgente
+    della GMD è renderizzato con tutti gli engine attivi del roster (Sfizz multi-kit +
+    DrumGizmo multi-kit, F0-T1b) **e con `k` varianti jitter** definite da F0-T15-pre.
+    Pre-shuffle deterministico con seed registrato in `manifest.json` (F0-T5 §5.5).
+    **Partizione kit-wise train/val** (Decision Lock CEO 2026-05-23 — Opzione B,
+    DOSSIER §10.2): train = 8 kit (DRSKit, CrocellKit, MuldjordKit, Aasimonster ·
+    Frankensnare, Unruly Drums, Big Rusty Drums, VSCO-2 CE), val = 2 kit "vergini"
+    (ShittyKit, Swirly Drums) → misura generalizzazione cross-kit, non solo
+    cross-session. Holdout esterno = E-GMD (§10.3, F0-T1c).
+    ⛔ F0-T15-pre, F0-T16-pre.
   - **T1-prep-B · Tail standardization** in `orchestrate.py` — implementare
     `tail_s = 0.5 s` uniforme (F0-T2a §3.8), `last_onset_s` dal target builder,
     trim/pad post-render. Supersedes la coda `_DRUMGIZMO_TAIL_S = 5.0 s` hardcoded.
@@ -659,22 +728,28 @@ stop compute + push HDD · **$10** → chiudi tutto.
     `dvc remote = azure` già pronto (F1-T2 ☑).
 - *DoD:* 1.5 TB renderizzati e versionati; log di completamento; manifest verde su
   entrambi gli split.
-- ⛔ F1-T1. **Sbloccato da F0-T5 ☑ (sharding spec) e F0-T3 ☑ (gate L2).**
+- ⛔ F1-T1, **F0-T15-pre** *(spec MIDI augmentation)*, **F0-T16-pre** *(pipeline MIDI
+  augmentation locale)*. Lo split `pre/post` di F0-T15/T16 (Decision Lock CEO 2026-05-23,
+  sessione T1-prep-D) sposta il MIDI Jittering dal lato F2-T2 al lato F2-T1: il render
+  consuma la recipe matrix `MIDI × jitter-variant × engine`, mai una matrix `MIDI ×
+  engine` da rifare a posteriori.
 
-**F2-T2 · Augmentation + Demucs — *scale-only* su Azure · `[G]` `P1`**
-- *📚 Letture:* `F0-T16` (la pipeline d'augmentation è già scritta e validata in locale,
-  qui si applica al dataset full-size) · [`DOSSIER §3.2 — bleed`](../docs/methodology/DOSSIER_TECNICO.md#aug-l1) · [`DOSSIER §3.4 — augmentation`](../docs/methodology/DOSSIER_TECNICO.md#aug-l3) · [`ENGINEERING_STANDARDS §1 — determinismo`](ENGINEERING_STANDARDS.md#determinism).
+**F2-T2 · Audio augmentation + Demucs — *scale-only* su Azure · `[G]` `P1`**
+- *📚 Letture:* `F0-T16-post` (la pipeline d'audio augmentation è già scritta e validata
+  in locale, qui si applica al dataset full-size) · [`DOSSIER §3.2 — bleed`](../docs/methodology/DOSSIER_TECNICO.md#aug-l1) · [`DOSSIER §3.4 — augmentation`](../docs/methodology/DOSSIER_TECNICO.md#aug-l3) · [`ENGINEERING_STANDARDS §1 — determinismo`](ENGINEERING_STANDARDS.md#determinism).
 - *Riformulazione (2026-05-23):* il task era originariamente "augmentation Python +
-  Demucs" lumpato. Decision Lock CEO: split in (a) **F0-T16** locale a €0 (build +
-  test + harness) e (b) questo task come puro **scale-only** su Azure, simmetrico a
-  come il render è stato spaccato F0-T2b/c/d/e → F2-T1.
-- *Azioni:* applicare la pipeline di augmentation di F0-T16 al dataset Gold completo
-  (post F2-T1); inferenza Demucs AI-Isolation a scala su GPU Azure; upload Blob;
-  tracciamento DVC.
+  Demucs" lumpato. Due Decision Lock successivi del CEO (2026-05-23): (1) split in
+  pipeline locale (F0-T16) + scale-only Azure (questo task); (2) sessione T1-prep-D —
+  separazione **MIDI augmentation (pre-render, F0-T15-pre/T16-pre, gate di F2-T1)** vs
+  **audio augmentation (post-render, F0-T15-post/T16-post, gate di questo task)**.
+  Qui resta solo lo scale-only dell'augmentation **audio**.
+- *Azioni:* applicare la pipeline di audio augmentation di F0-T16-post al dataset Gold
+  completo (post F2-T1); inferenza Demucs AI-Isolation a scala su GPU Azure; upload
+  Blob; tracciamento DVC.
 - *DoD:* dataset aumentato versionato; nessuna nuova logica scritta su Azure (solo
   scale di codice già verde in locale).
-- ⛔ F2-T1 (può procedere in streaming sul renderizzato), **F0-T16** (codice
-  d'augmentation validato in locale).
+- ⛔ F2-T1 (può procedere in streaming sul renderizzato), **F0-T16-post** (codice
+  d'audio augmentation validato in locale).
 
 **F2-T3 · Training "Gold" A100 → Gate L4 · `[G]` `P1` — spend A RISCHIO (gate L3)**
 - *📚 Letture:* [`F0-T4a — spec TCN`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md) · [`DOSSIER §10 — training set`](../docs/methodology/DOSSIER_TECNICO.md#training-set) · [`DOSSIER §10 — validation`](../docs/methodology/DOSSIER_TECNICO.md#validation) · [`MASTER_CHECKLIST §6 — Gate`](../MASTER_CHECKLIST.md#gates) · [`ENGINEERING_STANDARDS §5 — validazione statistica`](ENGINEERING_STANDARDS.md#statistical-validation).
@@ -729,13 +804,15 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T12 | Audit OpenPhase — standard ingegneristici | F0 | ☑ | — | — |
 | F0-T13 | De-referenziazione OP-X (chiusura decoupling) | F0 | ☑ | — | — |
 | F0-T14 | Mapping documentale dei task (campo Letture) | F0 | ☑ | — | — |
-| F0-T15 | Audit augmentation & agnosticità d'ingresso (STRP-001) | F0 | ☐ | — *(non critico — pre F0-T16/F2-T2)* | — |
-| F0-T16 | Augmentation — build & test in locale | F0 | ☐ | F0-T2e, F0-T15 | — |
+| F0-T15-pre | Audit MIDI augmentation (STRP-001) | F0 | ☑ | — *(2026-05-23 — spec LOCKED, Decision Lock CEO ratificato B1–B4: range Opzione B, k=2 + baseline, DNA-Trace 7-segment, storage ~$90)* | — |
+| F0-T15-post | Audit audio augmentation + agnosticità (STRP-001) | F0 | ☐ | — *(non critico — pre F2-T2)* | — |
+| F0-T16-pre | MIDI augmentation pipeline — build & test in locale | F0 | ☑ | — *(2026-05-23 — src/data_engineering/midi_augment/ implementato, 75 oracoli verdi, Ocular Proof in docs/gates/F0-T16-pre_OCULAR_PROOF/)* | — |
+| F0-T16-post | Audio augmentation pipeline — build & test in locale | F0 | ☐ | F0-T2e, F0-T15-post | — |
 | F0-T17 | Statistical Test Plan (STRP-001) | F0 | ◐ | — *(spec LOCKED 2026-05-23 — implementazione `src/evaluation/` in 2-3 sessioni; gate pre-F2-T3)* | — |
 | F1-T1 | Setup Azure | F1 | ☑ | — *(2026-05-23 — CEO offline runbook)* | — |
 | F1-T2 | dvc remote Azure | F1 | ☑ | — *(2026-05-23 — `dvc push` smoke verde)* | — |
-| F2-T1 | Render Gold 1.5 TB | F2 | ☐ | — *(sbloccato 2026-05-23 — F1-T1 ☑)* | — |
-| F2-T2 | Augmentation + Demucs — *scale-only* | F2 | ⊘ | F2-T1, F0-T16 | — |
+| F2-T1 | Render Gold 1.5 TB | F2 | ☐ | — *(2026-05-23 — gate MIDI augmentation chiuso, F0-T15-pre ☑ + F0-T16-pre ☑; ora gated solo dal provisioning operativo T1-prep-D)* | — |
+| F2-T2 | Audio augmentation + Demucs — *scale-only* | F2 | ⊘ | F2-T1, F0-T16-post | — |
 | F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1 *(F0-T4b ☑)* | **L4** |
 | F2-T4 | Credit-soak | F2 | ⊘ | CP-3 | — |
 | F3 | Consolidamento HDD | F3 | ⏸ | F2 | — |
@@ -759,11 +836,26 @@ correlazione di inviluppo, suite F0 150 passed)
 · ☑ F0-T2e (mini-batch end-to-end — `target_builder.py` MIDI→`flat-25` + `orchestrate.py`
 cuce la pipeline, 12 campioni Gold generati su 12 grooves sintetici, 37 oracoli §6.3,
 suite F0 189 passed)
-(Decision Lock 2026-05-20) · ☐ F0-T15 (audit augmentation & agnosticità d'ingresso —
-aperto 2026-05-22 su due revisioni del CEO, backlog in `AUGMENTATION_AUDIT_BACKLOG.md`;
-non critico, pre F0-T16/F2-T2/T3)
-· ☐ F0-T16 (augmentation — build & test in locale; aperto 2026-05-23 per simmetria col
-render F0-T2b/c/d/e → F2-T1; sblocca F2-T2 a scale-only su Azure, doctrine €0 in F0)
+(Decision Lock 2026-05-20) · ☑ **F0-T15-pre LOCKED (2026-05-23 sessione T1-prep-D)** —
+STRP-001 chiuso, Decision Lock CEO ratificato. Spec in
+`docs/methodology/F0-T15-pre_MIDI_AUGMENTATION_SPEC.md`. Parametri: Time σ=2ms clip
+±5ms, Velocity σ=8 + Ghost (vel≤40→×0.3..1.0) + Gain ×0.5..2.0, Component 10%/2s +
+skeleton kick+snare, **k=2 + baseline = ×3 recipe matrix**, seed sha256-derivato,
+DNA-Trace 7-segment. Costo Azure: +$67 (render +$7, storage +$60), dentro $200 con
+margine $100. **Sblocca F0-T16-pre (gate di F2-T1).** DOSSIER §3.1 e F0-T2a §3.7
+aggiornati; AUGMENTATION_AUDIT_BACKLOG segnato come *partially superseded* sull'asse MIDI.
+· ☐ F0-T15-post (audit audio augmentation + agnosticità d'ingresso — aperto 2026-05-22
+su due revisioni del CEO, backlog in `AUGMENTATION_AUDIT_BACKLOG.md`; non critico,
+pre F2-T2/T3)
+· ☑ **F0-T16-pre LOCKED (2026-05-23 sessione T1-prep-D)** — `src/data_engineering/
+midi_augment/` implementato (`seed.py` + `jitter.py` + `recipe_matrix.py`), pipeline
+canonica time→flam→velocity→ghost→gain→component, variant 0 identity baseline, seed
+derivation `sha256(master‖id‖idx)[:8]`, recipe matrix `|MIDI| × (k+1) × |engine|`
+Fisher-Yates-shuffled. Suite F0: **332 passed, 7 skipped, 0 failed** (+75 oracoli:
+35 seed + 16 jitter + 14 recipe_matrix + 5 property + 5 acceptance). Ocular Proof
+in `docs/gates/F0-T16-pre_OCULAR_PROOF/`. `ruff` + `mypy --strict` puliti. **Sblocca
+T1-prep-D** (F2-T1 ora gated solo dal provisioning compute Azure).
+· ☐ F0-T16-post (audio augmentation pipeline — build & test in locale; sblocca F2-T2)
 · ☑ **F0-T3 / Gate L2 SUPERATO (2026-05-23) — Decision Lock CEO.** Ocular Proof su 2
 campioni (1 Sfizz + 1 DrumGizmo): allineamento target↔MIDI **65/65 onsets entro ±3 ms**;
 0 NaN/inf; DNA-Trace shape & sha256 match; **bleed multi-mic DrumGizmo +0.99 off-diag**.
@@ -796,6 +888,19 @@ gated solo da F2-T1.**
     (v1.2.0); sotto-task `T1-prep-B` (implementazione). Trim/pad post-render
     cross-engine. Supersedes la coda 5 s hardcoded di F0-T2e.
   Insieme chiudono il canale di shortcut alla radice.
+· **Decision Lock CEO 2026-05-23 — split MIDI augmentation pre-render vs audio
+augmentation post-render** (osservazione CEO sessione T1-prep-D — il MIDI Jittering
+del DOSSIER §3.1 moltiplica la recipe matrix di F2-T1, non quella di F2-T2).
+  - **F0-T15** split in **F0-T15-pre** (MIDI, gate F2-T1) + **F0-T15-post** (audio,
+    gate F2-T2). Stesso split per F0-T16.
+  - **Recipe matrix T1-prep-A** emendata: `MIDI × jitter-variant × engine` (k variants
+    decise da F0-T15-pre via STRP-001).
+  - **F2-T1 ora ⊘ bloccato da F0-T15-pre + F0-T16-pre.** T1-prep-D
+    (provisioning compute Azure) sospeso finché lo split non si concretizza nel codice.
+  - Doctrine: il MIDI Jittering è pre-render per costruzione fisica (Time Jittering
+    sposta gli onset, Ghost Note Masking cambia il timbro, Component Dropping muta
+    sezioni → audio diverso). Renderizzare ora senza significherebbe ri-renderizzare
+    poi (use-it-or-lose-it §1.1 viola).
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---

@@ -1,9 +1,10 @@
 """DNA-Trace — sample lineage barcode + ``dna.json`` "Libretto Sanitario".
 
-Implements the F0-T2a §4 contract: the six-segment barcode codec (a strict
-bijection) and the ``dna.json`` document that permits full reverse-engineering
-of a Gold sample — lineage plus the ``sha256`` / non-finite integrity of both
-buffers (F0-T2a §3.7).
+Implements the F0-T2a §4 contract: the seven-segment barcode codec (a strict
+bijection — 7-segment from the Decision Lock CEO 2026-05-23, B3) and the
+``dna.json`` document that permits full reverse-engineering of a Gold sample —
+lineage plus the ``sha256`` / non-finite integrity of both buffers
+(F0-T2a §3.7).
 
 Critical module — mutation kill-rate gate >= 90 % (TESTING_DOCTRINE §3). Every
 function fails loud with :class:`DnaTraceError` and never returns partial state
@@ -27,10 +28,15 @@ from data_engineering.gold.recipe import Recipe
 #: ``dna.json`` schema version (F0-T2a §4.2).
 DNA_VERSION = "1.0"
 
-#: Ordered barcode segments (F0-T2a §4.1).
+#: Ordered barcode segments (F0-T2a §4.1 — 7-segment amendment, Decision Lock CEO
+#: 2026-05-23, bivio B3 of F0-T15-pre). The ``jittervar`` segment encodes the
+#: jitter-variant index (``J{idx:02d}``); it sits *after* ``midialt`` to
+#: preserve the lexical ordering MIDI-source → MIDI-transformation →
+#: MIDI-variant → render-side segments.
 BARCODE_SEGMENTS: tuple[str, ...] = (
     "midisrc",
     "midialt",
+    "jittervar",
     "engine",
     "reverb",
     "audioalt",
@@ -49,15 +55,24 @@ class DnaTraceError(ValueError):
 
 @dataclass(frozen=True)
 class Barcode:
-    """The six-segment DNA barcode (F0-T2a §4.1).
+    """The seven-segment DNA barcode (F0-T2a §4.1 — Decision Lock CEO 2026-05-23).
 
     Segments are joined by ``-`` to form the WebDataset sample ``key``. The key
     is dot-free by construction so it survives WebDataset's extension splitting
     (F0-T2a §3.1).
+
+    The ``jittervar`` segment (``J{idx:02d}``) distinguishes the ``k+1``
+    jittered variants produced by the MIDI augmentation pipeline (F0-T15-pre).
+    ``J00`` is always the baseline (identity); ``J01..Jkk`` are the augmented
+    branches. The segment is orthogonal to ``midialt`` (which records *which*
+    transformations are active as binary flags): two variants with the same
+    ``midialt`` can still differ via their seed-driven RNG draws, and the
+    ``jittervar`` segment is what disambiguates them in the manifest.
     """
 
     midisrc: str
     midialt: str
+    jittervar: str
     engine: str
     reverb: str
     audioalt: str
@@ -85,7 +100,7 @@ def encode_barcode(barcode: Barcode) -> str:
     """Encode a :class:`Barcode` into its ``-``-joined string key.
 
     Args:
-        barcode: The six-segment barcode.
+        barcode: The seven-segment barcode (F0-T2a §4.1, 7-segment amendment).
 
     Returns:
         The WebDataset sample key (dot-free).
@@ -107,13 +122,13 @@ def decode_barcode(key: str) -> Barcode:
     is a bijection (TESTING_DOCTRINE §6.2).
 
     Args:
-        key: A six-segment, ``-``-joined barcode key.
+        key: A seven-segment, ``-``-joined barcode key.
 
     Returns:
         The decoded :class:`Barcode`.
 
     Raises:
-        DnaTraceError: If ``key`` is not a well-formed six-segment barcode.
+        DnaTraceError: If ``key`` is not a well-formed seven-segment barcode.
     """
     if not isinstance(key, str):
         raise DnaTraceError(f"barcode key must be a string, got {type(key).__name__}")
@@ -207,6 +222,7 @@ def build_dna_json(
                 "file": recipe.midi_source.file,
             },
             "midi_jitter": {
+                "variant_idx": recipe.midi_jitter.variant_idx,
                 "time_jitter_ms": list(recipe.midi_jitter.time_jitter_ms),
                 "flam_probability": recipe.midi_jitter.flam_probability,
                 "velocity_jitter": recipe.midi_jitter.velocity_jitter.value,

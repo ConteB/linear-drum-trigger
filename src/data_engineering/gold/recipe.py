@@ -100,13 +100,21 @@ class MidiSource:
 
 @dataclass(frozen=True)
 class MidiJitter:
-    """``midi_jitter`` block (F0-T2a §1.1)."""
+    """``midi_jitter`` block (F0-T2a §1.1).
+
+    ``variant_idx`` (F0-T15-pre amendment, Decision Lock CEO 2026-05-23) tags
+    which of the ``k+1`` jittered branches this recipe represents — ``0`` is
+    the baseline (identity); ``1..k`` are the augmented variants. Default is
+    ``0`` so legacy recipes that predate the amendment parse cleanly as the
+    baseline.
+    """
 
     time_jitter_ms: tuple[float, float]
     flam_probability: float
     velocity_jitter: VelocityJitter
     component_drop_probability: float
     seed: int
+    variant_idx: int = 0
 
 
 @dataclass(frozen=True)
@@ -256,6 +264,7 @@ def _parse_midi_jitter(value: Any) -> MidiJitter:
                 "velocity_jitter",
                 "component_drop_probability",
                 "seed",
+                "variant_idx",
             }
         ),
         ctx,
@@ -267,6 +276,14 @@ def _parse_midi_jitter(value: Any) -> MidiJitter:
     high = _as_number(raw_range[1], f"{ctx}.time_jitter_ms[1]")
     if low > high:
         raise RecipeError(f"{ctx}.time_jitter_ms: min ({low}) exceeds max ({high})")
+    # ``variant_idx`` is optional with default 0 — legacy recipes parse as
+    # baseline; the F2-T1 recipe-matrix builder emits the explicit value.
+    variant_idx_raw = block.get("variant_idx", 0)
+    variant_idx = _as_int(variant_idx_raw, f"{ctx}.variant_idx")
+    if variant_idx < 0:
+        raise RecipeError(
+            f"{ctx}.variant_idx: must be non-negative, got {variant_idx}"
+        )
     return MidiJitter(
         time_jitter_ms=(low, high),
         flam_probability=_as_probability(
@@ -280,6 +297,7 @@ def _parse_midi_jitter(value: Any) -> MidiJitter:
             f"{ctx}.component_drop_probability",
         ),
         seed=_as_int(_require(block, "seed", ctx), f"{ctx}.seed"),
+        variant_idx=variant_idx,
     )
 
 

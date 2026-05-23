@@ -55,10 +55,33 @@ Il dataset di addestramento deve simulare l'entropia del segnale reale, traccian
 
 <a id="aug-prerender"></a>
 ### 3.1 Augmentation Pre-Rendering (Il "MIDI Jittering Engine")
-Prima di sintetizzare l'audio, i MIDI "perfetti" di Ground Truth subiscono una distorsione per forzare l'IA a gestire il caos:
-- **Time Jittering:** Spostamento casuale degli onset (±2ms a ±15ms) e creazione del 5% di "Flams" artificiali (doppi colpi) per allenare il look-ahead.
-- **Velocity Jittering:** Alterazione dinamica estrema (Ghost Note Masking e Global Gain Shift) per disaccoppiare il riconoscimento dal volume assoluto.
-- **Component Dropping:** Mute randomico del 10% di componenti (es. kick/toms) per rompere l'aspettativa di groove standard.
+
+**Parametri operativi LOCKED** — Decision Lock CEO 2026-05-23, STRP-001 in
+[`F0-T15-pre — MIDI Augmentation Spec`](F0-T15-pre_MIDI_AUGMENTATION_SPEC.md).
+Prima di sintetizzare l'audio, i MIDI "perfetti" di Ground Truth subiscono una
+distorsione *ricalibrata sulla GMD umana* (già imperfetta per costruzione):
+
+| Voce | Parametro |
+| :-- | :-- |
+| **Time Jittering — onset shift** | gaussiano `σ = 2 ms`, clip `±5 ms` (range ricalibrato — il `±15 ms` originario eccede la tolleranza target ±3 ms di [`§4`](#midi-matrix) e il gaussian smearing di [`F0-T2a §3.3`](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract)) |
+| **Flams artificiali** | 5% delle note · distanza inter-flam 15–25 ms uniforme (lookahead PDC ~100 ms ha headroom) |
+| **Velocity Jittering — perturbazione** | additivo gaussiano `σ = 8`, clip `[1, 127]` |
+| **Velocity Jittering — Ghost Masking** | note con `vel ≤ 40` → moltiplicate per fattore uniforme in `[0.3, 1.0]` |
+| **Velocity Jittering — Global Gain Shift** | fattore uniforme in `[0.5, 2.0]` applicato all'intero groove |
+| **Component Dropping** | 10% per zona temporale 2 s · **clausola groove-skeleton**: mai droppare kick+snare insieme |
+| **k varianti per MIDI sorgente** | **`k = 2` jitter + 1 baseline = ×3 sulla recipe matrix** (scalable down a `k = 1` a CP-1 se il saldo Azure lo richiede) |
+| **Seed policy** | `seed = sha256(master_seed ‖ source_midi_id ‖ variant_idx)[:8]` consumato via `numpy.random.default_rng` ([`ENGINEERING_STANDARDS §1 — determinismo`](../../04_INTELLIGENCE/ENGINEERING_STANDARDS.md#determinism)) |
+| **Lineage** | DNA-Trace barcode esteso 6→7 segment (segmento `J{idx:02d}` — vedi [`F0-T2a §3.7`](F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#dna-trace-format)) |
+
+**Cosa NON si fa:** pitch-shifting (overlap con M-diversity timbrica), time-stretching
+(sposta ground truth), pattern dropping groove-distruttivo (kick+snare insieme),
+cross-MIDI mixup (riservato all'audio side, [`F0-T15-post`](../../04_INTELLIGENCE/MASTER_SCHEDULING.md#tasks)).
+
+**Razionale strategico.** La letteratura ADT moderna (E-GMD M=43, Stein M=512)
+costruisce diversità via `M` grande di kit/preset e non fa MIDI jittering. Noi siamo
+vincolati a `M = 10` (roster F0-T1b — Self-Evident Commercial License): il MIDI
+jittering è il sostituto razionale per iniettare il caos esecutivo che `M` grande
+darebbe naturalmente.
 
 <a id="aug-l1"></a>
 ### 3.2 Livello 1: Stem Isolate & Micro-Bleed (30% Dataset)

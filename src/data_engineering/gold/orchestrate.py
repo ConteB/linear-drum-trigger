@@ -176,11 +176,15 @@ def _digit_token(text: str) -> str:
 
 
 def derive_barcode(recipe: Recipe) -> Barcode:
-    """Derive a deterministic six-segment DNA barcode from a recipe (F0-T2a §4.1).
+    """Derive a deterministic seven-segment DNA barcode from a recipe (F0-T2a §4.1).
 
     Every segment is dot-free and dash-free by construction, so the encoded key
     survives WebDataset's extension splitting (F0-T2a §3.1). The mapping is a
     pure function of the recipe: the same recipe always yields the same key.
+
+    The ``jittervar`` segment (``J{idx:02d}``) — added by the 7-segment
+    amendment of Decision Lock CEO 2026-05-23 (B3 of F0-T15-pre) — disambiguates
+    the ``k+1`` jittered variants produced by the MIDI augmentation pipeline.
 
     Args:
         recipe: The validated recipe.
@@ -195,6 +199,7 @@ def derive_barcode(recipe: Recipe) -> Barcode:
     low, high = recipe.midi_jitter.time_jitter_ms
     t_code = 0 if low == 0.0 and high == 0.0 else 1
     midialt = f"V{v_code}T{t_code}"
+    jittervar = f"J{recipe.midi_jitter.variant_idx:02d}"
 
     engine = "SFZ" if recipe.render.engine is Engine.SFIZZ else "DGZ"
     reverb = "R0" if recipe.augmentation.reverb_ir is None else "R1"
@@ -209,6 +214,7 @@ def derive_barcode(recipe: Recipe) -> Barcode:
     return Barcode(
         midisrc=midisrc,
         midialt=midialt,
+        jittervar=jittervar,
         engine=engine,
         reverb=reverb,
         audioalt=audioalt,

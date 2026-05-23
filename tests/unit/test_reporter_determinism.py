@@ -18,7 +18,6 @@ from neural.reporter import (  # noqa: E402
     write_training_report,
 )
 
-
 pytestmark = pytest.mark.core
 
 

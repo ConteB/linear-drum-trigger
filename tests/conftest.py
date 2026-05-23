@@ -58,10 +58,10 @@ VALID_RECIPE_YAML = textwrap.dedent(
     """
 )
 
-#: The barcode of the F0-T2a §4.2 example.
-SAMPLE_BARCODE = Barcode("GMD042", "V1T1", "DGZ", "R2", "C1H0", "SLK102")
+#: The barcode of the F0-T2a §4.2 example (7-segment — Decision Lock CEO 2026-05-23).
+SAMPLE_BARCODE = Barcode("GMD042", "V1T1", "J01", "DGZ", "R2", "C1H0", "SLK102")
 #: Its expected ``-``-joined key.
-SAMPLE_KEY = "GMD042-V1T1-DGZ-R2-C1H0-SLK102"
+SAMPLE_KEY = "GMD042-V1T1-J01-DGZ-R2-C1H0-SLK102"
 
 
 @pytest.fixture

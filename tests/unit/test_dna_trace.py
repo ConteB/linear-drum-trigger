@@ -23,11 +23,11 @@ pytestmark = pytest.mark.critical
 
 def test_encode_matches_spec_example(sample_barcode) -> None:
     # F0-T2a §4.1 / §4.2 example.
-    assert encode_barcode(sample_barcode) == "GMD042-V1T1-DGZ-R2-C1H0-SLK102"
+    assert encode_barcode(sample_barcode) == "GMD042-V1T1-J01-DGZ-R2-C1H0-SLK102"
 
 
 def test_decode_matches_spec_example(sample_barcode) -> None:
-    assert decode_barcode("GMD042-V1T1-DGZ-R2-C1H0-SLK102") == sample_barcode
+    assert decode_barcode("GMD042-V1T1-J01-DGZ-R2-C1H0-SLK102") == sample_barcode
 
 
 def test_encoded_key_is_dot_free(sample_barcode) -> None:
@@ -64,7 +64,7 @@ def test_dna_json_records_version_and_lineage(sample_barcode, sample_recipe,
         target=make_target(),
     )
     assert dna["dna_version"] == DNA_VERSION
-    assert dna["key"] == "GMD042-V1T1-DGZ-R2-C1H0-SLK102"
+    assert dna["key"] == "GMD042-V1T1-J01-DGZ-R2-C1H0-SLK102"
     assert dna["recipe_id"] == sample_recipe.recipe_id
 
 
@@ -96,7 +96,7 @@ def test_dna_json_records_buffer_integrity(sample_barcode, sample_recipe,
     ],
 )
 def test_encode_rejects_invalid_segment(segment, why) -> None:
-    bad = Barcode(segment, "V1T1", "DGZ", "R2", "C1H0", "SLK102")
+    bad = Barcode(segment, "V1T1", "J01", "DGZ", "R2", "C1H0", "SLK102")
     with pytest.raises(DnaTraceError, match=why):
         encode_barcode(bad)
 
@@ -106,10 +106,11 @@ def test_decode_rejects_non_string() -> None:
         decode_barcode(12345)  # type: ignore[arg-type]
 
 
-def test_decode_rejects_dotted_six_segment_key() -> None:
-    # Six segments but a dot inside one — the dot check, not the count check.
+def test_decode_rejects_dotted_seven_segment_key() -> None:
+    # Seven segments (post Decision Lock CEO 2026-05-23, B3) but a dot inside
+    # one — the dot check, not the count check.
     with pytest.raises(DnaTraceError, match="reserved"):
-        decode_barcode("a.x-b-c-d-e-f")
+        decode_barcode("a.x-b-c-d-e-f-g")
 
 
 def test_dna_json_records_full_lineage(sample_barcode, sample_recipe,

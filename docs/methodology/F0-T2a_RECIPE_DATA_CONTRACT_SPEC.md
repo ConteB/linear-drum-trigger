@@ -253,12 +253,14 @@ verità del Gold.
 ## 4. DNA-Trace — formato (DOSSIER §3.5)
 
 ### 4.1 Barcode (parte `key`, privo di punti)
-Schema: `{MIDISRC}-{MIDIALT}-{ENGINE}-{REVERB}-{AUDIOALT}-{SABOTEUR}`
+Schema: `{MIDISRC}-{MIDIALT}-{JITTERVAR}-{ENGINE}-{REVERB}-{AUDIOALT}-{SABOTEUR}` *(7
+segment — emendamento Decision Lock CEO 2026-05-23, bivio B3 di [`F0-T15-pre §5`](F0-T15-pre_MIDI_AUGMENTATION_SPEC.md))*.
 
 | Segmento | Esempio | Significato |
 | :-- | :-- | :-- |
 | `MIDISRC` | `GMD042` | dataset + indice file MIDI |
-| `MIDIALT` | `V1T1` | `V`=codice velocity-jitter, `T`=codice time-jitter |
+| `MIDIALT` | `V1T1` | flag binari: `V`=velocity-jitter ON/OFF, `T`=time-jitter ON/OFF |
+| `JITTERVAR` | `J01` | **jitter-variant idx** — `J00` = baseline (no jitter), `J01..Jkk` = `k` varianti sintetizzate; ortogonale a MIDIALT (distingue varianti con stesso set di flag ma seed diverso, [`DOSSIER §3.1`](DOSSIER_TECNICO.md#aug-prerender)) |
 | `ENGINE` | `DGZ` | `DGZ`=DrumGizmo, `SFZ`=Sfizz |
 | `REVERB` | `R2` | indice Impulse Response · `R0` = dry |
 | `AUDIOALT` | `C1H0` | codice mutilation (clipping/phase/comp…) |
@@ -270,15 +272,15 @@ JSON che permette il reverse-engineering totale del campione:
 ```json
 {
   "dna_version": "1.0",
-  "barcode": "GMD042-V1T1-DGZ-R2-C1H0-SLK102",
-  "key": "GMD042-V1T1-DGZ-R2-C1H0-SLK102",
+  "barcode": "GMD042-V1T1-J01-DGZ-R2-C1H0-SLK102",
+  "key": "GMD042-V1T1-J01-DGZ-R2-C1H0-SLK102",
   "recipe_id": "R-GMD042-DGZ-001",
   "recipe_sha256": "<hash della recipe YAML>",
   "split": "train",
   "generated_at": "2026-05-20T00:00:00Z",
   "lineage": {
     "midi_source": { "dataset": "GMD", "file": "bronze/gmd/.../42_rock_120.mid" },
-    "midi_jitter": { "time_shifts_ms": [...], "flams_added": 3,
+    "midi_jitter": { "variant_idx": 1, "time_shifts_ms": [...], "flams_added": 3,
                      "velocity_jitter": "both", "components_dropped": ["tom_hi_mid"],
                      "seed": 4242 },
     "render": { "engine": "drumgizmo", "kit": "DRSKit",

@@ -2,17 +2,25 @@
 id: LIN-DT-AUGAUDIT-001
 title: Augmentation — Audit Backlog (gap analysis post/pre-render)
 type: registro
-status: DRAFT
+status: DRAFT — partially superseded
 phase: F0
 domain: Data Engineering
-version: 0.4.0
+version: 0.5.0
 updated: 2026-05-23
 tags: [augmentation, audit, backlog, dataset, input-agnostic, F0-T15]
-related: [LIN-DT-DOSSIER-001, LIN-DT-SPEC-F0T2a, LIN-DT-SPEC-F0T4a]
+related: [LIN-DT-DOSSIER-001, LIN-DT-SPEC-F0T2a, LIN-DT-SPEC-F0T4a, LIN-DT-SPEC-F0T15PRE]
 supersedes: []
 ---
 
 # 🧪 AUGMENTATION — AUDIT BACKLOG
+
+> **⚠️ Asse MIDI superseded** dal Decision Lock CEO 2026-05-23 — vedi
+> [`F0-T15-pre — MIDI Augmentation Spec`](F0-T15-pre_MIDI_AUGMENTATION_SPEC.md) (LOCKED).
+> Le voci di questo backlog relative al **MIDI Jittering pre-render** sono ratificate
+> e parametrizzate: §1–§5 restano come **archivio** del ragionamento, non come
+> backlog attivo. L'**asse audio post-render** (§2–§4, codec/noise/IR/Studio
+> Mutilation/Saboteurs/agnosticità d'ingresso) resta materiale d'ingresso del task
+> [`F0-T15-post`](../../04_INTELLIGENCE/MASTER_SCHEDULING.md#tasks).
 
 > **Documento di lavoro — NON un Decision Lock.** Raccoglie i candidati di
 > augmentation emersi dalla revisione informale del 2026-05-22 (osservazione del

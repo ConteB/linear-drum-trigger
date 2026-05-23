@@ -58,11 +58,14 @@ def test_mic_config_channel_counts_match_spec() -> None:
         assert all(isinstance(name, str) and name for name in labels)
 
 
-def test_barcode_has_six_ordered_segments() -> None:
-    # F0-T2a §4.1 — the barcode dataclass mirrors the segment order exactly.
-    assert len(dna_trace.BARCODE_SEGMENTS) == 6
+def test_barcode_has_seven_ordered_segments() -> None:
+    # F0-T2a §4.1 — 7-segment after Decision Lock CEO 2026-05-23 (B3 of
+    # F0-T15-pre). The barcode dataclass mirrors the segment order exactly.
+    assert len(dna_trace.BARCODE_SEGMENTS) == 7
     fields = tuple(f.name for f in dataclasses.fields(dna_trace.Barcode))
     assert fields == dna_trace.BARCODE_SEGMENTS
+    # ``jittervar`` sits between ``midialt`` and ``engine``.
+    assert dna_trace.BARCODE_SEGMENTS.index("jittervar") == 2
 
 
 def test_no_skeleton_stubs_remain(make_audio) -> None:

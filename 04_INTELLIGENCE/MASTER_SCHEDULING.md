@@ -57,7 +57,7 @@ stato di ignoranza normativa; i link sono verificati in continuo dal gate `lyche
 | **F0** Fondazione Locale (€0) | 05-20 → ~06-02 | **L2** entro ~05-28 · **L3** entro ~06-02 | sotto pressione del muro |
 | **F1** Provisioning Azure | ~05-29 → ~06-01 | infra pronta | parte appena L2 è passato |
 | **F2** Burn Compute | ~06-01 → 06-19 | **L4** | il muro duro |
-| **F3** Consolidamento | post 06-19 | Gold su HDD | nessuna fretta |
+| **F3** Consolidamento | post 06-19 | Asset core su SSD 1 TB CEO | nessuna fretta · €0 storage |
 | **F4** Sviluppo Plugin C++/JUCE | ~06-20 → ~10-10 | plugin completo | coarse, raffinato post-L4 |
 | **F5** Release v1.0 EA | ~10-10 → ~10-20 | build $99 pubblicata | coarse |
 
@@ -101,7 +101,7 @@ architettura, gated solo da L2); il **training** è spesa a rischio (gated da L3
 - 🔴 **RED** — L3 non raggiunto entro CP-3: il credito si consuma **interamente** sul
   render (asset permanente sicuro) + augmentation + Tier 3 lato-render. Il training si
   rimanda a un piano post-credito. **Il credito non si perde mai** — si converte in
-  dataset, che resta su HDD.
+  dataset, che resta su Azure Blob fino al teardown F2 (poi: asset-only sull'SSD CEO).
 
 ## 5. Allocazione Budget Indicativa ($200)
 
@@ -114,7 +114,7 @@ architettura, gated solo da L2); il **training** è spesa a rischio (gated da L3
 | Buffer / egress | ~$10 | |
 
 Soglie di monitoraggio (il CEO controlla il saldo): **$100** → valutazione · **$40** →
-stop compute + push HDD · **$10** → chiudi tutto.
+stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chiudi tutto.
 
 <a id="tasks"></a>
 ## 6. Task Detate — Esecuzione Precisa
@@ -790,8 +790,23 @@ stop compute + push HDD · **$10** → chiudi tutto.
 
 ### Fasi F3–F5 — Coarse (da raffinare)
 
-- **F3 · Consolidamento:** acquisto HDD fisico 2 TB (€120 — unico impegno irreversibile);
-  push Gold tensor + recipes su HDD; teardown risorse Azure.
+- **F3 · Consolidamento:** **SSD 1 TB del CEO** (€0 — già in casa, Decision Lock CEO
+  2026-05-23 sessione T1-prep-D) come archive permanente. *Risparmio €120 vs piano
+  originale (HDD 2 TB).* Strategia "asset-only, Gold riproducibile" — il volume reale
+  da preservare è ~30 GB di **asset core** (recipe matrix · MIDI Bronze · kit vendor ·
+  modelli trained · evaluation report · repo), non i 4.5 TB di Gold raw (derivata
+  bit-deterministica della pipeline F2-T1, ricostruibile in ~14h su Azure per ~$11).
+  L'SSD ha quindi:
+  - **Asset core (~30 GB)** — il vero valore commerciale; sta su una chiavetta USB.
+  - **Subset Gold opzionale (~200 GB)** — 1-2 shard per kit (10 GB minimo, 200 GB
+    abbondante) per esperimenti locali rapidi su Mac M5 senza re-render Azure.
+  - **Checkpoint di training successivi (~50-100 GB)** — sweep iperparametri post-L4.
+  - **Margine libero ~700 GB+** — sicurezza.
+
+  *Workflow operativo:* (1) durante F2-T1 il Gold è scritto su Azure Blob; (2) post-L4
+  `dvc fetch` selettivo degli asset sull'SSD; (3) opzionalmente `dvc fetch` di N shard
+  per backup locale; (4) teardown Azure (`az group delete`); (5) l'SSD ora contiene
+  tutto il necessario per ricostruire il sistema o ri-trainare via Azure spot.
 - **F4 · Sviluppo Plugin C++/JUCE:** core DSP + integrazione RTNeural; Chronos Engine
   (MIDI delay-line); UI JUCE (componenti custom, render V26); licensing Soft-DRM
   (`juce::RSAKey`, Poisoned DSP); PDC. Implementazione del **Model Artifact** (spec
@@ -839,7 +854,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F2-T2 | Audio augmentation + Demucs — *scale-only* | F2 | ⊘ | F2-T1, F0-T16-post | — |
 | F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1 *(F0-T4b ☑)* | **L4** |
 | F2-T4 | Credit-soak | F2 | ⊘ | CP-3 | — |
-| F3 | Consolidamento HDD | F3 | ⏸ | F2 | — |
+| F3 | Consolidamento SSD 1 TB CEO (€0) | F3 | ⏸ | F2 | — |
 | F4 | Sviluppo Plugin | F4 | ⏸ | L4 | — |
 | F5 | Release v1.0 EA | F5 | ⏸ | F4 | — |
 
@@ -912,6 +927,14 @@ gated solo da F2-T1.**
     (v1.2.0); sotto-task `T1-prep-B` (implementazione). Trim/pad post-render
     cross-engine. Supersedes la coda 5 s hardcoded di F0-T2e.
   Insieme chiudono il canale di shortcut alla radice.
+· **Decision Lock CEO 2026-05-23 — F3 SSD-only, Gold riproducibile** (sessione
+T1-prep-D, post-domanda del CEO «come trovo 15 TB di HDD»). Reframe: l'asset
+preservabile non è il Gold raw (4.5 TB) ma il quartetto **modello trained + recipe
+matrix + kit vendor + MIDI Bronze** (~30 GB). Il Gold è derivata bit-deterministica
+(verificato dalla pipeline midi_augment + orchestrate.py), ricostruibile in ~14h su
+Azure per ~$11. F3 usa l'**SSD 1 TB del CEO** (€0, già in casa) al posto del piano
+HDD €120: risparmio **€120 sul budget €500** → utilizzabile per ri-render Azure
+futuri o riserva imprevisti.
 · **Decision Lock CEO 2026-05-23 — split MIDI augmentation pre-render vs audio
 augmentation post-render** (osservazione CEO sessione T1-prep-D — il MIDI Jittering
 del DOSSIER §3.1 moltiplica la recipe matrix di F2-T1, non quella di F2-T2).

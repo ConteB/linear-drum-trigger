@@ -236,9 +236,28 @@ class GoldDataset(Dataset[dict[str, torch.Tensor]]):
         }
 
 
+#: Fixed padded length for the per-sample ``key`` tensor — keeps the default
+#: PyTorch collate happy when the batch mixes different key lengths (e.g.
+#: the joint dataset has plain keys and ``-AUG``-suffixed keys side by side).
+_KEY_TENSOR_LEN: int = 64
+
+
 def _str_to_uint8_tensor(s: str) -> torch.Tensor:
-    """Encode a short string as a uint8 tensor (for default-collate compatibility)."""
-    return torch.tensor(list(s.encode("utf-8")), dtype=torch.uint8)
+    """Encode a short string as a fixed-length uint8 tensor.
+
+    The string is UTF-8 encoded and right-padded with ``\\0`` to
+    :data:`_KEY_TENSOR_LEN` bytes; raises if the encoded form is longer.
+    A fixed length lets ``torch.utils.data.default_collate`` stack
+    heterogeneously-named samples in the same batch.
+    """
+    raw = s.encode("utf-8")
+    if len(raw) > _KEY_TENSOR_LEN:
+        raise ValueError(
+            f"key {s!r} encodes to {len(raw)} bytes > _KEY_TENSOR_LEN "
+            f"({_KEY_TENSOR_LEN}) — bump the constant or shorten the key"
+        )
+    padded = raw + b"\x00" * (_KEY_TENSOR_LEN - len(raw))
+    return torch.tensor(list(padded), dtype=torch.uint8)
 
 
 def load_pool(

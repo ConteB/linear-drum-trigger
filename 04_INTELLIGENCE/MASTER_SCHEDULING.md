@@ -366,17 +366,26 @@ stop compute + push HDD · **$10** → chiudi tutto.
   baseline `C=32`, training ~50 s su Mac M5 / MPS. **Sblocca F2-T3** (gated
   ora solo da F2-T1).
 
-**F0-T5 · DVC + struttura Medallion · `[F]` `P2`**
-- *📚 Letture:* [`DOSSIER §9.2 — Medallion`](../docs/methodology/DOSSIER_TECNICO.md#medallion) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract).
+**F0-T5 · DVC + struttura Medallion + sharding WebDataset · `[F]` `P2`**
+- *📚 Letture:* [`DOSSIER §9.2 — Medallion`](../docs/methodology/DOSSIER_TECNICO.md#medallion) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`F0-T2a §3.8 — tail std`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#tail-standardization).
 - *Azioni:* `dvc init` nel repo; definire la struttura **Medallion** Bronze/Silver/Gold
   ([`DOSSIER_TECNICO` §9.2](../docs/methodology/DOSSIER_TECNICO.md#medallion)) e la strategia di **sharding WebDataset** del layer Gold
   (shard ~1 GB tracciati da DVC, non micro-file); senza remote.
 - *DoD:* `dvc status` pulito, struttura committata.
-- ◐ **PARZIALMENTE FATTO (2026-05-23):** `dvc init` eseguito in concomitanza con
-  F1-T2 (era prerequisito tecnico per `dvc remote add`); scaffold `.dvc/` tracked
-  in repo. Rimane da definire la **strategia di sharding WebDataset** del layer
-  Gold (~1 GB per shard, tracciati da DVC non come micro-file). Non critico ora —
-  si finalizza prima di F2-T1 (render), quando si sa il numero di scenari.
+- ☑ **FATTO (2026-05-23):** chiuso in due passi. (1) `dvc init` ☑ in concomitanza con
+  F1-T2 (era prerequisito tecnico per `dvc remote add`); scaffold `.dvc/` tracked in
+  repo. (2) **Strategia di sharding** chiusa con Decision Lock CEO — spec in
+  `docs/methodology/F0-T5_GOLD_SHARDING_SPEC.md`. Sintesi: pack-on-fill con pre-shuffle
+  della recipe matrix, shard target **1 GB esatto** (`gold-{split}-{index:06d}.tar`),
+  tar non compressi, DVC per directory (`data/gold/{train,val}`), `manifest.json` per
+  split con `sha256`/seed/total bytes, atomicità via `.tmp` + rename, branch
+  `*-augmented` parallelo per F2-T2. Calibrazione su mini-batch L2 reale:
+  ~250 campioni/shard, ~1500 shard totali a 1.5 TB. Modulo `shard_writer.py` da
+  implementare come **sotto-task di F2-T1 prep** (mai sul clock Azure). **Decision
+  Lock parallelo** (osservazione CEO 2026-05-23 su rischio engine-shortcut via
+  durata/tail): (A) **pairing forzato MIDI×Engine** in recipe matrix F2-T1 +
+  (C) **tail standardization** `tail_s = 0.5 s` uniforme — amendment a F0-T2a §3.8
+  (v1.2.0). Chiude il canale di shortcut durata↔engine alla radice.
 
 **F0-T6 · `audit_dsp_rigor.py` (predisposizione) · `[C]` `P2`**
 - *📚 Letture:* [`MASTER_CHECKLIST §3 — DSP`](../MASTER_CHECKLIST.md#dsp) · [`ENGINEERING_STANDARDS §3 — codifica`](ENGINEERING_STANDARDS.md#coding-standards) · [`TESTING_DOCTRINE §5 — test DSP`](TESTING_DOCTRINE.md#dsp-tests).
@@ -576,11 +585,28 @@ stop compute + push HDD · **$10** → chiudi tutto.
 ### Fase F2 — Burn Compute · gate d'ingresso: F1 completa
 
 **F2-T1 · Render Gold 1.5 TB · `[G]` `P1` — spend BASSO RISCHIO (gate L2)**
-- *📚 Letture:* [`F0-T2a §2 — render engine`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#render-engine) · [`ENGINEERING_STANDARDS §6 — robustezza`](ENGINEERING_STANDARDS.md#execution-robustness) · [`§4 — Scala del credito`](#credit-scale).
+- *📚 Letture:* [`F0-T2a §2 — render engine`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#render-engine) · [`F0-T2a §3.8 — tail std`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#tail-standardization) · [`F0-T5 — sharding`](../docs/methodology/F0-T5_GOLD_SHARDING_SPEC.md) · [`ENGINEERING_STANDARDS §6 — robustezza`](ENGINEERING_STANDARDS.md#execution-robustness) · [`§4 — Scala del credito`](#credit-scale).
 - *Azioni:* render del dataset Gold su Azure (Sfizz/DrumGizmo, multi-mic, multi-scenario);
   upload Blob; tracciamento DVC.
-- *DoD:* 1.5 TB renderizzati e versionati; log di completamento.
-- ⛔ F1-T1.
+- *Sotto-task di prep (locali, pre-clock-Azure):*
+  - **T1-prep-A · Recipe matrix con pairing forzato MIDI×Engine** (Decision Lock CEO
+    2026-05-23 — anti shortcut durata↔engine). Ogni MIDI sorgente della GMD è
+    renderizzato con tutti gli engine attivi del roster (Sfizz multi-kit + DrumGizmo
+    multi-kit, F0-T1b). Pre-shuffle deterministico con seed registrato in
+    `manifest.json` (F0-T5 §5.5).
+  - **T1-prep-B · Tail standardization** in `orchestrate.py` — implementare
+    `tail_s = 0.5 s` uniforme (F0-T2a §3.8), `last_onset_s` dal target builder,
+    trim/pad post-render. Supersedes la coda `_DRUMGIZMO_TAIL_S = 5.0 s` hardcoded.
+    Oracoli L1: pack del tail uniforme cross-engine su mini-batch L2.
+  - **T1-prep-C · `ShardWriter` modulo** — implementazione di
+    `src/data_engineering/gold/shard_writer.py` per F0-T5 §7 (pack-on-fill atomico
+    1 GB, manifest, resume). Test-first.
+  - **T1-prep-D · Provisioning compute Azure** — VM `Standard_D8s_v3` (~$0.38/h),
+    image con `sfizz_render` + `drumgizmo`, mount/upload Blob via SDK,
+    `dvc remote = azure` già pronto (F1-T2 ☑).
+- *DoD:* 1.5 TB renderizzati e versionati; log di completamento; manifest verde su
+  entrambi gli split.
+- ⛔ F1-T1. **Sbloccato da F0-T5 ☑ (sharding spec) e F0-T3 ☑ (gate L2).**
 
 **F2-T2 · Augmentation + Demucs — *scale-only* su Azure · `[G]` `P1`**
 - *📚 Letture:* `F0-T16` (la pipeline d'augmentation è già scritta e validata in locale,
@@ -639,7 +665,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T3 | Validazione Gate L2 | F0 | ☑ | — | **L2** *(superato 2026-05-23)* |
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☑ | F0-T3, F0-T4a | **L3** *(superato 2026-05-23 — opzione A, Decision Lock CEO)* |
-| F0-T5 | DVC + struttura Medallion | F0 | ◐ | — *(dvc init ☑ · sharding spec da finalizzare pre-F2-T1)* | — |
+| F0-T5 | DVC + struttura Medallion + sharding | F0 | ☑ | — *(spec sharding LOCKED 2026-05-23 — F0-T5_GOLD_SHARDING_SPEC.md)* | — |
 | F0-T6 | audit_dsp_rigor.py (predisp.) | F0 | ☐ | — | — |
 | F0-T7 | Classi JUCE (opz.) | F0 | ☐ | — | — |
 | F0-T8 | Model Artifact — spec export | F0 | ☐ | — | — |
@@ -702,6 +728,20 @@ F0-T4a §8 open item risolto. Barra metrica F≥0.80 spostata al Gate L4 (su 10
 grooves del mini-batch sarebbe stata statisticamente irrilevante anche se
 superata). Pacchetto APPROVED in `docs/gates/L3_OCULAR_PROOF/`. **F2-T3 ora
 gated solo da F2-T1.**
+· ☑ **F0-T5 chiuso (2026-05-23) — sharding WebDataset LOCKED.** Spec in
+`docs/methodology/F0-T5_GOLD_SHARDING_SPEC.md`: pack-on-fill con pre-shuffle, shard
+1 GB esatto, DVC per directory, manifest sha256, atomicità `.tmp`+rename, branch
+`*-augmented` per F2-T2. Calibrazione su mini-batch L2: ~250 campioni/shard,
+~1500 shard a 1.5 TB.
+· **Decision Lock CEO 2026-05-23 — anti shortcut engine-specific durata/tail**
+(osservazione CEO sul rischio di leak strutturale durata↔engine):
+  - **(A) Pairing forzato MIDI×Engine** nella recipe matrix di F2-T1 — sotto-task
+    `T1-prep-A`. Ogni MIDI renderizzato con tutti gli engine del roster → durata
+    smette di essere proxy dell'engine.
+  - **(C) Tail standardization** `tail_s = 0.5 s` uniforme — amendment F0-T2a §3.8
+    (v1.2.0); sotto-task `T1-prep-B` (implementazione). Trim/pad post-render
+    cross-engine. Supersedes la coda 5 s hardcoded di F0-T2e.
+  Insieme chiudono il canale di shortcut alla radice.
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---

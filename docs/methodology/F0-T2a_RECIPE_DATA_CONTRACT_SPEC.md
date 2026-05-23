@@ -5,8 +5,8 @@ type: spec
 status: LOCKED
 phase: F0
 domain: Data Engineering
-version: 1.1.0
-updated: 2026-05-22
+version: 1.2.0
+updated: 2026-05-23
 tags: [recipe, data-contract, webdataset, F0-T2a]
 related: [LIN-DT-SPEC-F0T4a, LIN-DT-DOSSIER-001, LIN-DT-CHKLST-001]
 supersedes: []
@@ -193,6 +193,60 @@ Il writer Gold calcola e registra in `dna.json`: `sha256` dei buffer `audio` e `
 `dtype`, `shape`, conteggio di `NaN/Inf` (deve essere 0). Il validatore L2 ricomputa gli
 hash e verifica `0 NaN/Inf` — Ocular Proof.
 
+<a id="tail-standardization"></a>
+### 3.8 Tail standardization — anti-shortcut engine-specific (Decision Lock 2026-05-23)
+
+**Problema (osservazione CEO 2026-05-23).** I render engine producono code post-ultimo
+onset di natura strutturalmente diversa: DrumGizmo registra microfoni reali in stanza →
+ring-out + bleed naturale 2–5 s; Sfizz suona stem puliti SFZ → release loop 0.5–1.5 s. Senza
+una policy di trim, *la durata e la firma del tail diventano un proxy dell'engine* — la
+rete TCN, anche causale, può apprendere "tail lungo nei canali OH → DrumGizmo" come
+shortcut. Aggravante: il **bleed** è già un signal engine-correlato (voluto come moat),
+quindi ogni segnale aggiuntivo engine-correlato amplifica il bias.
+
+**Policy (vincolante per tutti gli scrittori Gold — Sfizz, DrumGizmo, qualunque engine
+futuro).**
+
+1. **`tail_s` uniforme.** Ogni campione Gold è troncato/paddato a una coda fissa
+   `tail_s = 0.500 s` dopo l'ultimo onset MIDI della sorgente (`last_onset_s`). La durata
+   totale dell'`audio` buffer è esattamente `n_sample_target = round((last_onset_s +
+   tail_s) × 44100)` campioni — stessa formula per ogni engine, mai engine-dipendente.
+2. **Trim, mai estensione del render.** Se l'audio renderizzato è più lungo del target →
+   tronca a `n_sample_target`. Se è più corto → pad-zero in coda. Il render engine
+   continua a produrre la propria coda naturale (è il segnale che si vuole *escludere*);
+   è il writer che la rimuove.
+3. **`last_onset_s` viene dal MIDI sorgente** (post jitter, pre-render): `last_onset_s =
+   max(note.time + note.duration)` su tutte le note dopo `midi_jitter`. Il valore va
+   registrato in `dna.json` come `audio.last_onset_s` accanto a `shape` (vedi §4.2,
+   esempio aggiornato).
+4. **Il `target` matrix non viene troncato** — `n_frame = ceil(duration_s × R_target)` con
+   `duration_s = last_onset_s + tail_s`. Le righe oltre `last_onset_s` sono righe nulle
+   (zero onset, zero velocity, zero microtiming) per costruzione: rappresentano la coda di
+   silenzio post-trim. Il modello vede onset reali fino a `last_onset_s`, poi silenzio
+   uniforme per ogni engine.
+
+**Conseguenze per la recipe matrix (F2-T1).** La policy di **pairing forzato MIDI×Engine**
+(Decision Lock 2026-05-23, registrato in `MASTER_SCHEDULING` §6 — sotto-task di F2-T1)
+è la mitigazione complementare: ogni MIDI sorgente viene renderizzato con tutti gli engine
+attivi del roster (Sfizz multi-kit, DrumGizmo multi-kit) così la **durata totale del
+campione** (`last_onset_s + 0.5`) diventa per costruzione **indipendente dall'engine** —
+identica a parità di MIDI. Insieme, (i) tail uniforme e (ii) pairing forzato chiudono il
+canale di shortcut sia sul tail-signature sia sulla durata.
+
+**Trade-off accettato.** Si rinuncia a far apprendere al modello il ring-out naturale del
+kit come parte della "scena acustica". La scena acustica realistica è ricostruita lato
+augmentation: convoluzione IR + room sim ([`DOSSIER` §3.4](DOSSIER_TECNICO.md#aug-l3),
+F0-T15/F0-T16). Il Validation Protocol L4 ([`DOSSIER` §10.3](DOSSIER_TECNICO.md#holdout))
+falsifica/conferma la scelta sull'Holdout reale E-GMD.
+
+**Implementazione.** Costanti `TAIL_S = 0.5`, `last_onset_s` computato dal target builder
+(che già processa il MIDI), trim applicato in `orchestrate.py` prima di
+`write_gold_sample`. La hardcoded `_DRUMGIZMO_TAIL_S = 5.0` dell'orchestratore F0-T2e è
+**superata** da questa policy — resta nel render engine come durata d'uscita richiesta a
+DrumGizmo (il CLI vuole `--endpos` up-front, e va sovrastimato per catturare la coda
+naturale prima di troncarla), ma il trim al `n_sample_target` standardizzato è la
+verità del Gold.
+
 ---
 
 <a id="dna-trace-format"></a>
@@ -237,6 +291,7 @@ JSON che permette il reverse-engineering totale del campione:
   "audio":  { "shape": [4, 1323000], "dtype": "float16", "sample_rate": 44100,
               "mic_config": "glyn_johns",
               "channel_labels": ["kick","snare","oh_L","oh_R"],
+              "last_onset_s": 29.5, "tail_s": 0.5,
               "sha256": "<hash>", "n_nonfinite": 0 },
   "target": { "shape": [10334, 25], "dtype": "float16", "layout": "flat-25",
               "frame_rate_hz": 344.53125, "smear_ms": 3.0,
@@ -270,4 +325,22 @@ Le 5 risoluzioni della Tech Matrix sono state **approvate dal CEO** (Executive B
 5. ✅ Articolazioni intra-bus **collassate in v1.0**; classificazione per-articolazione rinviata a v2.0 (Dual-Path Network, [DOSSIER §6.3](DOSSIER_TECNICO.md#dual-path)).
 
 ---
-*Spec F0-T2a — STRP-001 (snello). **LOCKED 2026-05-20.** Vincolante per F0-T2b/c/d.*
+
+## 7. Cronologia delle ratifiche
+
+- **v1.0 — 2026-05-20** · Decision Lock STRP-001 originale (D1/D2/D2-bis): YAML recipe,
+  `flat-25` target, `R_target` parametrico, velocity normalizzata, articolazioni intra-bus
+  collassate v1.0. Vincolante per F0-T2b/c/d.
+- **v1.1 — 2026-05-22** · Amendment Decision Lock CEO: `multitrack_full` riallineato allo
+  standard di settore (8 canali — scambio `snare_bot` → `hihat`). Selezione 13→8 sui kit
+  DrumGizmo via `DRSKIT_MULTITRACK8` nell'adapter. Vedi §2.3.
+- **v1.2 — 2026-05-23** · Amendment Decision Lock CEO (osservazione CEO sul rischio di
+  *engine-shortcut* via durata/tail): **§3.8 Tail standardization** — `tail_s = 0.500 s`
+  uniforme per ogni engine; `last_onset_s` registrato in `dna.json`. Complementare al
+  **pairing forzato MIDI×Engine** della recipe matrix di F2-T1 (Decision Lock parallelo,
+  registrato in `MASTER_SCHEDULING`). Insieme chiudono il canale di shortcut
+  durata↔engine alla radice.
+
+---
+*Spec F0-T2a — STRP-001 (snello). **LOCKED 2026-05-20**, amended 2026-05-22 e 2026-05-23.
+Vincolante per F0-T2b/c/d/e e per F2-T1.*

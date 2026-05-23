@@ -723,9 +723,33 @@ stop compute + push HDD · **$10** → chiudi tutto.
     (Hypothesis: determinismo cross-run su input shuffled, ogni sample appare
     esattamente in 1 shard, pack-on-fill no-drop no-duplicate). **Suite F0:
     257 passed, 0 failed.** `ruff` + `mypy --strict` puliti.
-  - **T1-prep-D · Provisioning compute Azure** — VM `Standard_D8s_v3` (~$0.38/h),
-    image con `sfizz_render` + `drumgizmo`, mount/upload Blob via SDK,
-    `dvc remote = azure` già pronto (F1-T2 ☑).
+  - **T1-prep-D · Provisioning compute Azure** — VM **`Standard_D16s_v3`**
+    (~$0.77/h, 16 vCPU — Decision Lock CEO 2026-05-23 sessione T1-prep-D,
+    semplifica vs 2× D8s_v3 a costo equivalente), image Ubuntu 22.04 LTS
+    con cloud-init che provisiona DrumGizmo (apt 0.9.20-3build3) + Sfizz
+    1.2.3 (apt o source-build fallback) + 10 kit del roster F0-T1b
+    (sha256-verified streams) + venv Python + DVC remote SAS + smoke
+    render integrato. `dvc remote = azure` già pronto (F1-T2 ☑).
+    ☑ **FATTO (2026-05-23):** pacchetto pronto per consegna CEO offline
+    (stesso pattern di F1-T1):
+    - `tools/build_recipe_matrix.py` — genera la recipe matrix
+      `MIDI × jitter-variant × engine_kit` (kit-wise train/val split per
+      DOSSIER §10.2 Opzione B); smoke test sul mini-batch verde
+      (4 recipe parsabili, barcode 7-segment `J00`/`J01` distinto,
+      jitter_seed sha256-derivato auditabile).
+    - `tools/provision_render_vm.sh` — cloud-init script bash idempotente
+      (set -euo pipefail, sha256 verification streamed, smoke render
+      integrato; profilo `smoke`/`full` per validare la VM prima del
+      bulk).
+    - `tools/azure_kill.sh` — kill switch a 4 modalità (balance,
+      deallocate, teardown, nuclear) con magic-word confirmation;
+      idempotente, fail-soft, logged in `~/.neurotrigger/azure_kill.log`.
+    - `docs/runbooks/F2-T1_RENDER_BURN.md` — runbook completo per il CEO
+      (variabili env, comandi `az` step-by-step, smoke VM 15 min /
+      $0.03 prima del burn, soglie monitoring spesa, kill switch).
+    `ruff` pulito sul nuovo modulo; `mypy --strict` clean su `src/`
+    (i `tools/` seguono il pattern del repo — non gated). Suite F0:
+    **332 passed, 7 skipped, 0 failed** (invariato).
 - *DoD:* 1.5 TB renderizzati e versionati; log di completamento; manifest verde su
   entrambi gli split.
 - ⛔ F1-T1, **F0-T15-pre** *(spec MIDI augmentation)*, **F0-T16-pre** *(pipeline MIDI
@@ -811,7 +835,7 @@ stop compute + push HDD · **$10** → chiudi tutto.
 | F0-T17 | Statistical Test Plan (STRP-001) | F0 | ◐ | — *(spec LOCKED 2026-05-23 — implementazione `src/evaluation/` in 2-3 sessioni; gate pre-F2-T3)* | — |
 | F1-T1 | Setup Azure | F1 | ☑ | — *(2026-05-23 — CEO offline runbook)* | — |
 | F1-T2 | dvc remote Azure | F1 | ☑ | — *(2026-05-23 — `dvc push` smoke verde)* | — |
-| F2-T1 | Render Gold 1.5 TB | F2 | ☐ | — *(2026-05-23 — gate MIDI augmentation chiuso, F0-T15-pre ☑ + F0-T16-pre ☑; ora gated solo dal provisioning operativo T1-prep-D)* | — |
+| F2-T1 | Render Gold 1.5 TB ×3 (≈4.5 TB) | F2 | ☐ | — *(2026-05-23 — tutti i gate prep chiusi: T1-prep-A/B/C/D ☑ + F0-T15-pre/T16-pre ☑; F2-T1 ora gated solo dall'esecuzione CEO offline — runbook `docs/runbooks/F2-T1_RENDER_BURN.md`)* | — |
 | F2-T2 | Audio augmentation + Demucs — *scale-only* | F2 | ⊘ | F2-T1, F0-T16-post | — |
 | F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1 *(F0-T4b ☑)* | **L4** |
 | F2-T4 | Credit-soak | F2 | ⊘ | CP-3 | — |

@@ -18,6 +18,7 @@ from data_engineering.audio_augment import (
     apply_gain_perturbation,
     apply_mic_balance_jitter,
     apply_noise_floor,
+    apply_peak_normalize,
     derive_audio_seed,
 )
 
@@ -249,3 +250,84 @@ def test_pipeline_preserves_shape() -> None:
     out = apply_audio_augmentation(audio, sample_key="X", variant_idx=1,
                                      master_seed=42)
     assert out.shape == audio.shape
+
+
+# ----------------------------------------------------------------------------
+# apply_peak_normalize + per-voice toggles
+# ----------------------------------------------------------------------------
+
+
+def test_peak_normalize_scales_to_target() -> None:
+    audio = _make_audio(peak=0.5)
+    out = apply_peak_normalize(audio, target_peak=0.7)
+    peak = float(np.abs(out).max())
+    assert abs(peak - 0.7) < 0.01, f"peak={peak} should be ≈ 0.7"
+
+
+def test_peak_normalize_silent_unchanged() -> None:
+    audio = np.zeros((4, 1024), dtype=np.float32)
+    out = apply_peak_normalize(audio, target_peak=0.7)
+    np.testing.assert_array_equal(out, audio)
+
+
+def test_peak_normalize_rejects_invalid_target() -> None:
+    audio = _make_audio()
+    with pytest.raises(ValueError, match="target_peak must be in"):
+        apply_peak_normalize(audio, target_peak=0.0)
+    with pytest.raises(ValueError, match="target_peak must be in"):
+        apply_peak_normalize(audio, target_peak=1.5)
+
+
+def test_pipeline_pre_normalize_recovers_loud_input() -> None:
+    """An input that would have clipped without pre-normalize (peak 0.9 + 3 dB)
+    now passes because the input is rescaled to 0.5 first."""
+    audio = _make_audio(peak=0.9)
+    # Without pre-normalize → fail R3; with default pre_normalize_peak=0.5 → pass.
+    out = apply_audio_augmentation(
+        audio, sample_key="X", variant_idx=1, master_seed=42,
+        gain_range_db=(3.0, 3.0),  # force +3 dB; pre-normalize 0.5 → peak 0.7
+        mic_balance_range_db=(-2.0, 2.0),
+    )
+    peak = float(np.abs(out).max())
+    assert peak <= 1.0, f"peak {peak} should stay under 1.0"
+
+
+def test_pipeline_pre_normalize_can_be_disabled() -> None:
+    """Setting pre_normalize_peak=None restores the legacy behaviour where
+    loud inputs trip R3."""
+    audio = _make_audio(peak=0.95)
+    with pytest.raises(AudioAugmentError, match="clipped"):
+        apply_audio_augmentation(
+            audio, sample_key="X", variant_idx=1, master_seed=42,
+            gain_range_db=(6.0, 6.0),
+            pre_normalize_peak=None,
+        )
+
+
+def test_pipeline_per_voice_toggles_isolate_voices() -> None:
+    """Disabling all voices → the pipeline is the pre-normalize alone (which
+    is deterministic and produces non-empty output)."""
+    audio = _make_audio(peak=0.4)
+    out = apply_audio_augmentation(
+        audio, sample_key="X", variant_idx=1, master_seed=42,
+        enable_noise=False, enable_gain=False, enable_mic_balance=False,
+    )
+    # With only pre_normalize the output is a deterministic rescale to the
+    # pipeline's default pre_normalize_peak (0.5).
+    expected = apply_peak_normalize(audio, target_peak=0.5)
+    np.testing.assert_array_equal(out, expected)
+
+
+def test_pipeline_only_noise_voice() -> None:
+    audio = _make_audio(peak=0.4)
+    noise_only = apply_audio_augmentation(
+        audio, sample_key="X", variant_idx=1, master_seed=42,
+        enable_noise=True, enable_gain=False, enable_mic_balance=False,
+        pre_normalize_peak=None,
+    )
+    # Differs from input (noise added) but per-channel scale ratio is 1.0
+    # because no gain/mic_balance was applied.
+    assert not np.array_equal(audio, noise_only)
+    # The first channel of (noise_only - audio) should have non-zero values.
+    diff = noise_only - audio
+    assert float(np.abs(diff).max()) > 0

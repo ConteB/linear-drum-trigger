@@ -53,6 +53,43 @@ def _generate_pink_noise(
     return out
 
 
+def apply_peak_normalize(
+    audio: np.ndarray,
+    *,
+    target_peak: float = 0.7,
+) -> np.ndarray:
+    """Rescale ``audio`` so its peak absolute value equals ``target_peak``.
+
+    Pure, deterministic — no RNG. Headroom-preserving step that must run
+    *before* the gain stages of the pipeline. Without it, samples whose
+    native peak is already > 0.5 (e.g. the chaos layer) clip the R3
+    ceiling at +3 dB of gain and the pipeline rejects them. With it,
+    every sample lands at the same peak before the random gains, so the
+    R3 guard is back to being a safety net rather than a dataset filter.
+
+    Args:
+        audio: ``[n_mic, n_sample]`` audio.
+        target_peak: post-normalize peak absolute value in [0, 1].
+            Default 0.7 leaves ~3 dB of headroom for the gain stage.
+
+    Returns:
+        Rescaled audio, same shape & dtype. Silent input (peak ≈ 0) is
+        returned unchanged (no division by zero).
+    """
+    _check_audio(audio, "apply_peak_normalize")
+    if not 0.0 < target_peak <= 1.0:
+        raise ValueError(
+            f"target_peak must be in (0, 1], got {target_peak}"
+        )
+    f32 = audio.astype(np.float32, copy=False)
+    peak = float(np.abs(f32).max())
+    if peak <= 1e-9:
+        return audio  # silent → leave alone, no scale to apply.
+    factor = target_peak / peak
+    out: np.ndarray = (f32 * factor).astype(audio.dtype, copy=False)
+    return out
+
+
 def apply_noise_floor(
     audio: np.ndarray,
     *,

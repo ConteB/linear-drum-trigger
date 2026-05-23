@@ -21,6 +21,7 @@ from .voices import (
     apply_gain_perturbation,
     apply_mic_balance_jitter,
     apply_noise_floor,
+    apply_peak_normalize,
 )
 
 #: R2 floor: a Gold sample must keep peak ≥ 1e-4 after augmentation.
@@ -60,8 +61,12 @@ def apply_audio_augmentation(
     noise_db_fs: float = -50.0,
     gain_range_db: tuple[float, float] = (-6.0, 6.0),
     mic_balance_range_db: tuple[float, float] = (-3.0, 3.0),
+    pre_normalize_peak: float | None = 0.5,
+    enable_noise: bool = True,
+    enable_gain: bool = True,
+    enable_mic_balance: bool = True,
 ) -> np.ndarray:
-    """Run the full ``noise_floor → gain → mic_balance`` pipeline.
+    """Run the full ``[normalize →] noise_floor → gain → mic_balance`` pipeline.
 
     Variant 0 is the *baseline* (identity transform). Variants ≥ 1 apply
     the pipeline with seed ``derive_audio_seed(master_seed, sample_key,
@@ -75,6 +80,13 @@ def apply_audio_augmentation(
         noise_db_fs: dBFS for the noise floor voice.
         gain_range_db: dB bounds for the global gain voice.
         mic_balance_range_db: dB bounds for the per-channel jitter voice.
+        pre_normalize_peak: if not None, the audio is rescaled to this peak
+            *before* the random gain stages — keeps the R3 ceiling a safety
+            net rather than a dataset filter (T1-E follow-up 2026-05-24).
+            Set to None to skip (legacy behaviour).
+        enable_noise, enable_gain, enable_mic_balance: per-voice toggles
+            for the per-voice ablation (T1-E follow-up). All True is the
+            default pipeline.
 
     Returns:
         Augmented audio (or input unchanged for variant 0).
@@ -87,9 +99,14 @@ def apply_audio_augmentation(
     seed = derive_audio_seed(master_seed, sample_key, variant_idx)
     rng = np.random.default_rng(seed)
     out = audio
-    out = apply_noise_floor(out, noise_db_fs=noise_db_fs, rng=rng)
-    out = apply_gain_perturbation(out, range_db=gain_range_db, rng=rng)
-    out = apply_mic_balance_jitter(out, range_db=mic_balance_range_db, rng=rng)
+    if pre_normalize_peak is not None:
+        out = apply_peak_normalize(out, target_peak=pre_normalize_peak)
+    if enable_noise:
+        out = apply_noise_floor(out, noise_db_fs=noise_db_fs, rng=rng)
+    if enable_gain:
+        out = apply_gain_perturbation(out, range_db=gain_range_db, rng=rng)
+    if enable_mic_balance:
+        out = apply_mic_balance_jitter(out, range_db=mic_balance_range_db, rng=rng)
 
     peak = float(np.abs(out.astype(np.float32)).max())
     if peak < _SILENCE_FLOOR:

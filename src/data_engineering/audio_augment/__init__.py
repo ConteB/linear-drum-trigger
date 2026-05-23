@@ -31,6 +31,7 @@ from .voices import (
     apply_gain_perturbation,
     apply_mic_balance_jitter,
     apply_noise_floor,
+    apply_peak_normalize,
 )
 
 __all__ = [
@@ -39,5 +40,6 @@ __all__ = [
     "apply_gain_perturbation",
     "apply_mic_balance_jitter",
     "apply_noise_floor",
+    "apply_peak_normalize",
     "derive_audio_seed",
 ]

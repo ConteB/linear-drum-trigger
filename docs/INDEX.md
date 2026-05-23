@@ -14,7 +14,7 @@ related: [LIN-DT-DOCSTD-001]
 > **File generato** da `tools/gen_docs_index.py` (Doc Standard LIN-DT-DOCSTD-001 §5).
 > Non editare a mano — rigenerare. Rilancia lo script dopo ogni modifica al frontmatter.
 
-Documenti indicizzati: **47** · senza frontmatter: **2**.
+Documenti indicizzati: **47** · senza frontmatter: **3**.
 
 ## Documenti
 
@@ -252,6 +252,7 @@ Documenti indicizzati: **47** · senza frontmatter: **2**.
 
 ## ⚠️ Documenti senza frontmatter (backlog retrofit F0-T10)
 
+- `docs/gates/F0-T17_audit_reports/mix_2026-05-24/AUDIT_REPORT.md`
 - `docs/gates/L2_OCULAR_PROOF/L2_INSPECTION_2026-05-23.md`
 - `docs/gates/L3_OCULAR_PROOF/L3_INSPECTION_2026-05-23.md`
 

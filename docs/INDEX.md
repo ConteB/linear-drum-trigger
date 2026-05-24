@@ -14,7 +14,7 @@ related: [LIN-DT-DOCSTD-001]
 > **File generato** da `tools/gen_docs_index.py` (Doc Standard LIN-DT-DOCSTD-001 §5).
 > Non editare a mano — rigenerare. Rilancia lo script dopo ogni modifica al frontmatter.
 
-Documenti indicizzati: **48** · senza frontmatter: **9**.
+Documenti indicizzati: **48** · senza frontmatter: **10**.
 
 ## Documenti
 
@@ -60,7 +60,7 @@ Documenti indicizzati: **48** · senza frontmatter: **9**.
 | `LIN-DT-SPEC-F0T15PRE` | F0-T15-pre — MIDI Augmentation Spec (Time/Velocity/Component) — STRP-001 | spec | LOCKED | F0 | `docs/methodology/F0-T15-pre_MIDI_AUGMENTATION_SPEC.md` |
 | `LIN-DT-SPEC-F0T17` | F0-T17 — Statistical Test Plan (Data Audit + Evaluation Suite) | spec | LOCKED | F0 | `docs/methodology/F0-T17_STATISTICAL_TEST_PLAN.md` |
 | `LIN-DT-SPEC-F0T2a` | F0-T2a — Spec Recipe + Contratto Dati | spec | LOCKED | F0 | `docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md` |
-| `LIN-DT-SPEC-F0T4C` | F0-T4c — Data Pipeline Fixes (causality + RF + loss imbalance) — STRP-001 | spec | STRP-001-IN-REVIEW | F0 | `docs/methodology/F0-T4c_DATA_PIPELINE_FIXES_SPEC.md` |
+| `LIN-DT-SPEC-F0T4C` | F0-T4c — Data Pipeline Fixes (causality + RF + loss imbalance) — STRP-001 | spec | PARTIAL-LOCK | F0 | `docs/methodology/F0-T4c_DATA_PIPELINE_FIXES_SPEC.md` |
 | `LIN-DT-SPEC-F0T4a` | F0-T4a — Spec Topologia TCN Concreta | spec | LOCKED | F0 | `docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md` |
 | `LIN-DT-SPEC-F0T5` | F0-T5 — Spec Sharding WebDataset + struttura Medallion | spec | LOCKED | F0 | `docs/methodology/F0-T5_GOLD_SHARDING_SPEC.md` |
 | `LIN-DT-SPEC-F0T8` | F0-T8 — Model Artifact (export, packaging & trasporto) | spec | LOCKED | F0 | `docs/methodology/F0-T8_MODEL_ARTIFACT_SPEC.md` |
@@ -260,6 +260,7 @@ Documenti indicizzati: **48** · senza frontmatter: **9**.
 ## ⚠️ Documenti senza frontmatter (backlog retrofit F0-T10)
 
 - `docs/gates/F0-T17_audit_reports/mix_2026-05-24/AUDIT_REPORT.md`
+- `docs/gates/F0-T4c_REGRESSION/f0t4c-regression-2026-05-24/report.md`
 - `docs/gates/L2_OCULAR_PROOF/L2_INSPECTION_2026-05-23.md`
 - `docs/gates/L3_OCULAR_PROOF/L3_INSPECTION_2026-05-23.md`
 - `docs/gates/R&D_Tier1_reports/T1-C/T1C_REPORT.md`

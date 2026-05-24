@@ -997,7 +997,7 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 | F0-T3 | Validazione Gate L2 | F0 | ☑ | — | **L2** *(superato 2026-05-23)* |
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☑ | F0-T3, F0-T4a | **L3** *(superato 2026-05-23 — opzione A, Decision Lock CEO)* |
-| F0-T4c | Data Pipeline Fixes (STRP-001) | F0 | ◐ | — *(2026-05-23, agg. 2026-05-24 — STRP-001 IN REVIEW, spec `F0-T4c_DATA_PIPELINE_FIXES_SPEC.md`; 5 raccomandazioni attive B1/B2/B3/B4/B6 + 1 ritirata B5 pronte per Decision Lock CEO)* | **Gate bloccante per F2-T1 e F2-T3** |
+| F0-T4c | Data Pipeline Fixes (STRP-001) | F0 | ☑(partial) | — *(2026-05-24 — **PARTIAL-LOCK v1.0.0** Decision Lock CEO: B1/B2/B3/B6a/B6b/B6c ratificati; **B4 deferred** (rinviato a post-regression test); B5 ritirata. Spec `F0-T4c_DATA_PIPELINE_FIXES_SPEC.md` §6.1)* | **Gate F2-T3 sbloccato architetturalmente; F2-T1 resta ⊘ in attesa di B4** |
 | F0-T5 | DVC + struttura Medallion + sharding | F0 | ☑ | — *(spec sharding LOCKED 2026-05-23 — F0-T5_GOLD_SHARDING_SPEC.md)* | — |
 | F0-T6 | audit_dsp_rigor.py (predisp.) | F0 | ☑ | — *(2026-05-23 — script + 16 regole YAML LOCKED + fixture good/bad + 22 oracoli, gate operativo in F4)* | — |
 | F0-T7 | Classi JUCE (opz.) | F0 | ☐ | — | — |
@@ -1017,9 +1017,9 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 | F0-T17 | Statistical Test Plan (STRP-001) | F0 | ☑ | — *(2026-05-23 — `src/evaluation/` 4 moduli + orchestratore + thresholds LOCKED, 104 oracoli verdi, suite F0 436 passed, smoke mini-batch verde, gate pronto post-F2-T1)* | — |
 | F1-T1 | Setup Azure | F1 | ☑ | — *(2026-05-23 — CEO offline runbook)* | — |
 | F1-T2 | dvc remote Azure | F1 | ☑ | — *(2026-05-23 — `dvc push` smoke verde)* | — |
-| F2-T1 | Render Gold 1.5 TB ×3 (≈4.5 TB) | F2 | ⊘ | **F0-T4c** *(2026-05-23 — diagnostica T1-DIAG-A ha trovato 3 bug strutturali: senza Decision Lock dei fix B1..B4 il Gold renderizzato sarebbe inutilizzabile dalla rete; B4 vincola la durata MIDI minima a 5 s, B1/B2/B3 ratificano i default architetturali)* | — |
+| F2-T1 | Render Gold 1.5 TB ×3 (≈4.5 TB) | F2 | ⊘ | **F0-T4c B4 deferred** *(2026-05-24 PARTIAL-LOCK CEO: B1/B2/B3 architetturali ratificati, ma B4 = `midi_duration_min_s = 5.0` rinviato a riesame post-regression test. Senza B4, il render produrrebbe Gold con sample < (RF + lookahead) × stride = 201 088 audio samples ≈ 4.56 s — non consumabili dai nuovi default crop)* | — |
 | F2-T2 | Audio augmentation + Demucs — *scale-only* | F2 | ⊘ | F2-T1, F0-T16-post | — |
-| F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1, **F0-T4c** *(F0-T4b ☑; data pipeline fixes ratificanti i default architetturali prima del burn $50-80 di A100)* | **L4** |
+| F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1 *(F0-T4c PARTIAL-LOCK 2026-05-24 — sblocco architetturale acquisito: B1/B2/B3/B6 ratificati. Resta gated solo da F2-T1 e dalla quota A100)* | **L4** |
 | F2-T4 | Credit-soak | F2 | ⊘ | CP-3 | — |
 | F3 | Consolidamento SSD 1 TB CEO (€0) | F3 | ⏸ | F2 | — |
 | F4 | Sviluppo Plugin | F4 | ⏸ | L4 | — |
@@ -1167,6 +1167,27 @@ del DOSSIER §3.1 moltiplica la recipe matrix di F2-T1, non quella di F2-T2).
   renderizzato avrebbe sample troppo brevi (< RF + lookahead) e la rete non
   potrebbe consumarlo. Costo della pausa: ZERO. Costo dell'evitare: ~$60 di
   render + ~$50-80 di training A100 su una rete strutturalmente rotta.
+
+· **2026-05-24 — F0-T4c PARTIAL-LOCK v1.0.0 (Decision Lock CEO) + regression
+  test PASS.** Executive Briefing F0-T4c presentato; CEO ratifica
+  **B1+B2+B3+B6a+B6b+B6c**, defer **B4** (durata MIDI minima 5 s) al post-
+  regression test, ritira **B5**. Implementazione completa in 4 commit
+  (docs + 3 moduli neural + 1 tool nuovo + B6c data layer): spec F0-T4c →
+  `PARTIAL-LOCK v1.0.0`, F0-T4a §3.2/§5.1/§6.1 amendment, `src/neural/data.py`
+  (lookahead_frames=35 + MIN_CROP_SAMPLES=135552 fail-loud),
+  `src/neural/loss.py` (LossConfig defaults + `pos_weight: float | tuple`),
+  `src/neural/train.py` (`WeightedRandomSampler` auto-on quando pos_weight è
+  tuple + propagazione lookahead), `tools/scan_density.py` (nuovo — scan
+  Gold → per-bus pos_weight), `rare_emphasis.py` (30→50) + `mix_dataset.py`
+  (140/50/30 = 220). **Regression test 18 long-context sample (3
+  crash-bearing) su Mac M5/MPS, 600 epoche, 51.7s wall: F_max = 0.958,
+  F_crash_a_max = 1.000, timing_mae = 0.64 ms — ALL PASS ✅.** Architettura
+  F0-T4a C=32 confermata empiricamente viable; B6 (sampler + per-bus
+  pos_weight) sorta esattamente l'effetto atteso sui piatti rari. Report
+  in `docs/gates/F0-T4c_REGRESSION/f0t4c-regression-2026-05-24/`. Suite
+  pytest 537 passed. F2-T3 sbloccato architetturalmente; F2-T1 resta ⊘ in
+  attesa del **voto B4** (ora ripresentabile al CEO con numeri reali in
+  mano). Costo Azure: $0.
 
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 

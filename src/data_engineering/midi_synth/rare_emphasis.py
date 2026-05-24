@@ -2,11 +2,12 @@
 
 Counterweights the GMD distribution: GMD has crash/china/ride/tom under-
 represented relative to kick/snare/hihat, so the model risks learning the
-*frequent* events better than the *informative* ones. This module emits 30
+*frequent* events better than the *informative* ones. This module emits 50
 deterministic grooves where rare bus voicings are foregrounded — 3-5× the
-natural GMD frequency, per the CEO directive (2026-05-23, fine giornata).
+natural GMD frequency, per the CEO directive (2026-05-23, fine giornata,
+extended 2026-05-24 by F0-T4c B6c Decision Lock: 30 → 50 grooves).
 
-Five families, six grooves each (3 BPM tiers × 2 bar lengths):
+Five families, ten grooves each (5 BPM tiers × 2 bar lengths):
 
 * ``crash_led`` — crash on every downbeat (vs only bar-1 in GMD).
 * ``china_led`` — china punctuating offbeats (china rare in GMD).
@@ -43,15 +44,19 @@ from ._writer import (
     GrooveSpec,
 )
 
-#: Number of grooves emitted per family.
-_GROOVES_PER_FAMILY: int = 6
-
-#: BPM tiers (low / mid / high) per family — three tiers × 2 bar lengths = 6.
-_BPM_TIERS: tuple[int, ...] = (90, 115, 140)
+#: BPM tiers per family — five tiers (80/100/120/140/160) × 2 bar lengths = 10
+#: grooves per family. F0-T4c B6c amendment (Decision Lock CEO 2026-05-24):
+#: était 3 tiers × 2 bars = 6 grooves per family (30 total) — extended to
+#: foreground the rare cymbals across more BPM contexts.
+_BPM_TIERS: tuple[int, ...] = (80, 100, 120, 140, 160)
 _BARS_OPTIONS: tuple[int, ...] = (2, 3)
 
-#: Total grooves emitted by :func:`generate_rare_emphasis_grooves`.
-N_GROOVES: int = 30
+#: Number of grooves emitted per family — derived from the cartesian product.
+_GROOVES_PER_FAMILY: int = len(_BPM_TIERS) * len(_BARS_OPTIONS)
+
+#: Total grooves emitted by :func:`generate_rare_emphasis_grooves`
+#: (5 families × 10 grooves/family = 50). F0-T4c B6c.
+N_GROOVES: int = 50
 
 
 _GroovePattern = Callable[[int], list[tuple[int, int, int]]]
@@ -206,7 +211,11 @@ _FAMILIES: tuple[tuple[str, _GroovePattern], ...] = (
 def _groove_for_index(index: int) -> GrooveSpec:
     """Deterministic groove from ``index ∈ [0, N_GROOVES)``.
 
-    Index decomposition: ``index = family * 6 + bpm_tier * 2 + bars_tier``.
+    Index decomposition: ``index = family * _GROOVES_PER_FAMILY
+    + bpm_tier * len(_BARS_OPTIONS) + bars_tier``.
+
+    With the F0-T4c B6c extension this is ``family * 10 + bpm_tier * 2 +
+    bars_tier`` (was ``family * 6 + bpm_tier * 2 + bars_tier`` pre-amendment).
     """
     if not 0 <= index < N_GROOVES:
         raise ValueError(f"index {index} outside [0, {N_GROOVES})")
@@ -228,8 +237,9 @@ def generate_rare_emphasis_grooves(*, n: int = N_GROOVES) -> list[GrooveSpec]:
     Parameters
     ----------
     n
-        Number of grooves to return. Default 30 (Decision CEO 2026-05-23).
-        Must satisfy ``0 < n <= 30``.
+        Number of grooves to return. Default 50 (F0-T4c B6c Decision Lock
+        CEO 2026-05-24; was 30 pre-amendment).
+        Must satisfy ``0 < n <= 50``.
 
     Returns
     -------

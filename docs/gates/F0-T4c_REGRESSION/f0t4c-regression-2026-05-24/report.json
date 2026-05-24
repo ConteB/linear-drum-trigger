@@ -1,0 +1,395 @@
+{
+  "config": {
+    "batch_size": 4,
+    "crop_samples": 196608,
+    "device": "mps",
+    "epochs": 600,
+    "final_train_loss": 0.2513983517885208,
+    "lookahead_frames": 35,
+    "loss_config": {
+      "focal_gamma": 2.0,
+      "fp_to_fn_ratio": 3.0,
+      "onset_mask_threshold": 0.5,
+      "w_hihat": 0.25,
+      "w_microtiming": 0.1,
+      "w_onset": 2.0,
+      "w_velocity": 0.1
+    },
+    "lr": 0.001,
+    "n_crash_a_bearing": 3,
+    "n_parameters": 83673,
+    "n_samples": 18,
+    "pool_root": "data/gold/mix_2026-05-24",
+    "pos_weight_per_bus": [
+      87.2,
+      51.2,
+      69.5,
+      84.5,
+      82.9,
+      102.2,
+      137.0,
+      121.1
+    ],
+    "seed": 0,
+    "tcn_channels": 32,
+    "wall_time_s": 51.74890708294697
+  },
+  "decision_lock": "CEO 2026-05-24",
+  "results": {
+    "f_crash_a_max": 1.0,
+    "f_max": 0.958008658008658,
+    "f_max_key": "LOCAL_RND124-V3T1-J02-DGZ-R0-L1-NONE",
+    "f_max_timing_mae_ms": 0.6449987402368355,
+    "per_sample": [
+      {
+        "best_threshold": 0.5,
+        "f_crash_a": 1.0,
+        "f_measure_mean": 0.9569097569097569,
+        "f_measure_per_bus": [
+          0.9523809523809523,
+          0.9090909090909091,
+          NaN,
+          0.923076923076923,
+          1.0,
+          NaN,
+          1.0,
+          NaN
+        ],
+        "hihat_mae": 0.00017069770547095686,
+        "is_crash_a_bearing": true,
+        "key": "LOCAL_RND124-V0T0-J00-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 0.41464204729510856
+      },
+      {
+        "best_threshold": 0.5,
+        "f_crash_a": 1.0,
+        "f_measure_mean": 0.9425499231950845,
+        "f_measure_per_bus": [
+          0.9523809523809523,
+          0.8571428571428571,
+          NaN,
+          0.9032258064516129,
+          1.0,
+          NaN,
+          1.0,
+          NaN
+        ],
+        "hihat_mae": 0.00016141288506332785,
+        "is_crash_a_bearing": true,
+        "key": "LOCAL_RND124-V3T1-J01-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 0.3224993701184177
+      },
+      {
+        "best_threshold": 0.5,
+        "f_crash_a": 1.0,
+        "f_measure_mean": 0.958008658008658,
+        "f_measure_per_bus": [
+          0.9523809523809523,
+          0.9090909090909091,
+          NaN,
+          0.9285714285714286,
+          1.0,
+          NaN,
+          1.0,
+          NaN
+        ],
+        "hihat_mae": 0.0001466404355596751,
+        "is_crash_a_bearing": true,
+        "key": "LOCAL_RND124-V3T1-J02-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 0.6449987402368355
+      },
+      {
+        "best_threshold": 0.4,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.04174014171725493,
+        "f_measure_per_bus": [
+          0.035398230088495575,
+          0.09401709401709402,
+          0.04310344827586207,
+          0.0,
+          0.07792207792207792,
+          0.0,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.0525711365044117,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND003-V0T0-J00-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 17.11470795214638
+      },
+      {
+        "best_threshold": 0.4,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.043017445178120166,
+        "f_measure_per_bus": [
+          0.026666666666666665,
+          0.1021276595744681,
+          0.04310344827586207,
+          0.0,
+          0.08620689655172413,
+          0.0,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.0525711365044117,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND003-V3T1-J01-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 17.41496598639456
+      },
+      {
+        "best_threshold": 0.4,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.04313493355432563,
+        "f_measure_per_bus": [
+          0.035398230088495575,
+          0.09401709401709402,
+          0.05982905982905983,
+          0.0,
+          0.06956521739130435,
+          0.0,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.049966972321271896,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND003-V3T1-J02-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 16.35071806500378
+      },
+      {
+        "best_threshold": 0.4,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.029076955882960775,
+        "f_measure_per_bus": [
+          0.052631578947368425,
+          0.0608695652173913,
+          0.04310344827586207,
+          0.0,
+          0.01785714285714286,
+          0.0,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.086099773645401,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND045-V0T0-J00-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 16.253968253968253
+      },
+      {
+        "best_threshold": 0.4,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.03187582283188788,
+        "f_measure_per_bus": [
+          0.052631578947368425,
+          0.06926406926406925,
+          0.05150214592274678,
+          0.0,
+          0.01785714285714286,
+          0.0,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.084146648645401,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND045-V3T1-J01-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 15.96371882086168
+      },
+      {
+        "best_threshold": 0.4,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.030476039890740433,
+        "f_measure_per_bus": [
+          0.052631578947368425,
+          0.06926406926406925,
+          0.04310344827586207,
+          0.0,
+          0.01785714285714286,
+          0.0,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.0864252969622612,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND045-V3T1-J02-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 17.00032393909945
+      },
+      {
+        "best_threshold": 0.6,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.926683716965047,
+        "f_measure_per_bus": [
+          0.823529411764706,
+          1.0,
+          0.9565217391304348,
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.09384685754776001,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND092-V0T0-J00-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 1.3193156050298906
+      },
+      {
+        "best_threshold": 0.6,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.891812865497076,
+        "f_measure_per_bus": [
+          0.8421052631578948,
+          1.0,
+          0.8333333333333333,
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.09473207592964172,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND092-V3T1-J01-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 1.5366146458583434
+      },
+      {
+        "best_threshold": 0.7,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.9249999999999999,
+        "f_measure_per_bus": [
+          0.875,
+          1.0,
+          0.9,
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.12426197528839111,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND092-V3T1-J02-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 0.4353741496598639
+      },
+      {
+        "best_threshold": 0.6,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.862962962962963,
+        "f_measure_per_bus": [
+          0.9,
+          0.8,
+          NaN,
+          NaN,
+          NaN,
+          0.888888888888889,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.0005828296416439116,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND093-V0T0-J00-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 0.5374989501973629
+      },
+      {
+        "best_threshold": 0.6,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.8649122807017545,
+        "f_measure_per_bus": [
+          0.9,
+          0.8,
+          NaN,
+          NaN,
+          NaN,
+          0.8947368421052632,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.0006401031860150397,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND093-V3T1-J01-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 0.4146420472951085
+      },
+      {
+        "best_threshold": 0.6,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.9239316239316239,
+        "f_measure_per_bus": [
+          0.9,
+          1.0,
+          NaN,
+          NaN,
+          NaN,
+          0.8717948717948718,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.0006373387877829373,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND093-V3T1-J02-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 0.9329446064139942
+      },
+      {
+        "best_threshold": 0.6,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.5,
+        "f_measure_per_bus": [
+          0.0,
+          0.6666666666666666,
+          NaN,
+          NaN,
+          NaN,
+          0.8333333333333333,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.0005095740198157728,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND094-V0T0-J00-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 0.5442176870748299
+      },
+      {
+        "best_threshold": 0.6,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.5029239766081871,
+        "f_measure_per_bus": [
+          0.0,
+          0.6666666666666666,
+          NaN,
+          NaN,
+          NaN,
+          0.8421052631578948,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.0004401856567710638,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND094-V3T1-J01-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 0.34146992130185405
+      },
+      {
+        "best_threshold": 0.5,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.7657657657657657,
+        "f_measure_per_bus": [
+          NaN,
+          0.6666666666666666,
+          NaN,
+          NaN,
+          NaN,
+          0.8648648648648648,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.00016746361507102847,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND094-V3T1-J02-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 0.6829398426037081
+      }
+    ]
+  },
+  "spec": "docs/methodology/F0-T4c_DATA_PIPELINE_FIXES_SPEC.md",
+  "verdict": {
+    "overall_pass": true,
+    "pass_f_crash_a_ge_0.30": true,
+    "pass_f_max_ge_0.80": true,
+    "pass_timing_mae_le_5ms": true
+  }
+}

@@ -39,6 +39,22 @@ from data_engineering.gold.mic_standardize import CANONICAL_SLOTS
 #: Total encoder stride — F0-T4a §3 (4× Conv1d stride [4,4,4,2], Π = 128).
 ENCODER_STRIDE = 128
 
+#: Total receptive field of the trunk + encoder, in frames (F0-T4a §3.2).
+#: Diagnostica T1-DIAG-A 2026-05-23 misurò ~1024 frame effettivi sul training
+#: pattern attuale (dilatazioni 1..128 saturano oltre).
+RECEPTIVE_FIELD_FRAMES = 1024
+
+#: Default look-ahead in frames — F0-T4c B1 amendment (Decision Lock CEO 2026-05-24).
+#: ``ceil(0.100 s × 344.53 Hz) = 35`` frame = ~100 ms PDC (F0-T4a §5).
+#: Era ``0`` (strict-causal) prima della diagnostica T1-DIAG-A.
+DEFAULT_LOOKAHEAD_FRAMES = 35
+
+#: Minimum crop_samples that satisfies ``crop_frames + lookahead ≥ RF`` —
+#: F0-T4c B2 amendment (Decision Lock CEO 2026-05-24). Computed from
+#: ``(RECEPTIVE_FIELD_FRAMES + DEFAULT_LOOKAHEAD_FRAMES) × ENCODER_STRIDE``.
+MIN_CROP_SAMPLES = (RECEPTIVE_FIELD_FRAMES + DEFAULT_LOOKAHEAD_FRAMES) * ENCODER_STRIDE
+#: → 135_552 samples ≈ 3.07 s @ 44.1 kHz.
+
 #: F0-T4a §4 — channel-to-slot mapping per mic configuration.
 #:
 #: For each mic_config the tuple gives the destination slot index of each input
@@ -188,14 +204,31 @@ class GoldDataset(Dataset[dict[str, torch.Tensor]]):
         *,
         crop_samples: int,
         rng: np.random.Generator | None = None,
-        lookahead_frames: int = 0,
+        lookahead_frames: int = DEFAULT_LOOKAHEAD_FRAMES,
+        allow_short_crop: bool = False,
     ) -> None:
+        # F0-T4c B1+B2 (Decision Lock CEO 2026-05-24):
+        # - ``lookahead_frames`` defaults to ``DEFAULT_LOOKAHEAD_FRAMES`` (= 35)
+        #   so the strict-causal training of T1-DIAG-A cannot recur silently.
+        # - ``crop_samples`` is rejected fail-loud below ``MIN_CROP_SAMPLES``
+        #   because samples shorter than the receptive field force the model to
+        #   learn from left-pad zeros (the bug isolated in T1-DIAG-A). The
+        #   ``allow_short_crop`` escape hatch is reserved for explicit ablation
+        #   tests; do NOT use in production training.
         if not samples:
             raise GoldDataError("GoldDataset requires at least one sample")
         if crop_samples <= 0 or crop_samples % ENCODER_STRIDE != 0:
             raise GoldDataError(
                 f"crop_samples must be a positive multiple of {ENCODER_STRIDE}, "
                 f"got {crop_samples}"
+            )
+        if not allow_short_crop and crop_samples < MIN_CROP_SAMPLES:
+            raise GoldDataError(
+                f"crop_samples={crop_samples} < MIN_CROP_SAMPLES={MIN_CROP_SAMPLES} "
+                f"(= (RECEPTIVE_FIELD_FRAMES + DEFAULT_LOOKAHEAD_FRAMES) × "
+                f"ENCODER_STRIDE). Crops shorter than the receptive field force "
+                f"the model to learn from left-pad zeros (T1-DIAG-A bug, F0-T4c "
+                f"B2). Use allow_short_crop=True only for ablation."
             )
         if lookahead_frames < 0:
             raise GoldDataError(
@@ -312,9 +345,12 @@ def load_pool(
 __all__ = [
     "CANONICAL_SLOTS",
     "CANONICAL_SLOT_MAP",
+    "DEFAULT_LOOKAHEAD_FRAMES",
     "ENCODER_STRIDE",
     "HIHAT_OPENING_COL",
+    "MIN_CROP_SAMPLES",
     "R_TARGET_HZ",
+    "RECEPTIVE_FIELD_FRAMES",
     "SAMPLE_RATE",
     "TARGET_COLS",
     "GoldDataError",

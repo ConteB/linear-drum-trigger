@@ -1,4 +1,4 @@
-"""Mix-dataset orchestrator — 140 GMD + 30 rare + 30 chaos (R&D, 2026-05-23).
+"""Mix-dataset orchestrator — 140 GMD + 50 rare + 30 chaos (R&D, 2026-05-24).
 
 Composes three sources into a single shuffled MIDI roster, written to disk for
 ``generate_local_rnd_dataset.py`` to consume:
@@ -6,12 +6,16 @@ Composes three sources into a single shuffled MIDI roster, written to disk for
 * **GMD (Magenta Groove)** — 140 real human grooves sampled deterministically
   from ``info.csv``, filtered to ``time_signature=4-4`` and ``split=train``
   (the test/eval splits stay untouched for honest evaluation).
-* **Rare emphasis** — 30 synthetic grooves with crash/china/ride/tom over-
-  represented (see :mod:`midi_synth.rare_emphasis`).
+* **Rare emphasis** — 50 synthetic grooves with crash/china/ride/tom over-
+  represented (see :mod:`midi_synth.rare_emphasis`). F0-T4c B6c Decision Lock
+  CEO 2026-05-24: bumped from 30 to 50 to counter-balance ``crash_a`` density
+  (0.7 % in GMD vs ~13 % in ``ride`` and ``crash_b_misc``).
 * **Chaos** — 30 synthetic Machine-Gun Chaos grooves (see
   :mod:`midi_synth.chaos_generator`).
 
-The output is a flat directory of 200 ``.mid`` files plus a JSON manifest
+Default mix proportions: **140 / 50 / 30 = 220 grooves (≈ 64 / 23 / 14 %)**.
+
+The output is a flat directory of 220 ``.mid`` files plus a JSON manifest
 that records (a) the source of every entry, (b) the master seed, and (c) the
 shuffled order — enough to bit-reproduce the dataset later.
 
@@ -38,13 +42,15 @@ from .rare_emphasis import generate_rare_emphasis_grooves
 #: Default master seed for the mix (CEO 2026-05-23, fine giornata).
 DEFAULT_MASTER_SEED: Final[int] = 20260524
 
-#: Default mix proportions (Decision CEO 2026-05-23 — "70/15/15").
+#: Default mix proportions.
+#: F0-T4c B6c amendment (Decision Lock CEO 2026-05-24): rare 30 → 50.
+#: New ratio: 140 / 50 / 30 = 220 grooves (≈ 64 / 23 / 14 %).
 DEFAULT_N_GMD: Final[int] = 140
-DEFAULT_N_RARE: Final[int] = 30
+DEFAULT_N_RARE: Final[int] = 50
 DEFAULT_N_CHAOS: Final[int] = 30
 
-#: Manifest version — bump on schema changes.
-MANIFEST_VERSION: Final[str] = "1.0"
+#: Manifest version — bump on schema changes. v1.1 = F0-T4c B6c (rare 30→50).
+MANIFEST_VERSION: Final[str] = "1.1"
 
 
 class MixDatasetError(ValueError):
@@ -198,8 +204,14 @@ def build_mix_dataset(
     total = n_gmd + n_rare + n_chaos
     if total == 0:
         raise MixDatasetError("at least one source must contribute")
-    if n_rare > 30:
-        raise MixDatasetError(f"n_rare={n_rare} exceeds available 30")
+    # F0-T4c B6c (Decision Lock CEO 2026-05-24): rare cap bumped 30 → 50.
+    # Single source of truth is :data:`rare_emphasis.N_GROOVES`; import locally
+    # to avoid a hard top-level dependency for downstream consumers.
+    from .rare_emphasis import N_GROOVES as _N_RARE_AVAILABLE
+    if n_rare > _N_RARE_AVAILABLE:
+        raise MixDatasetError(
+            f"n_rare={n_rare} exceeds available {_N_RARE_AVAILABLE}"
+        )
     if n_chaos > 30:
         raise MixDatasetError(f"n_chaos={n_chaos} exceeds available 30")
 

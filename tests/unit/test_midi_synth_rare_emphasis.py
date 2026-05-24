@@ -42,9 +42,11 @@ _CRASH_NOTES = {CRASH_1, CRASH_2}
 # ----------------------------------------------------------------------------
 
 
-def test_default_count_is_30() -> None:
+def test_default_count_is_n_grooves() -> None:
+    """F0-T4c B6c amendment (Decision Lock CEO 2026-05-24): N_GROOVES = 50
+    (5 families × 5 BPM tiers × 2 bar lengths). Was 30 pre-amendment."""
     grooves = generate_rare_emphasis_grooves()
-    assert len(grooves) == N_GROOVES == 30
+    assert len(grooves) == N_GROOVES == 50
 
 
 def test_deterministic_across_calls() -> None:
@@ -62,16 +64,16 @@ def test_byte_deterministic_midi_serialisation(tmp_path: Path) -> None:
 
 def test_n_parameter_respected() -> None:
     g5 = generate_rare_emphasis_grooves(n=5)
-    g30 = generate_rare_emphasis_grooves(n=30)
+    g_all = generate_rare_emphasis_grooves(n=N_GROOVES)
     assert len(g5) == 5
-    assert g5 == g30[:5]
+    assert g5 == g_all[:5]
 
 
 def test_rejects_out_of_range_n() -> None:
     with pytest.raises(ValueError, match="outside"):
         generate_rare_emphasis_grooves(n=0)
     with pytest.raises(ValueError, match="outside"):
-        generate_rare_emphasis_grooves(n=31)
+        generate_rare_emphasis_grooves(n=N_GROOVES + 1)
 
 
 # ----------------------------------------------------------------------------
@@ -79,14 +81,14 @@ def test_rejects_out_of_range_n() -> None:
 # ----------------------------------------------------------------------------
 
 
-def test_five_families_each_six_grooves() -> None:
+def test_five_families_each_ten_grooves() -> None:
+    """F0-T4c B6c: 5 families × 10 grooves/family (5 BPM × 2 bars) = 50."""
     grooves = generate_rare_emphasis_grooves()
     families = [g.name.split("-")[1] for g in grooves]
     counter = Counter(families)
-    # Family names contain the second segment of name (after "rare-").
     expected = {"crash_led", "china_led", "ride_led", "tom_fill_heavy", "splash_bell"}
     assert set(counter.keys()) == expected
-    assert all(v == 6 for v in counter.values()), f"per-family counts: {counter}"
+    assert all(v == 10 for v in counter.values()), f"per-family counts: {counter}"
 
 
 def test_names_are_unique() -> None:
@@ -99,10 +101,11 @@ def test_names_have_expected_prefix() -> None:
         assert g.name.startswith("rare-"), f"unexpected name: {g.name}"
 
 
-def test_bpm_values_cover_three_tiers() -> None:
+def test_bpm_values_cover_five_tiers() -> None:
+    """F0-T4c B6c: 5 BPM tiers (80, 100, 120, 140, 160) instead of pre-amendment 3."""
     grooves = generate_rare_emphasis_grooves()
     bpms = {g.bpm for g in grooves}
-    assert bpms == {90, 115, 140}
+    assert bpms == {80, 100, 120, 140, 160}
 
 
 def test_bar_lengths_cover_2_and_3() -> None:

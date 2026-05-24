@@ -260,13 +260,17 @@ def test_rejects_zero_total(tmp_path: Path) -> None:
         )
 
 
-def test_rejects_n_rare_above_30(tmp_path: Path) -> None:
+def test_rejects_n_rare_above_available(tmp_path: Path) -> None:
+    """F0-T4c B6c amendment (Decision Lock CEO 2026-05-24): the cap is now
+    ``rare_emphasis.N_GROOVES`` (= 50), not the hard-coded 30. Reject one
+    above the available count."""
+    from data_engineering.midi_synth.rare_emphasis import N_GROOVES
     gmd_root = _make_gmd_fixture(tmp_path / "gmd", n_grooves=5)
     with pytest.raises(MixDatasetError, match="n_rare"):
         build_mix_dataset(
             gmd_root=gmd_root,
             output_dir=tmp_path / "mix",
-            n_gmd=0, n_rare=31, n_chaos=0,
+            n_gmd=0, n_rare=N_GROOVES + 1, n_chaos=0,
         )
 
 

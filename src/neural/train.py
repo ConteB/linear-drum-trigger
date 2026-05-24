@@ -25,15 +25,18 @@ from typing import Any
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 
 from neural.data import (
+    DEFAULT_LOOKAHEAD_FRAMES,
     ENCODER_STRIDE,
+    HIHAT_OPENING_COL,
+    MIN_CROP_SAMPLES,
     GoldDataset,
     GoldSample,
     load_pool,
 )
-from neural.loss import LossConfig, TCNLoss
+from neural.loss import LossConfig, N_BUSES, TCNLoss
 from neural.metrics import (
     FRAME_PERIOD_MS,
     L3_F_MEASURE_MIN,
@@ -90,13 +93,58 @@ def split_train_holdout(
     return train, holdout
 
 
+#: Default cap on the per-sample weight produced by
+#: :func:`_compute_sampler_weights` (F0-T4c B6a — Decision Lock CEO 2026-05-24).
+#: Without a cap, a single groove containing a 0.7 %-density bus would get a
+#: weight ~140× — likely to monopolise the epoch. Cap 200× balances foreground
+#: with bus diversity (the jitter k=2 gives 3 variants per source MIDI).
+SAMPLER_WEIGHT_CAP: float = 200.0
+
+
+def _compute_sampler_weights(
+    samples: list[GoldSample],
+    *,
+    pos_weight: float | tuple[float, ...],
+    onset_mask_threshold: float = 0.5,
+    cap: float = SAMPLER_WEIGHT_CAP,
+) -> list[float] | None:
+    """Return ``WeightedRandomSampler`` weights when ``pos_weight`` is per-bus.
+
+    For each sample compute ``weight_s = max_b(pos_weight[b])`` over the buses
+    ``b`` that the sample contains (≥ 1 onset above ``onset_mask_threshold``).
+    Samples with no positives default to ``1.0`` (baseline weight) — they are
+    still useful as negative examples. Output cap at ``cap`` (default 200) to
+    prevent rare-bus monopolisation.
+
+    Returns ``None`` when ``pos_weight`` is scalar (caller falls back to
+    plain shuffled DataLoader — legacy behaviour).
+    """
+    if not isinstance(pos_weight, tuple):
+        return None
+    if len(pos_weight) != N_BUSES:
+        raise ValueError(
+            f"pos_weight tuple must have {N_BUSES} elements, got {len(pos_weight)}"
+        )
+    weights: list[float] = []
+    for s in samples:
+        # Onset columns 0:24:3 — F0-T2a §3.3, flat-25 layout.
+        onset = s.target[:, 0:24:3]  # [n_frame, 8]
+        has_bus = (onset > onset_mask_threshold).any(axis=0)  # [8]
+        if not has_bus.any():
+            weights.append(1.0)
+            continue
+        bus_weights = [pos_weight[b] for b in range(N_BUSES) if has_bus[b]]
+        weights.append(min(cap, max(bus_weights)))
+    return weights
+
+
 def evaluate_holdout(
     model: TCNModel,
     holdout: list[GoldSample],
     *,
     device: torch.device,
     crop_samples: int,
-    lookahead_frames: int = 0,
+    lookahead_frames: int = DEFAULT_LOOKAHEAD_FRAMES,
 ) -> dict[str, L3Verdict]:
     """Evaluate the model on each holdout sample (deterministic crop = head of the file)."""
     model.eval()
@@ -135,7 +183,9 @@ def train(
         "GMD000-V0T0-DGZ-R0-L1-NONE",
         "GMD001-V0T0-SFZ-R0-L1-NONE",
     ),
-    crop_samples: int = 65536,
+    # F0-T4c B2 (Decision Lock CEO 2026-05-24): default crop = 196 608 samples
+    # (~4.46 s, margine 1.45× sopra MIN_CROP_SAMPLES = 135 552). Era 65536.
+    crop_samples: int = 196608,
     epochs: int = 200,
     batch_size: int = 4,
     lr: float = 1e-3,
@@ -149,7 +199,10 @@ def train(
     tcn_channels: int = 32,
     loss_config: LossConfig | None = None,
     include_keys: tuple[str, ...] | None = None,
-    lookahead_frames: int = 0,
+    # F0-T4c B1 (Decision Lock CEO 2026-05-24): default lookahead = 35 frame
+    # (= ~100 ms PDC). Era 0 (strict-causal — bug isolato dalla diagnostica
+    # T1-DIAG-A che faceva collassare ogni R&D Tier 1 a F ≈ 0.09).
+    lookahead_frames: int = DEFAULT_LOOKAHEAD_FRAMES,
 ) -> TrainResult:
     """Run the F0-T4b training. Returns the verdict for the L3 Ocular Proof.
 
@@ -183,18 +236,50 @@ def train(
         rng=np.random.default_rng(seed),
         lookahead_frames=lookahead_frames,
     )
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=0,
-        drop_last=False,
+    # F0-T4c B6a (Decision Lock CEO 2026-05-24): auto-attiva il
+    # WeightedRandomSampler quando il LossConfig usa pos_weight per-bus.
+    # Senza questo, il sampler shuffled vede crash_a (0.7 % dei sample GMD)
+    # nel 99.3 % dei batch come zero → strategy ottima "predici 0" → F = 0.
+    cfg = loss_config or LossConfig()
+    sampler_weights = _compute_sampler_weights(
+        train_samples, pos_weight=cfg.pos_weight
     )
+    if sampler_weights is not None:
+        # n_samples per epoch = len(train) — stessa quantità di step ma con
+        # probabilità ricalibrata sui bus rari. Generatore seedato per
+        # determinismo (T1-DIAG-A pattern).
+        gen = torch.Generator()
+        gen.manual_seed(seed)
+        sampler = WeightedRandomSampler(
+            weights=sampler_weights,
+            num_samples=len(train_samples),
+            replacement=True,
+            generator=gen,
+        )
+        print(
+            f"[F0-T4b] B6a WeightedRandomSampler ON · weights range "
+            f"[{min(sampler_weights):.1f}, {max(sampler_weights):.1f}]"
+        )
+        train_loader = DataLoader(
+            train_ds,
+            batch_size=batch_size,
+            sampler=sampler,
+            num_workers=0,
+            drop_last=False,
+        )
+    else:
+        train_loader = DataLoader(
+            train_ds,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=0,
+            drop_last=False,
+        )
 
     model = TCNModel(TCNConfig(channels=tcn_channels)).to(device)
     n_params = count_parameters(model)
     print(f"[F0-T4b] parameters = {n_params:,}")
-    loss_fn = TCNLoss(loss_config or LossConfig()).to(device)
+    loss_fn = TCNLoss(cfg).to(device)
     optim = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
 
     # MPS autocast is supported as of PyTorch 2.x; CPU autocast adds little.
@@ -420,11 +505,19 @@ def _write_report(result: TrainResult, path: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="F0-T4b TCN mini-prototype training")
     parser.add_argument("--epochs", type=int, default=200)
-    parser.add_argument("--crop-samples", type=int, default=65536)
+    # F0-T4c B2 default = 196 608 (~4.46 s); minimum enforced by GoldDataset.
+    parser.add_argument("--crop-samples", type=int, default=196608,
+                        help="audio crop in samples; min %d (F0-T4c B2)"
+                             % MIN_CROP_SAMPLES)
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--cpu", action="store_true", help="force CPU (skip MPS/CUDA)")
+    # F0-T4c B1 — propagation of the look-ahead PDC default.
+    parser.add_argument("--lookahead-frames", type=int,
+                        default=DEFAULT_LOOKAHEAD_FRAMES,
+                        help="look-ahead in frames; default %d (= 100 ms PDC, F0-T4c B1)"
+                             % DEFAULT_LOOKAHEAD_FRAMES)
     parser.add_argument(
         "--pool", type=Path, default=Path("data/gold/L2_pool"),
         help="Gold mini-batch root",
@@ -469,6 +562,7 @@ def main() -> None:
         report_dir=None if args.no_html_report else args.html_report_dir,
         run_id=args.run_id,
         run_title=args.run_title,
+        lookahead_frames=args.lookahead_frames,
     )
     _write_report(result, args.report_to)
     print(f"[F0-T4b] wrote report to {args.report_to}")

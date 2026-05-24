@@ -112,6 +112,30 @@ Le 4 teste si concatenano esattamente nel layout `flat-25` ([`F0-T2a §3.3`](F0-
 opening. Il data-loader fa già il reshape `cols 0:24 → [n_frame,8,3]` e `col 24 →
 [n_frame]`: il modello produce direttamente i tensori nello stesso ordine.
 
+<a id="rf-crop-constraint"></a>
+### 3.2 Vincolo `crop ≥ RF + lookahead` — amendment 2026-05-24 (F0-T4c · B2)
+
+> **Amendment Decision Lock CEO 2026-05-24** ([`F0-T4c §6.1`](F0-T4c_DATA_PIPELINE_FIXES_SPEC.md)). La
+> diagnostica [T1-DIAG-A](../gates/R&D_Tier1_reports/T1-DIAG-A/T1_DIAG_A_REPORT.md)
+> ha dimostrato che un training segment < receptive field è patologico:
+> il modello impara dal profilo del left-pad zero, non dall'audio reale.
+
+| Grandezza | Valore | Derivazione |
+| :-- | --: | :-- |
+| Receptive field totale (encoder + trunk) | **1024 frame** | `8 × (2 × dilatazione_max)` su §3 = `8 × (2 × 128)` = 2048; in pratica RF utile ≈ 1024 frame su dilatazioni `[1..128]` (gli ultimi blocchi saturano). Validato empiricamente in T1-DIAG-A. |
+| Lookahead PDC (§5) | **35 frame** | `≈ 100 ms` a `R_target = 344.53 Hz` |
+| Crop minimo (sample) | **`135 552`** | `(1024 + 35) × 128` — fail-loud sotto questa soglia |
+| Crop default (sample) | **`196 608`** (~4.46 s) | Margine 1.45× sopra il minimo per crop random non-boundary |
+
+**Implementato in `src/neural/data.py::GoldDataset.__init__`** — `raise
+GoldDataError` se `crop_samples < 135 552`. Il default di `train.train()` è
+`crop_samples = 196_608`.
+
+**Implicazione downstream (B4 deferred):** la durata MIDI minima del Gold
+deve essere ≥ ~3.07 s (con margine 2× per crop random = 5 s). B4 di F0-T4c
+ratifica questo vincolo come `midi_duration_min_s = 5.0` in F0-T2a §3.8;
+**deferred al post-regression test 2026-05-24**.
+
 <a id="input-agnostic-slots"></a>
 ## 4. Input agnostico — 8 slot canonici
 
@@ -148,6 +172,23 @@ di plugin (UI) è materia di **F4**; qui si fissa solo il contratto del tensore.
   [Model Artifact (`F0-T8`)](F0-T8_MODEL_ARTIFACT_SPEC.md#header-json); target di
   progetto = 4410 sample (100 ms), badge UI "MODE: MIXING GRADE ONLY".
 
+### 5.1 Default operativo — amendment 2026-05-24 (F0-T4c · B1)
+
+> **Amendment Decision Lock CEO 2026-05-24** ([`F0-T4c §6.1`](F0-T4c_DATA_PIPELINE_FIXES_SPEC.md)). La
+> diagnostica [T1-DIAG-A](../gates/R&D_Tier1_reports/T1-DIAG-A/T1_DIAG_A_REPORT.md)
+> ha rivelato che `GoldDataset` propagava `lookahead_frames = 0`
+> (strict-causal) ignorando il PDC di 100 ms qui prescritto.
+
+| Parametro | Valore default ratificato |
+| :-- | --: |
+| `GoldDataset.lookahead_frames` (default) | **`35`** (= `ceil(0.100 × 344.53)`) |
+| `train.train(lookahead_frames=...)` (default) | **`35`** |
+| `evaluate_holdout(lookahead_frames=...)` (default) | **`35`** |
+
+Implementato in `src/neural/data.py` + `src/neural/train.py`. CLI
+`python -m neural.train --lookahead-frames N` consente override per
+A/B sperimentali.
+
 ## 6. Loss & Ground Truth
 
 | Testa | Loss | Note |
@@ -158,6 +199,33 @@ di plugin (UI) è materia di **F4**; qui si fissa solo il contratto del tensore.
 | hihat_opening | **L1 / MSE densa** | su ogni frame ([`DOSSIER §2.2`](DOSSIER_TECNICO.md#midi-output)) |
 
 Loss totale = somma pesata; i **pesi inter-testa** sono iperparametri di F0-T4b.
+
+### 6.1 LossConfig — amendment 2026-05-24 (F0-T4c · B3 + B6b)
+
+> **Amendment Decision Lock CEO 2026-05-24** ([`F0-T4c §6.1`](F0-T4c_DATA_PIPELINE_FIXES_SPEC.md)). I
+> default originari (`pos_weight=50, w_on=1.0, w_vel=0.5, w_mt=0.5,
+> w_hh=1.0`) erano calibrati per density ~5 % (Lin 2017 baseline);
+> la density misurata sul Gold mix è 0.4-1.5 % → 10× più sparso → la
+> teoria prescrive `pos_weight ≈ 200`. La diagnostica T1-DIAG-A ha
+> confermato lift +49 % F (holdout) col nuovo set.
+
+| Parametro | Default ratificato | Note |
+| :-- | --: | :-- |
+| `pos_weight` | **`200`** (scalare) o **tuple per-bus** (B6b) | Quando tuple di 8 valori, il sampler B6a si attiva automaticamente |
+| `w_onset` | **`2.0`** | Era 1.0; raddoppiato perché onset è il segnale primario |
+| `w_velocity` | **`0.1`** | Era 0.5; ridotto — velocity contribuisce poco alla F-measure di onset |
+| `w_microtiming` | **`0.1`** | Era 0.5; ridotto — idem |
+| `w_hihat` | **`0.25`** | Era 1.0; ridotto — HH dense L1 dominava il gradient nel regime sparso |
+| `focal_gamma` | `2.0` *(invariato)* | Lin 2017 baseline |
+| `fp_to_fn_ratio` | `3.0` *(invariato)* | Doctrine F0-T4a §6 / DOSSIER §6.2 |
+| `onset_mask_threshold` | `0.5` *(invariato)* | — |
+
+**B6b · `pos_weight` per-bus** (class imbalance bi-assiale sui piatti). Quando
+`pos_weight` è una tupla di 8 valori (uno per bus), il termine FN
+dell'Asymmetric Focal viene pesato per-bus, e il `WeightedRandomSampler` di
+B6a si attiva automaticamente nel `DataLoader`. Tool: `tools/scan_density.py`
+calcola la tupla dal training set (cap `1000`, safe by construction su bus
+con density = 0).
 
 <a id="l3-threshold"></a>
 ## 7. Soglia numerica Gate L3 — "metriche di onset significativamente non casuali"

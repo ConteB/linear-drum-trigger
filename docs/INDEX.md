@@ -14,7 +14,7 @@ related: [LIN-DT-DOCSTD-001]
 > **File generato** da `tools/gen_docs_index.py` (Doc Standard LIN-DT-DOCSTD-001 §5).
 > Non editare a mano — rigenerare. Rilancia lo script dopo ogni modifica al frontmatter.
 
-Documenti indicizzati: **47** · senza frontmatter: **9**.
+Documenti indicizzati: **48** · senza frontmatter: **9**.
 
 ## Documenti
 
@@ -60,6 +60,7 @@ Documenti indicizzati: **47** · senza frontmatter: **9**.
 | `LIN-DT-SPEC-F0T15PRE` | F0-T15-pre — MIDI Augmentation Spec (Time/Velocity/Component) — STRP-001 | spec | LOCKED | F0 | `docs/methodology/F0-T15-pre_MIDI_AUGMENTATION_SPEC.md` |
 | `LIN-DT-SPEC-F0T17` | F0-T17 — Statistical Test Plan (Data Audit + Evaluation Suite) | spec | LOCKED | F0 | `docs/methodology/F0-T17_STATISTICAL_TEST_PLAN.md` |
 | `LIN-DT-SPEC-F0T2a` | F0-T2a — Spec Recipe + Contratto Dati | spec | LOCKED | F0 | `docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md` |
+| `LIN-DT-SPEC-F0T4C` | F0-T4c — Data Pipeline Fixes (causality + RF + loss imbalance) — STRP-001 | spec | STRP-001-IN-REVIEW | F0 | `docs/methodology/F0-T4c_DATA_PIPELINE_FIXES_SPEC.md` |
 | `LIN-DT-SPEC-F0T4a` | F0-T4a — Spec Topologia TCN Concreta | spec | LOCKED | F0 | `docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md` |
 | `LIN-DT-SPEC-F0T5` | F0-T5 — Spec Sharding WebDataset + struttura Medallion | spec | LOCKED | F0 | `docs/methodology/F0-T5_GOLD_SHARDING_SPEC.md` |
 | `LIN-DT-SPEC-F0T8` | F0-T8 — Model Artifact (export, packaging & trasporto) | spec | LOCKED | F0 | `docs/methodology/F0-T8_MODEL_ARTIFACT_SPEC.md` |
@@ -79,12 +80,13 @@ Documenti indicizzati: **47** · senza frontmatter: **9**.
 - **F0-T1b** — `LIN-DT-ROSTER-F0T1b`
 - **F0-T1c** — `LIN-DT-HOLDOUT-F0T1c`
 - **F0-T2a** — `LIN-DT-SPEC-F0T2a`
-- **F0-T4a** — `LIN-DT-SPEC-F0T4a`
+- **F0-T4a** — `LIN-DT-SPEC-F0T4C`, `LIN-DT-SPEC-F0T4a`
+- **F0-T4c** — `LIN-DT-SPEC-F0T4C`
 - **F0-T5** — `LIN-DT-SPEC-F0T5`
 - **F0-T8** — `LIN-DT-SPEC-F0T8`
 - **F1** — `LIN-DT-RUNBOOK-F1T1`
 - **F2-T1** — `LIN-DT-RUNBOOK-F2T1`, `LIN-DT-RUNBOOK-F2T1QUOTA`
-- **STRP-001** — `LIN-DT-SPEC-F0T15POST`, `LIN-DT-SPEC-F0T15PRE`
+- **STRP-001** — `LIN-DT-SPEC-F0T15POST`, `LIN-DT-SPEC-F0T15PRE`, `LIN-DT-SPEC-F0T4C`
 - **addendum** — `LIN-DT-DCBP-001`
 - **aes-gcm** — `LIN-DT-SPEC-F0T8`
 - **ai** — `LIN-DT-DCBP-001`, `LIN-DT-RPTBP-001`
@@ -142,6 +144,8 @@ Documenti indicizzati: **47** · senza frontmatter: **9**.
 - **licensing** — `LIN-DT-DPL-001`, `LIN-DT-LICVER-F0T1`
 - **linear-shield** — `LIN-DT-GOV-001`
 - **logging** — `LIN-DT-PII-001`
+- **lookahead** — `LIN-DT-SPEC-F0T4C`
+- **loss-imbalance** — `LIN-DT-SPEC-F0T4C`
 - **market-analysis** — `LIN-DT-QMA-001`
 - **marketing** — `LIN-DT-COMPAN-001`, `LIN-DT-MKTOCULAR-001`, `LIN-DT-MKTSTRAT-001`, `LIN-DT-QMA-001`
 - **medallion** — `LIN-DT-SPEC-F0T5`
@@ -159,11 +163,13 @@ Documenti indicizzati: **47** · senza frontmatter: **9**.
 - **pointer** — `LIN-DT-PMINDEX-001`, `LIN-DT-REC-001`, `LIN-DT-ROADMAP-001`, `LIN-DT-SPRINT-001`
 - **positioning** — `LIN-DT-MKTSTRAT-001`
 - **post-render** — `LIN-DT-SPEC-F0T15POST`
+- **pre-Azure-gate** — `LIN-DT-SPEC-F0T4C`
 - **pre-render** — `LIN-DT-SPEC-F0T15PRE`
 - **privacy** — `LIN-DT-PII-001`
 - **provenance** — `LIN-DT-DPL-001`
 - **qa** — `LIN-DT-TESTDOC-001`
 - **quota** — `LIN-DT-RUNBOOK-AZURE-ENABLEMENT`, `LIN-DT-RUNBOOK-F2T1QUOTA`
+- **receptive-field** — `LIN-DT-SPEC-F0T4C`
 - **recipe** — `LIN-DT-SPEC-F0T2a`
 - **recipe-matrix** — `LIN-DT-SPEC-F0T15PRE`
 - **recovery** — `LIN-DT-ONBOARD-001`
@@ -242,6 +248,7 @@ Documenti indicizzati: **47** · senza frontmatter: **9**.
 | `LIN-DT-SPEC-F0T15PRE` | `LIN-DT-DOSSIER-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T5`, `LIN-DT-MSCHED-001` | `LIN-DT-AUGAUDIT-001`, `LIN-DT-RUNBOOK-F2T1`, `LIN-DT-SPEC-F0T15POST` |
 | `LIN-DT-SPEC-F0T17` | `LIN-DT-ENGSTD-001`, `LIN-DT-DOSSIER-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a` | — |
 | `LIN-DT-SPEC-F0T2a` | `LIN-DT-SPEC-F0T4a`, `LIN-DT-DOSSIER-001`, `LIN-DT-CHKLST-001` | `LIN-DT-AUGAUDIT-001`, `LIN-DT-DOSSIER-001`, `LIN-DT-ENGSTD-001`, `LIN-DT-ROSTER-F0T1b`, `LIN-DT-SPEC-F0T15POST`, `LIN-DT-SPEC-F0T15PRE`, `LIN-DT-SPEC-F0T17`, `LIN-DT-SPEC-F0T4a`, `LIN-DT-SPEC-F0T5`, `LIN-DT-SPEC-F0T8`, `LIN-DT-TESTDOC-001` |
+| `LIN-DT-SPEC-F0T4C` | `LIN-DT-SPEC-F0T4A`, `LIN-DT-SPEC-F0T2A`, `LIN-DT-RND-T1DIAGA-001` | — |
 | `LIN-DT-SPEC-F0T4a` | `LIN-DT-SPEC-F0T2a`, `LIN-DT-DOSSIER-001`, `LIN-DT-CHKLST-001` | `LIN-DT-AUGAUDIT-001`, `LIN-DT-CHRONOS-001`, `LIN-DT-DOSSIER-001`, `LIN-DT-ENGSTD-001`, `LIN-DT-SPEC-F0T15POST`, `LIN-DT-SPEC-F0T17`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T8` |
 | `LIN-DT-SPEC-F0T5` | `LIN-DT-SPEC-F0T2a`, `LIN-DT-DOSSIER-001`, `LIN-DT-MSCHED-001` | `LIN-DT-SPEC-F0T15PRE` |
 | `LIN-DT-SPEC-F0T8` | `LIN-DT-DOSSIER-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a`, `LIN-DT-CHKLST-001`, `LIN-DT-ENGSTD-001` | — |

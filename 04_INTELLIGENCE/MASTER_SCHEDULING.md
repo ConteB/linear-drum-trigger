@@ -379,6 +379,40 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
   baseline `C=32`, training ~50 s su Mac M5 / MPS. **Sblocca F2-T3** (gated
   ora solo da F2-T1).
 
+**F0-T4c · Data Pipeline Fixes (causality + RF + loss imbalance) — STRP-001 `[D]` `P1`**
+- *📚 Letture:* [`F0-T4c — spec`](../docs/methodology/F0-T4c_DATA_PIPELINE_FIXES_SPEC.md) · [`Report T1-DIAG-A`](../docs/gates/R&D_Tier1_reports/T1-DIAG-A/T1_DIAG_A_REPORT.md) · [`F0-T4a §3 — TCN topology`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md) · [`F0-T2a §3.8 — tail std`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#tail-standardization).
+- *Origine:* diagnostica [T1-DIAG-A](../docs/gates/R&D_Tier1_reports/T1-DIAG-A/T1_DIAG_A_REPORT.md)
+  (2026-05-23, direttiva CEO "Opzione A") — la rete ferma a F ≈ 0.09 in
+  tutti i R&D Tier 1 (T1-A → T1-H) NON per data starvation né capacity,
+  ma per **tre disconnessioni strutturali tra la spec F0-T4a/§3 e la
+  sua implementazione** in `src/neural/data.py` + `src/neural/train.py`:
+  (1) strict-causality (PDC 100ms mai applicato), (2) RF collapse
+  (1024 frame ≈ 2.97 s) vs training crop (256 frame ≈ 0.74 s) → 75 %
+  del receptive field è left-pad zero, (3) LossConfig pos_weight 4×
+  sotto density misurata. Fix combinato porta self-overfit F 0.08 →
+  0.234 mean / **0.827 max** con timing-MAE 3.99 ms (sotto L3) sul
+  groove migliore — architettura provata viable.
+- *Azioni:* applicare STRP-001 (6 fasi + Executive Briefing). Cinque
+  raccomandazioni numerate B1..B5 per Decision Lock CEO: (B1) look-ahead
+  default = 35 frame, (B2) crop minimo = 135 552 samples (~3.07 s),
+  (B3) LossConfig defaults riparametrizzati, (B4) F0-T2a §3.8 amendment
+  con `midi_duration_min_s = 5.0` per F2-T1, (B5) bus-mask dei 3 head
+  morti (Tier 2). Implementazione: i knob esistono già come CLI in
+  `a3fe30c` / `c7f10a5`; il Decision Lock cambia i default e ratifica
+  gli amendment doc.
+- *DoD:* Executive Briefing approvato dal CEO; spec `LOCKED v1.0.0`;
+  F0-T4a §3/§6 + F0-T2a §3.8 aggiornati; regression test su 18 long
+  sample riproduce F_max ≥ 0.80 con i nuovi default.
+- *Costo Azure:* **$0** — interamente locale.
+- ⛔ — *nessuno*. **Gate bloccante per F2-T1 e F2-T3.** Senza ratifica
+  di B4 (durata MIDI minima), F2-T1 renderizzerebbe un Gold di sample
+  troppo brevi (< RF + lookahead) → la rete non lo può consumare.
+- ◐ **STRP-001 IN REVIEW (2026-05-23):** spec in
+  `docs/methodology/F0-T4c_DATA_PIPELINE_FIXES_SPEC.md`. 6 fasi STRP-001
+  complete; 5 raccomandazioni B1..B5 pronte per Executive Briefing CEO.
+  Pre-flight verifica empirica richiesta prima del Decision Lock: contare
+  i MIDI GMD ≥ 5 s (~1150 totali, da misurare).
+
 **F0-T5 · DVC + struttura Medallion + sharding WebDataset · `[F]` `P2`**
 - *📚 Letture:* [`DOSSIER §9.2 — Medallion`](../docs/methodology/DOSSIER_TECNICO.md#medallion) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`F0-T2a §3.8 — tail std`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#tail-standardization).
 - *Azioni:* `dvc init` nel repo; definire la struttura **Medallion** Bronze/Silver/Gold
@@ -873,10 +907,12 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 - *DoD:* 1.5 TB renderizzati e versionati; log di completamento; manifest verde su
   entrambi gli split.
 - ⛔ F1-T1, **F0-T15-pre** *(spec MIDI augmentation)*, **F0-T16-pre** *(pipeline MIDI
-  augmentation locale)*. Lo split `pre/post` di F0-T15/T16 (Decision Lock CEO 2026-05-23,
-  sessione T1-prep-D) sposta il MIDI Jittering dal lato F2-T2 al lato F2-T1: il render
-  consuma la recipe matrix `MIDI × jitter-variant × engine`, mai una matrix `MIDI ×
-  engine` da rifare a posteriori.
+  augmentation locale)*, **F0-T4c** *(Decision Lock data pipeline fixes — B4 vincola
+  la durata MIDI minima a 5 s, senza questo il Gold renderizzato è inutilizzabile
+  dalla rete corrente)*. Lo split `pre/post` di F0-T15/T16 (Decision Lock CEO
+  2026-05-23, sessione T1-prep-D) sposta il MIDI Jittering dal lato F2-T2 al lato
+  F2-T1: il render consuma la recipe matrix `MIDI × jitter-variant × engine`, mai
+  una matrix `MIDI × engine` da rifare a posteriori.
 
 **F2-T2 · Audio augmentation + Demucs — *scale-only* su Azure · `[G]` `P1`**
 - *📚 Letture:* `F0-T16-post` (la pipeline d'audio augmentation è già scritta e validata
@@ -900,7 +936,9 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 - *Azioni:* training "Gold" della TCN su A100 Spot; validazione Holdout reale
   (E-GMD) + Slakh-Mix (Slakh2100) + Ocular Proof.
 - *DoD:* il modello supera l'Holdout reale → **Gate L4** (sblocca i claim pubblici).
-- ⛔ F2-T1 **e** F0-T4b (L3).
+- ⛔ F2-T1 **e** F0-T4b (L3) **e** **F0-T4c** *(Decision Lock data pipeline fixes —
+  B1/B2/B3 ratificano i default architetturali; senza, il training A100 ripeterebbe
+  la struttura provata fallimentare dalla diagnostica T1-DIAG-A)*.
 
 **F2-T4 · Credit-soak · `[G]` `P2`**
 - *📚 Letture:* [`§4 — Scala del credito`](#credit-scale) · [`§3 — Checkpoint`](#checkpoints).
@@ -952,6 +990,7 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 | F0-T3 | Validazione Gate L2 | F0 | ☑ | — | **L2** *(superato 2026-05-23)* |
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☑ | F0-T3, F0-T4a | **L3** *(superato 2026-05-23 — opzione A, Decision Lock CEO)* |
+| F0-T4c | Data Pipeline Fixes (STRP-001) | F0 | ◐ | — *(2026-05-23 — STRP-001 IN REVIEW, spec `F0-T4c_DATA_PIPELINE_FIXES_SPEC.md`, 5 raccomandazioni B1..B5 pronte per Decision Lock CEO)* | **Gate bloccante per F2-T1 e F2-T3** |
 | F0-T5 | DVC + struttura Medallion + sharding | F0 | ☑ | — *(spec sharding LOCKED 2026-05-23 — F0-T5_GOLD_SHARDING_SPEC.md)* | — |
 | F0-T6 | audit_dsp_rigor.py (predisp.) | F0 | ☑ | — *(2026-05-23 — script + 16 regole YAML LOCKED + fixture good/bad + 22 oracoli, gate operativo in F4)* | — |
 | F0-T7 | Classi JUCE (opz.) | F0 | ☐ | — | — |
@@ -971,9 +1010,9 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 | F0-T17 | Statistical Test Plan (STRP-001) | F0 | ☑ | — *(2026-05-23 — `src/evaluation/` 4 moduli + orchestratore + thresholds LOCKED, 104 oracoli verdi, suite F0 436 passed, smoke mini-batch verde, gate pronto post-F2-T1)* | — |
 | F1-T1 | Setup Azure | F1 | ☑ | — *(2026-05-23 — CEO offline runbook)* | — |
 | F1-T2 | dvc remote Azure | F1 | ☑ | — *(2026-05-23 — `dvc push` smoke verde)* | — |
-| F2-T1 | Render Gold 1.5 TB ×3 (≈4.5 TB) | F2 | ☐ | — *(2026-05-23 — tutti i gate prep chiusi: T1-prep-A/B/C/D ☑ + F0-T15-pre/T16-pre ☑; F2-T1 ora gated solo dall'esecuzione CEO offline — runbook `docs/runbooks/F2-T1_RENDER_BURN.md`)* | — |
+| F2-T1 | Render Gold 1.5 TB ×3 (≈4.5 TB) | F2 | ⊘ | **F0-T4c** *(2026-05-23 — diagnostica T1-DIAG-A ha trovato 3 bug strutturali: senza Decision Lock dei fix B1..B4 il Gold renderizzato sarebbe inutilizzabile dalla rete; B4 vincola la durata MIDI minima a 5 s, B1/B2/B3 ratificano i default architetturali)* | — |
 | F2-T2 | Audio augmentation + Demucs — *scale-only* | F2 | ⊘ | F2-T1, F0-T16-post | — |
-| F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1 *(F0-T4b ☑)* | **L4** |
+| F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1, **F0-T4c** *(F0-T4b ☑; data pipeline fixes ratificanti i default architetturali prima del burn $50-80 di A100)* | **L4** |
 | F2-T4 | Credit-soak | F2 | ⊘ | CP-3 | — |
 | F3 | Consolidamento SSD 1 TB CEO (€0) | F3 | ⏸ | F2 | — |
 | F4 | Sviluppo Plugin | F4 | ⏸ | L4 | — |
@@ -1097,6 +1136,30 @@ del DOSSIER §3.1 moltiplica la recipe matrix di F2-T1, non quella di F2-T2).
   multi-mic accumula RSS oltre la soglia). Sblocca **R&D Tier 1** (T1-A data audit,
   T1-B baseline TCN su MPS, T1-D stabilità per-seed, T1-C sweep iperparametri).
   Costo Azure: **$0**.
+· **2026-05-23 fine giornata — T1-DIAG-A: Opzione A diagnostica chiusa, 3 bug
+  strutturali identificati, F2-T1 e F2-T3 SOSPESI in attesa Decision Lock CEO su
+  F0-T4c.** Direttiva CEO ("procediamo con la diagnostica, non sono ancora pronto
+  a questa decisione [F0-T15-post], ho bisogno di avere almeno un po' di confidenza
+  che il modello vada"). La diagnostica ha trovato che il plateau F ≈ 0.09 di tutti
+  i R&D Tier 1 (T1-A → T1-H) NON è data starvation né capacity, ma **tre
+  disconnessioni strutturali tra spec F0-T4a/§3 e la sua implementazione**:
+  (1) strict-causality (PDC 100ms mai applicato in `GoldDataset`),
+  (2) RF collapse (receptive field 1024 frame ≈ 2.97 s vs training crop 256 frame
+  ≈ 0.74 s → 75 % del context è left-pad zero),
+  (3) LossConfig `pos_weight=50` 4× sotto density misurata (0.4-1.5 %).
+  Fix combinato porta self-overfit F 0.08 → 0.234 mean / **F_max = 0.827** (passa
+  L3) con **timing-MAE 3.99 ms** (sotto L3 = 5 ms) su groove migliore.
+  **Architettura F0-T4a C=32 provata viable.** Capacity test (C=32/64/128) ha
+  escluso definitivamente l'ipotesi di capacità insufficiente. Spec STRP-001 in
+  `docs/methodology/F0-T4c_DATA_PIPELINE_FIXES_SPEC.md` con 5 raccomandazioni B1..B5
+  pronte per Decision Lock. Report diagnostico completo in
+  `docs/gates/R&D_Tier1_reports/T1-DIAG-A/`. Commit: `a3fe30c` + `c7f10a5`.
+  **Implicazione operativa CRITICA:** F2-T1 (render 1.5 TB) era pronto al burn
+  offline; ora ⊘ **sospeso** perché B4 (durata MIDI minima 5 s) e B1/B2/B3 (default
+  architetturali) devono essere ratificati PRIMA del render — altrimenti il Gold
+  renderizzato avrebbe sample troppo brevi (< RF + lookahead) e la rete non
+  potrebbe consumarlo. Costo della pausa: ZERO. Costo dell'evitare: ~$60 di
+  render + ~$50-80 di training A100 su una rete strutturalmente rotta.
 
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 

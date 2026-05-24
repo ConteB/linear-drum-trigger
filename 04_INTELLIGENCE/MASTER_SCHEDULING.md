@@ -977,7 +977,17 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
   (`juce::RSAKey`, Poisoned DSP); PDC. Implementazione del **Model Artifact** (spec
   F0-T8): exporter PyTorch→RTNeural, blob pesi cifrato, header metadati.
   `audit_dsp_rigor.py` (predisposto in F0-T6) applicato come gate Zero-Allocation su
-  ogni commit del core DSP. *Sotto-fasi da dettagliare post-L4.*
+  ogni commit del core DSP.
+  **Primo task obbligatorio: `F4-T0 · DSP Harness Audit & Port` (STRP-001)** —
+  port C++/JUCE dei 4 layer di preprocessing introdotti in F0-T4d (PreEmphasis,
+  OnsetEnvelope, ChannelNorm, concat) con round-trip bit-exactness test
+  Python ↔ C++. Spec dettagliata in
+  [`F0-T4d §9 — C++/JUCE Port Plan`](../docs/methodology/F0-T4d_PREPROCESSING_HARNESS_AND_AUDIT_SPEC.md#cpp-port-plan)
+  (~185 LOC stimati, +26 ms PDC entro budget 100 ms, +170 KB BinaryData,
+  zero dipendenze esterne oltre JUCE). DoD: round-trip max\|Δ\| ≤ 1e-5 sul
+  TCN output finale; `audit_dsp_rigor.py` verde; ≤ 5 % CPU su MacBook Air M1
+  a 44.1 kHz / 256 sample buffer.
+  *Altre sotto-fasi (UI, Chronos, licensing) da dettagliare post-L4.*
 - **F5 · Release v1.0 EA:** QA conforme agli standard interni; build VST3 + AU;
   pubblicazione Early-Access $99.
 
@@ -1023,7 +1033,8 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 | F2-T3 | Training A100 → L4 | F2 | ⊘ | F2-T1 *(F0-T4c PARTIAL-LOCK 2026-05-24 — sblocco architetturale acquisito: B1/B2/B3/B6 ratificati. Resta gated solo da F2-T1 e dalla quota A100)* | **L4** |
 | F2-T4 | Credit-soak | F2 | ⊘ | CP-3 | — |
 | F3 | Consolidamento SSD 1 TB CEO (€0) | F3 | ⏸ | F2 | — |
-| F4 | Sviluppo Plugin | F4 | ⏸ | L4 | — |
+| F4-T0 | DSP Harness Audit & Port (STRP-001) — primo task F4 | F4 | ⏸ | L4 + F0-T4d ☑ | — *(spec `F0-T4d §9 C++/JUCE Port Plan`; ~185 LOC, +26 ms PDC, +170 KB BinaryData, zero deps oltre JUCE; DoD round-trip max\|Δ\| ≤ 1e-5 + audit_dsp_rigor verde + ≤ 5 % CPU)* |
+| F4 | Sviluppo Plugin (UI/Chronos/licensing post F4-T0) | F4 | ⏸ | F4-T0 | — |
 | F5 | Release v1.0 EA | F5 | ⏸ | F4 | — |
 
 **Stato globale:** Fase attiva **F0** · ☑ F0-T1 · ☑ F0-T1b · ☑ F0-T1c · ☑ F0-T2a · ☑ F0-T4a

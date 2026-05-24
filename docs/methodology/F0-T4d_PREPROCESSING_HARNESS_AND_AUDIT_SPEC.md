@@ -364,7 +364,198 @@ A valle della ratifica:
   del burn $50-80, perché aumenta significativamente la probabilità di
   passare L4. Se il CEO vuole partire F2-T3 senza, accetta esplicitamente
   il rischio L4 documentato in F0-T4c §6.5.
-- **Per F4 (plugin C++)**: P1 va replicato (basso costo); P2 da valutare
-  al budget runtime reale (fallback P1-only).
+- **Per F4 (plugin C++)**: vedi §9 "C++/JUCE Port Plan" — diventa il primo
+  task obbligatorio di F4 (**F4-T0 · DSP Harness Audit & Port**, vedi
+  `04_INTELLIGENCE/MASTER_SCHEDULING.md` §6).
+
+<a id="cpp-port-plan"></a>
+## 9. C++/JUCE Port Plan (deliverable F4)
+
+> **Scope di questa sezione**: documentare passo-per-passo cosa fa l'harness
+> di preprocessing in PyTorch (quello che gira durante il training) e
+> dimostrare che è **integralmente replicabile in JUCE C++** con i vincoli
+> del progetto (Zero-Allocation thread audio, PDC ≤ 100 ms, bit-exactness
+> Python↔C++). Il documento è la **base operativa** per il task
+> **F4-T0 · DSP Harness Audit & Port (STRP-001)** che apre la fase F4
+> dell'implementazione plugin.
+
+### 9.1 Flusso dati end-to-end
+
+```
+Input audio raw 44.1 kHz multi-mic
+        │
+        │  [B, 8, T]  (8 canali microfonici)
+        ▼
+┌─────────────────────────────────────────────────────────┐
+│  PreprocessingFrontend (src/neural/preprocessing.py)    │
+│                                                         │
+│  ┌───────────────┐    ┌──────────────────────────────┐  │
+│  │  P1.1         │    │  P2  OnsetEnvelope           │  │
+│  │  PreEmphasis  │    │  (in parallelo)              │  │
+│  │  (HP filter)  │    └──────────────────────────────┘  │
+│  └───────────────┘                  │                   │
+│         │                           │                   │
+│         │  [B, 8, T]                │  [B, 1, T]        │
+│         │  (audio "pulito")         │  (onset evidence) │
+│         └──────────┬────────────────┘                   │
+│                    │                                    │
+│                    │  concat dim=1 → [B, 9, T]          │
+│                    ▼                                    │
+│         ┌─────────────────────┐                         │
+│         │  P1.2 ChannelNorm   │                         │
+│         │  (z-score per-ch)   │                         │
+│         └─────────────────────┘                         │
+│                    │                                    │
+└────────────────────┼────────────────────────────────────┘
+                     │  [B, 9, T]  →  alla TCN
+                     ▼
+```
+
+### 9.2 Step-by-step (cosa fa ogni layer e perché)
+
+#### Step 1 — `PreEmphasis` (P1.1)
+
+- **Cosa fa**: high-pass 1° ordine, attenua DC + sub-bass.
+- **Formula**: `y[t] = x[t] − 0.97 · x[t−1]`
+- **Perché**: il transient è ciò che ci interessa per l'onset detection.
+  Il sustain (coda del piatto, sottofondo del basso) è rumore informativo.
+  Pre-emphasis enfatizza la *novità temporale*.
+- **Costo per sample**: 1 moltiplicazione + 1 sottrazione.
+
+#### Step 2 — `OnsetEnvelope` (P2) — onset evidence classico MIREX
+
+7 sotto-passi:
+
+##### 2a · STFT (Short-Time Fourier Transform)
+- Finestre da **2048 sample** (≈ 46 ms a 44.1 kHz), una ogni **128 sample** (≈ 3 ms).
+- FFT per ogni finestra → matrice tempo × frequenza ("spettrogramma").
+- **Formula**: `spec[f, t] = |FFT(audio[t−1024 : t+1024]) · Hann(2048)|`
+
+##### 2b · Mel-band reduction
+- Le 1025 frequenze FFT → **80 bande mel** (scala log-spaced sotto 4 kHz, ~lineare sopra), simile al sistema uditivo umano.
+- Output: matrice 80 × tempo.
+
+##### 2c · Compressione logaritmica
+- **Formula**: `log_mel = log1p(mel)`
+- Comprime la dinamica: un piatto fortissimo non oscura un kick sussurrato.
+
+##### 2d · Spectral flux (il cuore del trick)
+- **Formula**: `flux[band, t] = max(0, log_mel[band, t] − log_mel[band, t−1])`
+- *Differenza temporale half-wave-rectified*: cattura solo gli **incrementi** di energia.
+  Nota stazionaria → flux ≈ 0. Attacco improvviso → flux grande.
+
+##### 2e · Somma sulle bande mel
+- **Formula**: `envelope[t] = Σ_{bands} flux[band, t]`
+- Un singolo scalare per frame: alto quando *qualunque* banda ha un improvviso aumento di energia.
+
+##### 2f · Min-max normalize
+- **Formula**: `envelope[t] = (envelope[t] − min) / (max − min)`
+- Riscalato in `[0, 1]`. Indipendente dal volume assoluto del sample.
+
+##### 2g · Upsample × 128 (NN-repeat)
+- L'envelope è a 344 Hz (frame rate del modello). Hold-and-repeat ×128 → 44 100 Hz, stesso rate dell'audio.
+- Necessario per concatenarlo come 9° canale alongside ai mic.
+
+**Perché tutta questa fatica**: dai alla rete un canale extra che dice *"qui c'è probabilmente un onset"*. Non è una predizione del modello, è un'evidenza DSP pre-computata. La rete TCN poi raffina/correla con gli altri 8 canali audio. **Il preprocessing fa il 50% del lavoro che la rete dovrebbe fare da sola.**
+
+#### Step 3 — `concat`
+```
+combined = cat([mics_pre_emphasized, onset_envelope], dim=1)
+# [B, 8, T] + [B, 1, T] = [B, 9, T]
+```
+
+#### Step 4 — `ChannelNorm` (P1.2)
+- Per ognuno dei 9 canali: sottrai media e dividi per std (frozen, da training).
+- **Formula**: `z[c, t] = (x[c, t] − μ[c]) / √(σ²[c] + ε)`
+- Tutti i 9 canali a media 0 e varianza 1 → la rete vede solo la *forma* dell'onda, non la loudness.
+
+### 9.3 Mappatura C++/JUCE — componente per componente
+
+| Componente | Operazione DSP | JUCE building block | LOC C++ | Latenza |
+| :-- | :-- | :-- | --: | --: |
+| **PreEmphasis** | `y[t] = x[t] − 0.97 · x[t−1]` | `juce::IIRFilter` 1-pole o custom | ~10 | **1 sample** |
+| **STFT (2048/128)** | FFT sliding-window con Hann | `juce::dsp::FFT` + ring buffer + window | ~80 | **n_fft/2 = 1024 samples (~23 ms)** |
+| **Mel-bank `[80×1025]`** | matrice precomputed, 80 dot product per frame | `float[80][1025]` const + SIMD | ~30 | 0 |
+| **`log1p`** | element-wise | `std::log1pf` (intrinsic) o LUT | ~5 | 0 |
+| **Flux differenziale** | `max(0, frame[t] − frame[t−1])` | array diff + max | ~10 | **1 frame (~3 ms)** |
+| **Sum mel + min-max** | reduce 80 + scaling | trivial loop + running min/max | ~15 | 0 |
+| **NN-repeat ×128** | hold-and-repeat | trivial | ~5 | 0 |
+| **Concat 8→9 canali** | append a buffer multi-channel | `juce::AudioBuffer<float>::copyFrom` | ~10 | 0 |
+| **ChannelNorm** | `(x − μ) / σ` element-wise | `float[9]` μ + `float[9]` σ const + loop SIMD | ~20 | 0 |
+| **Totale** | | | **~185** | **~26 ms** |
+
+### 9.4 Compatibilità con i vincoli del progetto
+
+| Vincolo | Stato |
+| :-- | :-- |
+| **Zero-Allocation thread audio** (`audit_dsp_rigor.py`) | ✅ tutto static, pre-allocato in `prepareToPlay()` |
+| **LGPL-3.0 compatibile** (JUCE) | ✅ tutto JUCE nativo, nessuna libreria di terzi |
+| **PDC budget ≤ 100 ms** (F0-T4a §5) | ✅ +26 ms (23 STFT + 3 flux), entro budget |
+| **Compatibilità RTNeural** | ✅ il preprocessing è *davanti* a RTNeural, non dentro. RTNeural rimane invariato (`in_channels=9` nel JSON dei pesi) |
+| **Bit-exact replication** | ⚠️ STFT in float32 sì; mixed-precision FP16 no (motivo dei bug NaN della sessione P1+P2). C++ usa float32 di default → no problema |
+
+### 9.5 Architettura nel plugin JUCE (deliverable F4)
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  AudioProcessor::processBlock(buffer)                    │
+│                                                          │
+│  1. buffer (8 mic in)                                    │
+│  2. PreEmphasisProcessor.process(buffer)       ← P1.1    │
+│  3. OnsetEnvelopeProcessor.process(buffer)     ← P2      │
+│     └─ STFT → Mel → log1p → flux → sum → upsample        │
+│  4. concat(buffer, onsetEnvelope) → 9 channels           │
+│  5. ChannelNormProcessor.process(9chan_buffer) ← P1.2    │
+│     └─ frozen μ/σ from training (in BinaryData)          │
+│  6. RTNeuralModel.forward(9chan_buffer) → trigger MIDI   │
+│  7. Chronos delay-line (PDC compensation)                │
+│  8. MIDI out                                             │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 9.6 Asset da embeddare in `BinaryData`
+
+| Asset | Size | Note |
+| :-- | --: | :-- |
+| Pesi TCN cifrati (`.opna`) | ~340 KB | spec F0-T8 esistente |
+| **Mel filterbank `[80×1025]`** | ~320 KB float32 → 160 KB float16 | costante, una sola volta |
+| **ChannelNorm μ, σ `[9]`** | 72 byte | float32 per canale, frozen a fine training |
+| **Hann window `[2048]`** | 8 KB | costante, precomputed |
+| **Totale extra harness** | **~170 KB** | trascurabile |
+
+### 9.7 Ottimizzazioni runtime considerate
+
+- **STFT a passo `> 1 hop`** (downsampling onset evidence) → −50 % CPU, latency invariata
+- **Bandpass filterbank invece di mel** → −90 % CPU, qualità leggermente peggiore (da A/B testare in F4-T0)
+- **SIMD (SSE/NEON)** → `juce::dsp::FFT` lo usa già nativamente; SIMD manuale per mel-bank dot product
+- **Buffer chunking** → process audio a chunk di N campioni invece di sample-by-sample (più cache-friendly)
+
+### 9.8 Rischi tecnici noti
+
+| Rischio | Mitigazione |
+| :-- | :-- |
+| STFT FP32 in C++ ≠ STFT FP32 in PyTorch (ordering FFT, edge handling) | Round-trip bit-exactness test (max\|Δ\| ≤ 1e-5) come F0-T4b — primo step di F4-T0 |
+| `juce::dsp::FFT` non garantisce determinismo cross-platform (CPU vs ARM) | Verificare su entrambi (Mac arm64 + Windows x86_64); fallback "vendored FFT" se serve |
+| Hann window definition differs (periodic vs symmetric) | Documentato esplicitamente nella spec PyTorch (`periodic=True`); replicato in C++ |
+| Mel-bank slaney vs HTK normalization | PyTorch usa slaney (matched in `_make_mel_filterbank`); replicato bit-exact |
+| Loudness drift in ChannelNorm running stats tra train ed eval | μ, σ vanno **frozen** a fine training (`model.eval()`); in C++ caricati come `const float[]` |
+
+### 9.9 Plan operativo F4-T0 (STRP-001)
+
+Quando F4 parte, F4-T0 è il primo task. Le 6 fasi STRP-001 saranno:
+
+1. **Competitor & Market Analysis**: come Superior Drummer / EZdrummer / Steven Slate fanno il DSP front-end (proprietario, non documentato — sostituiamo con benchmark MIREX moderni).
+2. **Open-Source Codebase Analysis**: `juce::dsp::FFT` API, `juce::IIRFilter` API, vendor SIMD libraries (Eigen/xsimd se servono).
+3. **UX/UI Impact**: nessuno diretto (DSP è invisibile); badge "PDC 100 ms" già nel design (LINEAR_DESIGN_GUIDE).
+4. **Tech Implementation Matrix**: tabella per ogni layer (Python ref → C++ port → bit-exact test).
+5. **Executive Briefing**: piano dettagliato, budget LOC, budget CPU%, budget memoria → ratifica CEO.
+6. **Docs Update**: spec C++ del DSP front-end + amendment a F0-T4d con risultati round-trip test.
+
+**DoD F4-T0**:
+- ✅ tutti i 4 componenti (PreEmphasis, OnsetEnvelope, ChannelNorm, concat) implementati come `juce::dsp::ProcessorBase` subclass
+- ✅ round-trip test Python ↔ C++ verde su 10 sample (max\|Δ\| ≤ 1e-5 sul output finale TCN)
+- ✅ `audit_dsp_rigor.py` verde sui file C++ (zero allocation/lock/mutex/IO nel thread audio)
+- ✅ CPU profile dimostra ≤ 5 % CPU su MacBook Air M1 a 44.1 kHz / 256 sample buffer
+- ✅ Latency report misurata = 26 ms ± 1 ms (PDC budget rispettato)
 
 ---

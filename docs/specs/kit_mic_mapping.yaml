@@ -1,0 +1,108 @@
+# ============================================================================
+# KIT → 8-CANONICAL MIC MAPPING  (Artefatto versionato)
+# Progetto: drum-trigger-fresh / OP-NeuroTrigger
+# Riferimenti: F0-T2a §2.3 (`multitrack_full` 8-slot canonical, Decision Lock
+#              CEO 2026-05-22); F0-T2c (integrazione DrumGizmo).
+# ----------------------------------------------------------------------------
+# STATO: LOCKED — Decision Lock CEO 2026-05-24 (sessione mini-L3 cross-kit).
+# Companion di `midi_mapping_table.yaml`: dove quello è "nota GM → bus logico",
+# QUI è "canale fisico del kit DrumGizmo → slot canonico del tensore Gold".
+# ============================================================================
+schema_version: "1.0"
+status: LOCKED
+
+# Gli 8 slot canonici di destinazione — F0-T2a §2.3 amendment 2026-05-22.
+# Ogni mappatura deve coprire questi 8 in ordine, una entry per slot.
+canonical_slots:
+  - kick
+  - snare
+  - hihat
+  - tom
+  - floor
+  - oh_L
+  - oh_R
+  - room
+
+# Per ogni kit DrumGizmo: selezione di 1 microfono reale per slot. "Selezione,
+# mai down-mix" — è la dottrina F0-T2a §2.3: down-mixing di due microfoni
+# spaziati combina filtra il segnale.
+#
+# Quando un kit non ha un mic dedicato per uno slot (es. ShittyKit non ha hihat
+# dedicato), si usa il bleed dal mic più vicino (overhead) — è la migliore
+# approssimazione fisica disponibile e la rete impara comunque a discriminare
+# l'onset dal bleed.
+kits:
+
+  DRSKit:
+    # 13 mic ufficiali — selezione 8/13. Dropped: Kdrum_back, Snare_bottom,
+    # Ride, Tom2, AmbR. Decision Lock CEO 2026-05-22 (sessione T1-prep, F0-T2c).
+    kick:   Kdrum_front
+    snare:  Snare_top
+    hihat:  Hihat
+    tom:    Tom1
+    floor:  Tom3
+    oh_L:   OHL
+    oh_R:   OHR
+    room:   AmbL
+
+  MuldjordKit:
+    # 16 mic (incl. Trigger). Kick stereo via KdrumL/KdrumR — selezione
+    # KdrumL come riferimento mono. Floor da Tom4 (il kit ha 4 tom; Tom4 è
+    # quello più grave = floor). Decision Lock CEO 2026-05-24 (mini-L3).
+    kick:   KdrumL
+    snare:  Snare_top
+    hihat:  Hihat
+    tom:    Tom1
+    floor:  Tom4
+    oh_L:   OHL
+    oh_R:   OHR
+    room:   AmbL
+  # Alias di compatibilità — la dir vendorizzata è `MuldjordKit3/` e
+  # il kit XML è `MuldjordKit3.xml`, ma il `recipe.render.kit` label
+  # convenzionale è `MuldjordKit`. Entry duplicata per il dispatch
+  # diretto da kit XML stem.
+  MuldjordKit3:
+    kick:   KdrumL
+    snare:  Snare_top
+    hihat:  Hihat
+    tom:    Tom1
+    floor:  Tom4
+    oh_L:   OHL
+    oh_R:   OHR
+    room:   AmbL
+
+  ShittyKit:
+    # 8 mic, naming pre-2018 (lowercase + dash-separated). NON ha mic
+    # dedicato per hihat — usa il bleed da OH-L (la fisica del kit:
+    # hihat sotto OH sinistro). Room è coppia stereo Room-L/R; selezione
+    # Room-L mono. Decision Lock CEO 2026-05-24 (mini-L3 val "vergine").
+    kick:   kick
+    snare:  snare
+    hihat:  OH-L      # no dedicated hihat mic — piggyback on overhead-left bleed
+    tom:    Tom
+    floor:  Floor
+    oh_L:   OH-L
+    oh_R:   OH-R
+    room:   Room-L
+
+  CrocellKit:
+    # 15 mic — selezione 8/15. Decision Lock CEO 2026-05-24 (mini-L3 cross-kit).
+    # Note: OHCenter è una terza overhead opzionale del kit; non occupa uno slot
+    # canonico (oh_L/oh_R sono già coperti da OHLeft/OHRight). Floor tom 1
+    # (FTom1) > FTom2 per fisica del kit (FTom1 = primo floor tom = più acuto).
+    kick:   KDrumInside
+    snare:  SnareTop
+    hihat:  Hihat
+    tom:    Tom1
+    floor:  FTom1
+    oh_L:   OHLeft
+    oh_R:   OHRight
+    room:   AmbLeft
+
+  # ------------------------------------------------------------------------
+  # Kit ratificati dal roster F0-T1b ma non ancora consumati dal codice.
+  # Aggiunte = bump `schema_version` minor + commit doc-only.
+  # ------------------------------------------------------------------------
+
+  # Aasimonster:   # TODO — manifest-only nel roster F0-T1b
+  # Swirly:        # TODO — manifest-only

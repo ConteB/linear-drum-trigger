@@ -143,16 +143,20 @@ binario è assente (host macOS) e girano dentro OrbStack.
 | Ruolo | Kit Tama Superstar moderno (timbro production-grade) · Train Gold |
 | ⚠️ Nota integrazione | Convenzione di naming `Midimap.xml` (no variant suffix) — `DrumGizmoRenderer._resolve_drumgizmo_midimap` va esteso in T1-prep-A per supportare entrambe le convenzioni (`Midimap_<variant>.xml` per DRSKit, `Midimap.xml` per MuldjordKit). |
 
-### `vendor/drumgizmo/CrocellKit/` 🌐 **manifest-only**
+### `vendor/drumgizmo/CrocellKit/` 📦 **localmente vendorizzato** (2026-05-25)
 
 | Campo | Valore |
 | :-- | :-- |
 | Kit | DrumGizmo — **CrocellKit v1.1** |
 | Sorgente | `https://drumgizmo.org/kits/CrocellKit/CrocellKit1_1.zip` |
 | Licenza | **CC-BY-4.0** |
-| sha256 (zip, **5.5 GB**) | `65d6f3aab56bcf357c6d636990e1b4e56f78513c0e8031ce80c284c9c677813d` |
-| Ruolo | Kit DrumGizmo grande, multi-mic ricchi · Train Gold |
-| Provisioning | da scaricare su VM Azure in T1-prep-D (zero disco locale) |
+| Size zip | 5.5 GB (`Content-Length: 5646502341` su nginx drumgizmo.org) |
+| sha256 (zip) | `341d1f23e5867fd9d465bbcf3e4cd2f805bb7d7c4f519ba9ec73daae8161d5c6` *(re-computed 2026-05-25; il valore precedente nel manifest era stale)* |
+| Entrypoint XML | `vendor/drumgizmo/CrocellKit/CrocellKit_full.xml` |
+| Size estratto | 8.4 GB |
+| Ruolo | Kit DrumGizmo grande, multi-mic ricchi · **Train Gold + mini-L3 cross-kit train** (Decision Lock CEO 2026-05-24) |
+| Provisioning | localmente sul Mac del CEO 2026-05-25 (mini-L3) + ri-scaricabile su VM Azure in T1-prep-D |
+| Mappatura mic | `docs/specs/kit_mic_mapping.yaml` (CrocellKit entry: kick=KDrumInside, snare=SnareTop, hihat=Hihat, tom=Tom1, floor=FTom1, OH=OHLeft/OHRight, room=AmbLeft) |
 
 ### `vendor/drumgizmo/Aasimonster/` 🌐 **manifest-only**
 
@@ -165,17 +169,19 @@ binario è assente (host macOS) e girano dentro OrbStack.
 | Ruolo | Kit DrumGizmo multi-mic, timbro distinto · Train Gold |
 | Provisioning | da scaricare su VM Azure in T1-prep-D |
 
-### `vendor/drumgizmo/ShittyKit/` 🌐 **manifest-only**
+### `vendor/drumgizmo/ShittyKit/` 📦 **localmente vendorizzato** (2026-05-24)
 
 | Campo | Valore |
 | :-- | :-- |
 | Kit | DrumGizmo — **ShittyKit v1.2** |
 | Sorgente | `https://drumgizmo.org/kits/ShittyKit/ShittyKit1_2.zip` |
 | Licenza | **CC-BY-4.0** |
-| sha256 (zip) | `383673954af91c88a7044e17cbc5eeed67e815fcbff574a55278e33efb9afd77` |
-| md5 (zip) | `cbab008a3a4413c6e85b1439d36fe63f` (fonte: drumgizmo.org) |
-| Ruolo | **Val Gold (kit "vergine")** — Decision Lock CEO 2026-05-23 Opzione B · timbro lo-fi/vintage, fuori standard rispetto al training |
-| Provisioning | da scaricare su VM Azure in T1-prep-D |
+| Size zip | 353 MB (`Content-Length: 369655148` su nginx drumgizmo.org) |
+| md5 (zip) | `cbab008a3a4413c6e85b1439d36fe63f` *(MATCH con fonte drumgizmo.org — verificato 2026-05-24)* |
+| sha256 (zip) | `acf7c4b0fb01b9c764dca176a3603c25cd9685e5e82a5f7119d16cec7e7af807` *(re-computed 2026-05-24; il valore precedente nel manifest era stale)* |
+| Entrypoint XML | `vendor/drumgizmo/ShittyKit/ShittyKit.xml` |
+| Ruolo | **Val Gold (kit "vergine")** — Decision Lock CEO 2026-05-23 Opzione B + **mini-L3 cross-kit val** (Decision Lock CEO 2026-05-24) · timbro lo-fi/vintage, fuori standard rispetto al training |
+| Provisioning | localmente sul Mac del CEO 2026-05-24 (mini-L3) + ri-scaricabile su VM Azure in T1-prep-D |
 | Nota | Usa formato drumkit più datato (velocity-group fissi), ma compatibile con DrumGizmo 0.9.20 |
 
 ---

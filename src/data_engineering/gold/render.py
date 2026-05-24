@@ -241,6 +241,68 @@ DRSKIT_MULTITRACK8: tuple[tuple[str, str], ...] = (
 )
 
 
+#: Path to the kit→8-canonical mic mapping spec (LOCKED, F0-T2a §2.3 companion).
+#: Single source of truth: edit the YAML, NOT this file. Bump `schema_version`
+#: in the YAML on every change.
+KIT_MIC_MAPPING_YAML = Path(__file__).resolve().parents[3] / "docs" / "specs" / "kit_mic_mapping.yaml"
+
+
+def _load_kit_mic_mapping(
+    yaml_path: Path = KIT_MIC_MAPPING_YAML,
+) -> dict[str, tuple[tuple[str, str], ...]]:
+    """Load ``docs/specs/kit_mic_mapping.yaml`` into the dispatch dict.
+
+    Fail-loud on any schema mismatch — the mapping is doctrine, a malformed
+    YAML must NOT silently fall back to DRSKit (we'd corrupt every cross-kit
+    render with wrong mic selections).
+    """
+    import yaml  # noqa: PLC0415 — lazy import (only when render runs)
+    payload = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"kit_mic_mapping.yaml: root must be a mapping (got {type(payload).__name__})"
+        )
+    canonical = tuple(payload.get("canonical_slots") or ())
+    if canonical != (
+        "kick", "snare", "hihat", "tom", "floor", "oh_L", "oh_R", "room",
+    ):
+        raise RuntimeError(
+            f"kit_mic_mapping.yaml: canonical_slots must equal the 8-slot "
+            f"layout of F0-T2a §2.3; got {canonical}"
+        )
+    kits_raw = payload.get("kits") or {}
+    out: dict[str, tuple[tuple[str, str], ...]] = {}
+    for kit_label, slot_to_channel in kits_raw.items():
+        if not isinstance(slot_to_channel, dict):
+            raise RuntimeError(
+                f"kit_mic_mapping.yaml: kit '{kit_label}' must be a mapping"
+            )
+        try:
+            entries = tuple((slot, slot_to_channel[slot]) for slot in canonical)
+        except KeyError as exc:
+            raise RuntimeError(
+                f"kit_mic_mapping.yaml: kit '{kit_label}' missing slot {exc!s}"
+            ) from exc
+        out[kit_label] = entries
+    return out
+
+
+#: Cached dispatch (loaded once per process). To reload after editing the
+#: YAML in a long-running test session, call ``_load_kit_mic_mapping.cache_clear()``
+#: — but it's just a module-level dict, restart the process is simpler.
+KIT_TO_MULTITRACK8: dict[str, tuple[tuple[str, str], ...]] = _load_kit_mic_mapping()
+
+
+def channel_map_for_kit(kit_label: str) -> tuple[tuple[str, str], ...]:
+    """Resolve the 8-canonical mic mapping for a given kit label.
+
+    Falls back to :data:`DRSKIT_MULTITRACK8` for unknown kits (the
+    industry-standard layout — registered kits should be added to
+    ``docs/specs/kit_mic_mapping.yaml`` ahead of any render).
+    """
+    return KIT_TO_MULTITRACK8.get(kit_label, DRSKIT_MULTITRACK8)
+
+
 class DrumGizmoRenderer:
     """Fail-loud adapter over the ``drumgizmo`` CLI (F0-T2a §2.2).
 

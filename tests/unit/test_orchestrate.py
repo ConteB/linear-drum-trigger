@@ -171,11 +171,40 @@ def test_midimap_resolved_by_kit_naming_convention(tmp_path: Path) -> None:
 
 
 def test_midimap_unresolvable_kit_name_fails_loud(tmp_path: Path) -> None:
-    """A kit file with no ``_variant`` suffix cannot yield a map — fail loud."""
+    """A kit dir with neither variant nor single-XML Midimap files fails loud."""
     kit = tmp_path / "kit.xml"
     kit.write_text("<kit/>", encoding="utf-8")
-    with pytest.raises(OrchestrationError, match="derive a MIDI map"):
+    with pytest.raises(OrchestrationError, match="MIDI map not found"):
         _resolve_drumgizmo_midimap(kit)
+
+
+def test_midimap_single_xml_fallback_uppercase(tmp_path: Path) -> None:
+    """Older single-XML kits (no underscore variant) resolve to `Midimap.xml`
+    in the kit directory — added 2026-05-24 to support MuldjordKit3,
+    Aasimonster, and other DrumGizmo kits that predate the variant
+    naming convention."""
+    kit = tmp_path / "MuldjordKit3.xml"
+    kit.write_text("<kit/>", encoding="utf-8")
+    midimap = tmp_path / "Midimap.xml"
+    midimap.write_text("<midimap/>", encoding="utf-8")
+    assert _resolve_drumgizmo_midimap(kit) == midimap
+
+
+def test_midimap_single_xml_fallback_lowercase(tmp_path: Path) -> None:
+    """ShittyKit ships ``midimap.xml`` (lowercase) — the resolver tolerates
+    the case variant too. On case-insensitive filesystems (HFS+/APFS default)
+    we cannot create `midimap.xml` distinct from `Midimap.xml`, so the test
+    accepts either case-resolved hit (the resolver is order-deterministic
+    and on Linux/OrbStack the precise filename is preserved)."""
+    kit = tmp_path / "ShittyKit.xml"
+    kit.write_text("<kit/>", encoding="utf-8")
+    midimap = tmp_path / "midimap.xml"
+    midimap.write_text("<midimap/>", encoding="utf-8")
+    resolved = _resolve_drumgizmo_midimap(kit)
+    # On case-insensitive FS the OS reports whichever name first matched;
+    # both are the same inode. Accept either spelling.
+    assert resolved.name.lower() == "midimap.xml"
+    assert resolved.parent == tmp_path
 
 
 def test_midimap_absent_file_fails_loud(tmp_path: Path) -> None:

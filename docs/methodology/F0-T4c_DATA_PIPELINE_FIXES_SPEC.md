@@ -429,6 +429,96 @@ A valle del regression test §6.2 #13:
   aggressivo? scan_density wrong?). B4 non ha senso senza un'architettura
   che apprende.
 
+### 6.5 Mini-L3 cross-kit verdict (2026-05-25) — campanello d'allarme
+
+> **🔴 FAIL ❌** — pacchetto completo in
+> `docs/gates/F0-T4c_MINI_L3/`. CEO directive 2026-05-24: testare il modello
+> cross-kit (3 kit train → 1 kit val "vergine") prima del burn F2-T1/T3 su
+> Azure, per rispondere alla domanda: *la rete impara l'evento fisico o il
+> timbro?*
+
+**Setup mini-L3:**
+- **Train:** 3 kit DrumGizmo (DRSKit, MuldjordKit3, CrocellKit) × 117 GMD MIDI
+  (≥ 5s, ≤ 15s) × 2 jitter variants = **656 Gold sample**
+  (di cui 600 usati per OOM safety sul Mac 16 GB)
+- **Val "vergine":** ShittyKit × 117 MIDI × 1 jitter = **115 Gold sample**
+  (kit mai visto in training — Decision Lock CEO 2026-05-23 Opzione B)
+- **Model:** F0-T4a TCN `C=32` (83 673 params) con tutti i default F0-T4c
+  (lookahead=35, crop=196 608, LossConfig B3, B6a/B6b pos_weight per-bus)
+- **Wall-time:** ~30 min totali (15 min render train + 1 min render val +
+  10 min training MPS + report)
+
+**Risultati:**
+
+| Configuration | Train sample | Epoch | Final train loss | Val F_mean | Val F range | Verdetto |
+| :-- | --: | --: | --: | --: | :-- | :--: |
+| Run 1 (baseline-only) | 331 | 120 | 1.09 | **0.049** | [0.005, 0.151] | ❌ FAIL |
+| Run 2 (full pool) | 600 | 150 | 1.11 | **0.021** | [0.005, 0.040] | ❌ FAIL |
+
+**Gate target:** F_mean ≥ 0.55 (sotto L4 = 0.80, sopra regression test self-overfit).
+
+**Pattern diagnostico per-bus sul val ShittyKit (aggregato 115 sample):**
+
+| Bus | n_true | n_pred | n_match | Precision | Recall |
+| :-- | --: | --: | --: | --: | --: |
+| kick | 526 | 37 444 | 438 | 0.012 | 0.833 |
+| snare | 1 201 | 45 168 | 1 198 | 0.027 | **0.998** |
+| hihat | 371 | 46 211 | 371 | 0.008 | **1.000** |
+| floor_tom | 295 | 44 958 | 294 | 0.007 | 0.997 |
+| ride | 300 | 44 857 | 300 | 0.007 | **1.000** |
+
+**Diagnosi:** la rete sui timbri ShittyKit collassa a **"predici onset ovunque"**
+— Recall ~1.00 (becca quasi tutti i veri perché spara su quasi ogni frame),
+Precision ~0.01 (140× più false positive del necessario). Stesso pattern del
+sample collapse osservato su RND003/RND045 nel regression test (§6.4) — la
+rete non generalizza a domini fuori distribuzione.
+
+**Cause strutturali (ordinate per severità):**
+1. **Mismatch microfonico drastico.** ShittyKit ha mic layout incompatibile
+   con i 3 kit train (no mic Hihat dedicato → mappato a OH-L bleed; naming
+   `kick`/`snare` lowercase vs `Kdrum_front`/`Snare_top` dei kit moderni;
+   8 mic totali vs 13-16 — vedi `docs/specs/kit_mic_mapping.yaml`).
+2. **`pos_weight` cap 1000** (B6b) per `crash_a`/`crash_b` premia la rete che
+   spara "sempre 1" sui domini fuori distribuzione (sui timbri sconosciuti
+   ogni attivazione di basso livello passa la soglia di pos_weight aggressivo).
+3. **Audio augmentation assente** (F0-T16-post deferred). La rete non ha mai
+   visto la stessa nota fisica con sonorità diverse → non ha imparato
+   l'invarianza spettrale che il cross-kit richiede.
+4. **Capacity `C=32`** può essere troppo piccola per "memorizzare" abbastanza
+   timbri da generalizzare. L'esclusione di T1-DIAG-A valeva per self-overfit;
+   cross-kit è dominio strutturalmente diverso.
+
+**Implicazione operativa per F2-T1/T3 e L4:**
+- L4 userà E-GMD (registrazioni umane reali su kit reali) come holdout —
+  **molto più diverso** dai render Gold sintetici di quanto ShittyKit lo sia
+  da DRSKit/Muldjord/Crocell. Il mini-L3 è quindi un **campanello d'allarme
+  forte**: l'L4 ha alta probabilità di fallire allo stesso modo con l'architettura
+  attuale.
+- Il fix B1-B6 di F0-T4c resta **architetturalmente corretto** (regression test
+  self-overfit verde F=0.958 lo dimostra); il problema è di **generalizzazione
+  cross-domain**, non di apprendimento.
+- **Candidate mitigations da considerare prima di F2-T3:**
+  - F0-T16-post audio augmentation: ratifica e implementazione (oggi `STRP-001
+    IN REVIEW`) — la più probabile soluzione strutturale.
+  - `LossConfig.pos_weight` cap più conservativo (es. 200 invece di 1000).
+  - C=64 o C=128 (capacity test esteso a regime cross-kit, non solo
+    self-overfit come T1-DIAG-A).
+  - Domain randomization durante training (scrambling canali, mic drop, etc.)
+    — l'idea di base di F0-T15-post B7/B8.
+
+**Il mini-L3 NON blocca:**
+- B4 (durata MIDI minima = 5 s) può essere ratificato — il mini-L3 ha
+  dimostrato che la pipeline data → render → training funziona end-to-end;
+  il problema è qualitativo del modello su cross-domain, non quantitativo
+  della pipeline dati.
+- F2-T1 può partire una volta firmato B4; il render Gold sintetico è la base
+  per qualunque iterazione successiva.
+
+**Il mini-L3 INFORMA:**
+- F2-T3 ha ora una soglia di rischio quantificata: la prima training A100
+  potrebbe fallire L4. Suggerimento di sequenza: prima ratifica F0-T16-post +
+  re-run mini-L3 con augmentation; SOLO se passa, F2-T3 con confidenza.
+
 ### 6.4 Risultato regression test (2026-05-24)
 
 > **🎉 PASS ✅** — pacchetto completo in

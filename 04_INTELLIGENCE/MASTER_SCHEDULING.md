@@ -1168,6 +1168,29 @@ del DOSSIER §3.1 moltiplica la recipe matrix di F2-T1, non quella di F2-T2).
   potrebbe consumarlo. Costo della pausa: ZERO. Costo dell'evitare: ~$60 di
   render + ~$50-80 di training A100 su una rete strutturalmente rotta.
 
+· **2026-05-25 — Mini-L3 cross-kit (CEO directive 2026-05-24) → FAIL ❌,
+  campanello d'allarme strutturale.** Test locale (0$ Azure): 656 sample
+  Gold su 3 kit train (DRSKit + MuldjordKit + CrocellKit) + 115 sample val
+  "vergine" ShittyKit, training TCN F0-T4a `C=32` con tutti i default F0-T4c.
+  **Due run successivi (run 1 = 331 baseline-only sample, 120 epoch;
+  run 2 = 600 sample, 150 epoch) entrambi FAIL:** val F_mean = 0.049 e 0.021
+  rispettivamente (gate ≥ 0.55). Più dati peggiora — diagnosi: la rete
+  collassa a "predici onset ovunque" sui timbri ShittyKit (Recall ~1.00,
+  Precision ~0.01, 140× false positive ratio). **Implicazione:** L4 (E-GMD
+  Holdout reale) ha alta probabilità di fallire stessa modalità. Soluzioni
+  candidate: F0-T16-post audio augmentation, `pos_weight` cap più
+  conservativo, C=64/128. **Il mini-L3 NON blocca B4/F2-T1** (la pipeline
+  dati è verde end-to-end); suggerisce di **ratificare F0-T16-post + ri-girare
+  mini-L3 prima del burn $50-80 di F2-T3 A100**. Tooling riproducibile:
+  `tools/mini_l3_runner.py` + `tools/mini_l3_train.py`. Report HTML
+  blueprint-compliant in `docs/gates/F0-T4c_MINI_L3/`. Side effect positivo:
+  introdotti `docs/specs/kit_mic_mapping.yaml` (companion versionato di
+  `midi_mapping_table.yaml` — single source of truth della mappatura kit→
+  8-canonical), fallback "single-XML" in `_resolve_drumgizmo_midimap`
+  (supporto MuldjordKit3 + ShittyKit), CrocellKit + ShittyKit estratti in
+  `vendor/drumgizmo/` (vendor/README aggiornato). Costo Azure: **$0**.
+  Commit: in arrivo.
+
 · **2026-05-24 — F0-T4c PARTIAL-LOCK v1.0.0 (Decision Lock CEO) + regression
   test PASS.** Executive Briefing F0-T4c presentato; CEO ratifica
   **B1+B2+B3+B6a+B6b+B6c**, defer **B4** (durata MIDI minima 5 s) al post-

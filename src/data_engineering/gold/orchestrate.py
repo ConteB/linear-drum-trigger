@@ -37,6 +37,7 @@ from data_engineering.gold.gold_writer import SAMPLE_RATE, write_gold_sample
 from data_engineering.gold.recipe import Engine, Recipe
 from data_engineering.gold.render import (
     DRSKIT_MULTITRACK8,
+    channel_map_for_kit,
     DrumGizmoRenderer,
     RenderError,
     SfizzRenderer,
@@ -257,25 +258,37 @@ def wav_to_audio_buffer(wav_path: str | Path) -> tuple[np.ndarray, float]:
 def _resolve_drumgizmo_midimap(kit_path: Path) -> Path:
     """Resolve a DrumGizmo kit's MIDI map by the kit-file naming convention.
 
-    DrumGizmo kits ship ``<Name>_<variant>.xml`` kit files alongside
-    ``Midimap_<variant>.xml`` maps (e.g. DRSKit's ``DRSKit_full.xml`` /
-    ``Midimap_full.xml``). The recipe schema (F0-T2a §1.1) carries only the kit
-    path, so the map is derived here.
+    Two layouts in the wild:
+
+    1. **Variant-bearing kits** (e.g. DRSKit): `<Name>_<variant>.xml` kit file
+       paired with `Midimap_<variant>.xml` map. The variant lets one kit ship
+       multiple mic configurations.
+    2. **Single-XML kits** (e.g. MuldjordKit3, ShittyKit, most older
+       DrumGizmo kits): just `<Name>.xml` paired with `Midimap.xml` (or the
+       case-variant `midimap.xml`). Pre-2018-style kits.
+
+    The recipe schema (F0-T2a §1.1) carries only the kit path, so the map is
+    derived here. Fail-loud if no candidate map file exists.
     """
+    parent = kit_path.parent
     stem = kit_path.stem
-    if "_" not in stem:
-        raise OrchestrationError(
-            f"cannot derive a MIDI map from kit file {kit_path.name}: "
-            "expected a '<Name>_<variant>.xml' DrumGizmo kit name"
-        )
-    variant = stem.split("_", 1)[1]
-    midimap = kit_path.parent / f"Midimap_{variant}.xml"
-    if not midimap.is_file():
-        available = sorted(p.name for p in kit_path.parent.glob("Midimap_*.xml"))
-        raise OrchestrationError(
-            f"DrumGizmo MIDI map not found: {midimap} (available: {available})"
-        )
-    return midimap
+    candidates: list[Path] = []
+    if "_" in stem:
+        # Variant-bearing convention — try Midimap_<variant>.xml first.
+        variant = stem.split("_", 1)[1]
+        candidates.append(parent / f"Midimap_{variant}.xml")
+    # Single-XML fallback — Midimap.xml / midimap.xml in the kit dir.
+    candidates.extend((parent / "Midimap.xml", parent / "midimap.xml"))
+    for cand in candidates:
+        if cand.is_file():
+            return cand
+    available = sorted(
+        p.name for p in parent.glob("*idimap*.xml")
+    ) or ["(none)"]
+    raise OrchestrationError(
+        f"DrumGizmo MIDI map not found alongside kit {kit_path.name} "
+        f"(tried: {[c.name for c in candidates]}; available in dir: {available})"
+    )
 
 
 def _render(recipe: Recipe, midi_path: Path, kit_path: Path, wav_path: Path) -> None:
@@ -295,7 +308,10 @@ def _render(recipe: Recipe, midi_path: Path, kit_path: Path, wav_path: Path) -> 
         midi_path=midi_path,
         wav_path=wav_path,
         duration_s=midi_len + _DRUMGIZMO_RENDER_TAIL_S,
-        channel_map=DRSKIT_MULTITRACK8,
+        # F0-T4c CEO 2026-05-24: per-kit dispatch from docs/specs/kit_mic_mapping.yaml.
+        # Was DRSKIT_MULTITRACK8 hardcoded (worked only for DRSKit; broke on
+        # MuldjordKit / ShittyKit etc. in the mini-L3 cross-kit run).
+        channel_map=channel_map_for_kit(recipe.render.kit),
     )
 
 

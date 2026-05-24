@@ -5,8 +5,8 @@ type: spec
 status: LOCKED
 phase: F0
 domain: AI / Reporting
-version: 1.0.0
-updated: 2026-05-23
+version: 1.1.0
+updated: 2026-05-24
 tags: [reporting, training, ux, ai, blueprint]
 related: [LIN-DT-DCBP-001, LIN-DT-ENGSTD-001, LIN-DT-MSCHED-001]
 supersedes: []
@@ -137,13 +137,31 @@ random. Soglia gate (`< 0.10`) come linea orizzontale.
 
 ### § 7 — Esempi qualitativi
 
-1-2 sample dal holdout. Per ognuno:
+**1..N sample** dal holdout (amendment v1.1, 2026-05-24 — direttiva CEO: per
+diagnosi clinica del modello su pattern multipli, non solo 1-2 cherry-picked).
+Per ognuno:
 
-- Piano-roll **ground-truth** (8 bus × T frame, heatmap binaria).
-- Piano-roll **predetto** sovrapposto (onset predicted con bordo colorato).
-- Drift annotato in ms per gli onset matchati.
+- Piano-roll con **ground-truth** (cerchi verdi) **+ predetto** (croci rosse)
+  sovrapposti, 8 bus × T frame.
+- Caption con `f_mean`, `timing_mae_ms` per quick-scan.
+- Asse X in secondi (più leggibile di "frame").
 
-Asse X in secondi (più leggibile di "frame").
+**Numero di sample:** `1..N`, configurato dal driver del report:
+
+- **Auto-emit da `train.py` (default):** `len(holdout_keys)` — tipicamente 2.
+- **Regression test / Tier-1 sweep:** `len(samples_under_test)` — tipicamente 6–18.
+- **Tier-2 / Ocular Proof (L3, L4):** **tutti i sample del holdout reale**
+  (E-GMD / Slakh-Mix), per non lasciare angoli del dataset non ispezionati.
+
+Implementazione: `build_default_context()` itera su ogni elemento di
+`holdout_evals` (`for e in holdout_evals: charts["piano_roll_samples"].append(...)`)
+— il template emette automaticamente N caption + N piano-roll, in ordine di
+input. Nessun cap hard-coded.
+
+**Linee guida visuali (>10 sample):** quando N supera ~10, il render diventa
+verticalmente lungo. Resta accettabile (page-by-page scroll in browser), ma
+i Tier-2 con dataset grandi dovrebbero produrre un report "campione" con i
+12 peggiori + 12 migliori, mai un singolo HTML con migliaia di piano-roll.
 
 ### § 8 — Iperparametri usati
 

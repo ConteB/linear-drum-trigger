@@ -197,7 +197,7 @@ rotture di contratto. Tier 2, può essere committato dopo F2-T3.
 | Rischio | Mitigazione |
 | :-- | :-- |
 | 100 ms PDC inaccettabile per use-case live | Documentato; v1.0 è "Studio Mode". V1.x può esplorare lookahead ridotto. |
-| Sample > 5 s mismatch con GMD reale (median ~10-12 s, OK; ma alcuni grooves brevi) | Filtrare a monte i MIDI < 5 s. **Verifica empirica:** GMD v1.0 contiene 1150 MIDI; quanti sono ≥ 5 s? **Da misurare prima del Decision Lock.** |
+| Sample > 5 s mismatch con GMD reale | **Misurato 2026-05-23 (pre-flight chiuso):** GMD v1.0 contiene 1150 MIDI; 551 (47.9 %) sono ≥ 5 s; mediana effettiva = 4.35 s. Con jitter k=2 + baseline (×3) × 8 kit del roster F0-T1b → **13 224 sample di training**, sopra la soglia ~10 K che la CRNN literature suggerisce per la convergenza. Trade-off: meno varietà rispetto al GMD completo; mitigato da audio augmentation ×3 in F2-T2 (40 K sample totali post-augment, in linea con il SOTA `M=43 K` di Vogl). **Soglia alternative:** ≥ 4 s manterrebbe 585 MIDI (50.9 %) ma riduce il margine RF a 1.30× — meno robusto. ≥ 3 s = 846 MIDI (73.6 %) cade sotto la RF teorica (3.07 s) → escluso. **Raccomandazione: B4 = 5 s.** |
 | LossConfig riparametrizzato peggiora qualche metrica secondaria (timing-MAE, hihat-MAE) | Diagnostic ha mostrato timing-MAE STESSO o migliore. HiHat MAE leggermente peggio (era già fuori range con vecchi default). Da rivalutare a F2-T3. |
 
 ## 5. Executive Briefing — Raccomandazioni numerate
@@ -247,6 +247,11 @@ recipe matrix di F0-T2a. Implicazioni operative:
 - `tools/build_recipe_matrix.py` aggiunge un filtro `--min-duration-s 5.0`.
 - Storage Gold: ~+30 % ($42 vs $32 mensile, dentro allocazione §5).
 - Wall-time render: ~+20 % (~6h vs ~5h, dentro spend budget).
+- **Pre-flight chiuso (2026-05-23):** GMD v1.0 contiene 1150 MIDI;
+  **551 (47.9 %) ≥ 5 s**, mediana 4.35 s. Con jitter k=2 + baseline (×3)
+  × 8 kit del roster F0-T1b = **13 224 sample di training**, sopra la
+  soglia ~10 K della CRNN literature. Audio augmentation F2-T2 ×3 porta
+  a ~40 K (in linea col SOTA Vogl `M=43 K`).
 
 ### B5 · Bus-mask dei 3 head morti (OH_L/OH_R/Room) — Tier 2
 

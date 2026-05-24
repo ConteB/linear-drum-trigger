@@ -41,9 +41,15 @@ combinato (look-ahead PDC = 35 frame, crop ≥ receptive field = 1024
 frame, LossConfig riparametrizzato per density misurata) porta la stessa
 rete C=32 da F = 0.08 a F = 0.234 mean / **0.827 max** su self-overfit,
 con timing-MAE = 3.99 ms (< 5 ms L3) sul groove migliore — **passando il
-gate L3 a livello individuale**. Il documento ratifica i tre fix come
-amendment a F0-T4a §3 / §6 e a F0-T2a §3.8, e blocca il consumo del
-credito Azure su F2-T1 finché il Decision Lock CEO non è formalizzato.
+gate L3 a livello individuale**. Un fix secondario (B6, class imbalance
+sui piatti) emerge dalla misura empirica del dataset: ride/crash_a/
+crash_b_misc appaiono nello 0.7-13 % dei sample GMD; sample-level
+oversampling + per-bus pos_weight + lieve rebalance del mix garantiscono
+F adeguata anche sulle categorie rare. Il documento ratifica i fix B1..B4
+come amendment a F0-T4a §3 / §6 e a F0-T2a §3.8, B6 come secondario,
+ritira B5 (errore di interpretazione iniziale corretto 2026-05-24), e
+blocca il consumo del credito Azure su F2-T1 finché il Decision Lock CEO
+non è formalizzato.
 
 ## 1. Competitor & Market Analysis
 
@@ -91,6 +97,23 @@ modern accetta questo regime.
 | **F0-T4a baseline** | **50** | **4× sotto density 0.005** |
 | **F0-T4a + B3 fix** | 200 | Coerente con density misurata 0.4-1.5 % |
 
+### 1.4 Class imbalance per categorie rare in drum transcription (B6)
+
+| Sistema | Strategia long-tail | F crash | F kick/snare |
+| :-- | :-- | --: | --: |
+| **Vogl 2017** (CRNN) | Weighted CE, peso = 1/freq per classe | 0.71 | 0.92 |
+| **ADTOF** (Zehren) | BCE + Dice loss su classi minoritarie | 0.78 | 0.93 |
+| **OnsetsAndFrames** | WeightedRandomSampler su nota+velocity | 0.83 | 0.95 (piano) |
+| **DTM** (Wu 2018) | Synthetic crash injection (downbeats) | 0.65 | 0.90 |
+| **MT3** (Gardner 2022) | Curriculum learning (balanced → full) | 0.79 | 0.94 |
+| **F0-T4a baseline** | Pos_weight scalare unico (=200 post-B3) | (expected ~0) | ~0.5 (post-B1+B2) |
+| **F0-T4a + B6** | Sampler + per-bus pos_weight + mix rebalance | target ≥ 0.3 (overfit), ≥ 0.5 (Gold) | target ≥ 0.5 (overfit), ≥ 0.8 (Gold) |
+
+Industry consensus: per density < 1 %, **scalar pos_weight non basta** —
+serve combinare (a) sample-level oversampling, (b) per-class loss
+weighting, (c) data composition rebalance. I tre sono additivi e
+indipendentemente A/B testabili.
+
 Pos_weight 50 era preso "a sentimento" dal Focal Loss originale (Lin
 2017) per density ~5 %. La density del nostro dataset (Gaussian-smeared
 onset al 344 Hz frame rate) è **10× più bassa** — la teoria prescrive
@@ -104,6 +127,8 @@ proporzionalmente più aggressivo.
 | **ADTOF** (Apache-2.0) | TCN-style drum transcription | Conferma RF ≪ segment, look-ahead esplicito nel data pipeline. Pattern: `segment = max(8 s, 4 × RF)`. |
 | **demucs** (MIT) | Streaming-friendly conv stack | Streaming inference con state buffer, non left-pad zero. RTNeural-style. |
 | **mir_eval** (MIT) | Già in F0-T17 | Validazione metrica invariata; soglia ±50 ms standard. |
+| **PyTorch `WeightedRandomSampler`** (BSD) | stdlib, B6a | Sample-level oversampling; API minimale. No dipendenza nuova. |
+| **ADTOF loss combiner** (Apache-2.0) | Reference per B6b/Dice | Riferimento concettuale; non vendoring (~80 LOC equivalenti scritte ex-novo) |
 
 **Pattern stabile dall'open-source:** TCN streaming = real-context
 training (segment ≥ RF) + look-ahead esplicito + state-buffer inference.
@@ -132,9 +157,18 @@ Precision" v1.0 ($99 EA). Live ottimizzato per latency-critical workflow
 
 ### 3.2 Aderenza "Laboratory Precision"
 
-I tre fix non aggiungono né tolgono componenti UI. Sono modifiche
+I fix B1..B4 non aggiungono né tolgono componenti UI. Sono modifiche
 interne al data pipeline + ai default architetturali. **Nessun impatto
 visivo.**
+
+### 3.3 Uniformità delle metriche pubblicate (B6)
+
+L'UI del plugin riporta F-measure per categoria di trigger (LINEAR_DESIGN_GUIDE
+"performance card"). Una F crash_a = 0 sarebbe pubblicamente imbarazzante
+("non riconosce i crash") anche se F kick/snare fossero 0.95. **B6 protegge
+la coerenza percepita del prodotto:** la promessa "trascrizione
+neurale a 8 categorie" deve essere uniformemente vera, non vera-su-5-
+falsa-su-3. Impatto UX positivo, costo zero.
 
 ## 4. Tech Implementation Matrix
 
@@ -167,29 +201,57 @@ parametri attuali della recipe matrix che non hanno minimo esplicito).
 **Amendment a F0-T2a §3.8:** aggiungere il vincolo
 `midi_duration_min_s = 5.0` come parametro versionato della recipe matrix.
 
-### 4.3 Bus-mask dei 3 head morti — fix secondario `[F]` P2
+### 4.3 ~~Bus-mask dei 3 head morti~~ — ❌ RITIRATO (errore di interpretazione)
 
-I bus OH_L / OH_R / Room non hanno mai onset nel target (sono mic
-positions, non bus di trigger). Tre opzioni:
+> **Errore di lettura corretto 2026-05-24.** L'osservazione "3/8 bus
+> hanno target sempre vuoto" che originava B5 era un artefatto del
+> diagnostic tool: avevo etichettato gli output buses con i nomi degli
+> **input mic slot** (OH_L / OH_R / Room di `CANONICAL_SLOT_MAP`).
+> I bus di output reali (per `midi_mapping_table.yaml` LOCKED da Decision
+> Lock F0-T2a 2026-05-20) sono **ride / crash_a / crash_b_misc** — sono
+> categorie di trigger reali, non mic positions. Non vanno mascherati.
+> Vedi §4.6 (B6) per l'osservazione corretta che emerge dai numeri.
 
-| Opzione | Approccio | Vantaggio | Svantaggio |
+### 4.6 Class imbalance sui piatti (ride / crash_a / crash_b_misc) — B6
+
+Misura empirica sul dataset `mix_2026-05-24` (% di sample con ≥ 1 hit per bus):
+
+| Bus | GMD reale (405 sample) | rare_emphasis (90) | chaos (90) |
+| :-- | --: | --: | --: |
+| kick | 73 % | 99 % | 100 % |
+| snare | 97 % | 99 % | 100 % |
+| hihat | 56 % | 100 % | 100 % |
+| tom_hi_mid | 62 % | 20 % | 100 % |
+| floor_tom | 68 % | 20 % | 100 % |
+| **ride** | **13 %** | 40 % | 100 % |
+| **crash_a** | **0.7 %** ⚠️ | 36 % | 100 % |
+| **crash_b_misc** | **11 %** | 60 % | 100 % |
+
+Il problema vero non sono "3 head morti" ma una **class imbalance bi-assiale** sui piatti:
+
+1. **Frame-level imbalance** (density per frame): già gestita da B3 con `pos_weight=200` scalare. OK per ride/crash_b (~10 %) ma sotto-tarato per crash_a (0.7 %) → pos_weight teorico ≈ 14 000.
+2. **Sample-level imbalance** (% di sample contenenti positives): `pos_weight` non aiuta. In 99.3 % dei batch GMD la rete **non vede neanche un esempio di crash_a** → strategy ottima = "predici sempre 0" → loss quasi nulla, F = 0.
+
+Il `rare_emphasis` e il `chaos` esistono proprio per counter-bilanciare, ma alla proporzione attuale 70/15/15 il GMD pesa abbastanza da nascondere il segnale. Tre leve, additive, **costo $0**:
+
+| Leva | Cosa | Implementazione | Effetto atteso |
 | :-- | :-- | :-- | :-- |
-| (a) **N_BUSES = 5** | Riduce flat-25 → flat-16 | Cleanest | Rompe il contratto F0-T2a §3.3, invasivo |
-| (b) **Bus-mask nel loss** | I 3 bus muti restano nel target ma il loss ignora i loro contributi | Zero rotture | Modello continua a parametrizzare 3 head inutili |
-| (c) **Lasciare com'è** | Niente fix | Zero lavoro | Spreco di capacity (qual.) — non bloccante |
+| **B6a · WeightedRandomSampler** | Sample-level: `PyTorch WeightedRandomSampler` con peso `1 / density_min(sample)` (= 1 / density del bus più raro che il sample contiene) | ~30 righe in `train.py`; pytorch stdlib | Grooves con crash_a visti ~140× più spesso |
+| **B6b · `pos_weight` per-bus** | Frame-level: `LossConfig.pos_weight` diventa `tuple[float, ...]` (8 valori) calcolato da scan del training set, capped a 1000 | LossConfig refactor + scan tool; ~50 righe | Crash_a gradient finalmente forte sui (rari) positives |
+| **B6c · Rebalance mix 70/15/15 → 60/25/15** | Data-level: aumentare `rare_emphasis` da 30 → 50 grooves | Param in `mix_dataset.py` | Più esempi reali (non solo chaos) dei piatti rari |
 
-**Raccomandazione: (b)** — bus-mask nel `TCNLoss` su un set bloccato di
-indici (5 bus reali: 0/1/2/3/4). Modifica chirurgica al loss, niente
-rotture di contratto. Tier 2, può essere committato dopo F2-T3.
+Tutti e tre sono **ortogonali** e individualmente A/B testabili. L'effetto è verificabile con un re-overfit: con i 3 fix B1/B2/B3 + i 3 sotto-fix B6a/b/c, il crash_a F atteso passa da ~0 a ≥ 0.3 sul mini-set.
 
 ### 4.4 Costo
 
 | Voce | Costo | Note |
 | :-- | --: | :-- |
 | Implementazione fix (B1/B2/B3 defaults) | **$0** | Codice già esiste come knob CLI in `a3fe30c` / `c7f10a5`; serve solo cambiare default + ratificarli |
-| Implementazione bus-mask (B5) | **$0** | ~50 righe in `loss.py` + 2 oracoli |
+| ~~Implementazione bus-mask (B5)~~ | — | **B5 ritirata** (errore di interpretazione, vedi §4.3) |
 | Amendment F0-T2a §3.8 (B4) | **$0** | Doc-only |
+| Implementazione B6 (B6a + B6b + B6c) | **$0** | ~100 righe totali Python + 1 param in mix_dataset.py + 3 oracoli |
 | F2-T1 storage impact (clip ≥ 5 s vs 1-3 s media local_rnd) | **~+30 %** sul Gold storage | Cool LRS, da $32 a ~$42/mese → dentro budget ($55 allocato §5) |
+| F2-T1 storage incrementale per B6c (rare 30→50) | **~+5 %** | 20 grooves extra × 8 kit × 3 jitter = 480 sample extra; trascurabile |
 | Tempo wall-clock F2-T1 con clip più lunghe | **~+20 %** | Render time scale lineare con clip duration. Da ~5h a ~6h → dentro spend budget |
 
 ### 4.5 Rischi
@@ -197,13 +259,17 @@ rotture di contratto. Tier 2, può essere committato dopo F2-T3.
 | Rischio | Mitigazione |
 | :-- | :-- |
 | 100 ms PDC inaccettabile per use-case live | Documentato; v1.0 è "Studio Mode". V1.x può esplorare lookahead ridotto. |
+| B6a (oversampling): stesso groove visto N× → overfit su quei grooves | Mitigato dalla diversità del jitter k=2 (ogni groove ha 3 varianti); inoltre il `WeightedRandomSampler` resta probabilistico — il singolo groove non è "garantito ogni epoch" |
+| B6b (pos_weight per-bus): bus con density = 0 nel training → pos_weight diverge | Cap a 1000 (3 σ sopra il pos_weight medio osservato). Se un bus ha 0 positives, pos_weight = 1000 ma il termine FN contribuisce 0 al loss comunque (no positives = nessun termine FN) — safe by construction |
+| B6c (rare 30→50): più sintetico, meno GMD reale → potenziale domain shift | I `rare_emphasis` MIDI sono già stilisticamente realistici (famiglie crash/china/ride/tom/splash su pattern GM); non sono "chaos noise". Mantenere il 60 % di GMD reale preserva l'autenticità |
 | Sample > 5 s mismatch con GMD reale | **Misurato 2026-05-23 (pre-flight chiuso):** GMD v1.0 contiene 1150 MIDI; 551 (47.9 %) sono ≥ 5 s; mediana effettiva = 4.35 s. Con jitter k=2 + baseline (×3) × 8 kit del roster F0-T1b → **13 224 sample di training**, sopra la soglia ~10 K che la CRNN literature suggerisce per la convergenza. Trade-off: meno varietà rispetto al GMD completo; mitigato da audio augmentation ×3 in F2-T2 (40 K sample totali post-augment, in linea con il SOTA `M=43 K` di Vogl). **Soglia alternative:** ≥ 4 s manterrebbe 585 MIDI (50.9 %) ma riduce il margine RF a 1.30× — meno robusto. ≥ 3 s = 846 MIDI (73.6 %) cade sotto la RF teorica (3.07 s) → escluso. **Raccomandazione: B4 = 5 s.** |
 | LossConfig riparametrizzato peggiora qualche metrica secondaria (timing-MAE, hihat-MAE) | Diagnostic ha mostrato timing-MAE STESSO o migliore. HiHat MAE leggermente peggio (era già fuori range con vecchi default). Da rivalutare a F2-T3. |
 
 ## 5. Executive Briefing — Raccomandazioni numerate
 
-> Le **5 raccomandazioni** richiedono un Decision Lock CEO esplicito.
-> Numerate per accettazione (✅) / rifiuto (❌) / modifica puntuale.
+> **5 raccomandazioni attive (B1, B2, B3, B4, B6) + 1 ritirata (B5).**
+> Richiedono un Decision Lock CEO esplicito, numerate per accettazione
+> (✅) / rifiuto (❌) / modifica puntuale.
 
 ### B1 · Look-ahead PDC default = 35 frame (100 ms)
 
@@ -253,12 +319,61 @@ recipe matrix di F0-T2a. Implicazioni operative:
   soglia ~10 K della CRNN literature. Audio augmentation F2-T2 ×3 porta
   a ~40 K (in linea col SOTA Vogl `M=43 K`).
 
-### B5 · Bus-mask dei 3 head morti (OH_L/OH_R/Room) — Tier 2
+### ~~B5 · Bus-mask~~ — ❌ RITIRATA (2026-05-24)
 
-Aggiungere `loss_bus_mask: tuple[int, ...] = (0, 1, 2, 3, 4)` a
-`LossConfig` (lista dei bus che contribuiscono al loss). Esclude 5, 6,
-7 di default. Modifica chirurgica a `TCNLoss.forward`. **Tier 2** — può
-essere ratificato in qualsiasi momento prima di F2-T3, non blocca F2-T1.
+> Errore di interpretazione: avevo letto i nomi degli **input mic slot**
+> (`CANONICAL_SLOT_MAP` di `src/neural/data.py`) e li avevo applicati ai
+> bus di **output**. I 3 bus che il diagnostic mostrava muti non sono
+> Overhead/Room, sono **ride / crash_a / crash_b_misc** — categorie di
+> trigger reali bloccate dal Decision Lock F0-T2a 2026-05-20
+> (`docs/specs/midi_mapping_table.yaml`). **Non vanno mascherati.** Vedi
+> B6 per l'osservazione corretta che emerge dalla misura empirica.
+
+### B6 · Class balance per-bus sui piatti (ride / crash_a / crash_b_misc)
+
+La misura empirica dei target del mix `2026-05-24` (§4.6) mostra una
+**class imbalance bi-assiale** sui piatti che né B3 (`pos_weight`
+scalare) né il `rare_emphasis` attuale risolvono interamente:
+
+- `crash_a` appare nel **0.7 %** dei sample GMD (5 onset totali su 405)
+- `ride` 13 %, `crash_b_misc` 11 %
+- In contrasto: kick 73 %, snare 97 %
+
+Ratificare **tre sotto-fix ortogonali**, additivi, costo $0:
+
+**B6a · Sample-level `WeightedRandomSampler`**
+- Implementare `WeightedRandomSampler` nel `train.py` DataLoader.
+- Peso per sample = `max_b (1 / density_b)` dove `b` sono i bus che il
+  sample contiene. Grooves con crash_a ottengono peso ~140×.
+- Cap weight a 200× per evitare che lo stesso groove monopolizzi
+  l'epoch. Mitigato dal jitter k=2 (3 varianti diverse per groove).
+- Implementazione: ~30 righe di `train.py`, PyTorch stdlib.
+
+**B6b · `pos_weight` per-bus calcolato dalla density**
+- `LossConfig.pos_weight` diventa `float | tuple[float, ...]` (8 valori
+  o scalare per backward compatibility).
+- Scan one-time del training set → calcola `pos_weight[b] = min(1000,
+  (1 - density_b) / max(density_b, 1e-6))`. Cap 1000 evita gradient
+  explosion su bus con density = 0 (safe by construction: nessun positive
+  = nessun termine FN da pesare).
+- Default proposto (calcolato sul mix corrente):
+  - kick: 200, snare: 65, hihat: 250, tom_hi_mid: 100, floor_tom: 95,
+    ride: 770, crash_a: **1000** (capped), crash_b_misc: 920
+- Implementazione: ~50 righe in `loss.py` + scan tool + 2 oracoli.
+
+**B6c · Rebalance mix composition 70/15/15 → 60/25/15**
+- Aumentare `rare_emphasis` da 30 → 50 grooves (le 5 famiglie × 10
+  varianti invece di × 6).
+- Mantenere GMD a 140 grooves (60 % proporzionale) e chaos a 30 (15 %).
+- Implementazione: 1 parametro in `tools/mix_dataset.py` +
+  `_rare_emphasis_count = 50`.
+- Costo F2-T1 incrementale: 20 grooves extra × 8 kit × 3 jitter = 480
+  sample extra, trascurabile.
+
+**Verifica di accettazione (regression test):** dopo B1+B2+B3+B6a+b+c,
+un self-overfit su 18 sample che includano almeno 3 grooves con
+crash_a deve produrre **F_crash_a ≥ 0.3** (vs ~0 attuale). Aggiungere
+all'oracolo §6 della spec.
 
 ---
 
@@ -278,7 +393,12 @@ essere ratificato in qualsiasi momento prima di F2-T3, non blocca F2-T1.
 >    propagazione lookahead a `evaluate_holdout`.
 > 7. **`src/neural/loss.py`** → nuovi default `LossConfig`.
 > 8. **`tools/build_recipe_matrix.py`** → flag `--min-duration-s 5.0`.
-> 9. **`MASTER_SCHEDULING.md`** → F2-T1 sblocco (era ⊘ blocked da
->    F0-T4c), F2-T3 sblocco (idem), F0-T4c → ☑.
+> 9. **`src/neural/loss.py`** → `pos_weight: float | tuple[float, ...]`
+>    (B6b), default per-bus tuple calcolato dalla density.
+> 10. **`src/neural/train.py`** → `WeightedRandomSampler` opzionale (B6a),
+>     attivo di default quando `loss_config.pos_weight` è una tupla.
+> 11. **`tools/mix_dataset.py`** → `_rare_emphasis_count = 50` (B6c).
+> 12. **`MASTER_SCHEDULING.md`** → F2-T1 sblocco (era ⊘ blocked da
+>     F0-T4c), F2-T3 sblocco (idem), F0-T4c → ☑.
 > 10. **Regression test:** harness `pytest` su 18 sample long-context
 >     deve riprodurre F_max ≥ 0.80, F_shuf < 0.10 con i nuovi default.

@@ -393,13 +393,18 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
   0.234 mean / **0.827 max** con timing-MAE 3.99 ms (sotto L3) sul
   groove migliore — architettura provata viable.
 - *Azioni:* applicare STRP-001 (6 fasi + Executive Briefing). Cinque
-  raccomandazioni numerate B1..B5 per Decision Lock CEO: (B1) look-ahead
+  raccomandazioni numerate attive (B1, B2, B3, B4, B6) + una ritirata
+  (B5, errore di interpretazione corretto 2026-05-24): (B1) look-ahead
   default = 35 frame, (B2) crop minimo = 135 552 samples (~3.07 s),
   (B3) LossConfig defaults riparametrizzati, (B4) F0-T2a §3.8 amendment
-  con `midi_duration_min_s = 5.0` per F2-T1, (B5) bus-mask dei 3 head
-  morti (Tier 2). Implementazione: i knob esistono già come CLI in
-  `a3fe30c` / `c7f10a5`; il Decision Lock cambia i default e ratifica
-  gli amendment doc.
+  con `midi_duration_min_s = 5.0` per F2-T1, ~~(B5) bus-mask~~ (RITIRATA
+  — i 3 bus "morti" erano in realtà ride/crash_a/crash_b_misc, categorie
+  reali bloccate da F0-T2a, non mic positions), (B6) class balance
+  per-bus sui piatti via 3 sotto-fix ortogonali a costo zero
+  (`WeightedRandomSampler`, `pos_weight` per-bus, mix rebalance 70/15/15
+  → 60/25/15). Implementazione: B1/B2/B3 knob esistono già come CLI in
+  `a3fe30c` / `c7f10a5`; B4 doc-only; B6 richiede ~100 LOC nuove
+  (loss.py + train.py + mix_dataset.py).
 - *DoD:* Executive Briefing approvato dal CEO; spec `LOCKED v1.0.0`;
   F0-T4a §3/§6 + F0-T2a §3.8 aggiornati; regression test su 18 long
   sample riproduce F_max ≥ 0.80 con i nuovi default.
@@ -407,11 +412,13 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 - ⛔ — *nessuno*. **Gate bloccante per F2-T1 e F2-T3.** Senza ratifica
   di B4 (durata MIDI minima), F2-T1 renderizzerebbe un Gold di sample
   troppo brevi (< RF + lookahead) → la rete non lo può consumare.
-- ◐ **STRP-001 IN REVIEW (2026-05-23):** spec in
+- ◐ **STRP-001 IN REVIEW (2026-05-23, aggiornato 2026-05-24 con B6
+  e ritiro B5):** spec in
   `docs/methodology/F0-T4c_DATA_PIPELINE_FIXES_SPEC.md`. 6 fasi STRP-001
-  complete; 5 raccomandazioni B1..B5 pronte per Executive Briefing CEO.
-  Pre-flight verifica empirica richiesta prima del Decision Lock: contare
-  i MIDI GMD ≥ 5 s (~1150 totali, da misurare).
+  complete; **5 raccomandazioni attive (B1, B2, B3, B4, B6) + 1 ritirata
+  (B5)** pronte per Executive Briefing CEO. Pre-flight chiusi: (1) MIDI
+  GMD ≥ 5 s = 551/1150 (47.9 %); (2) class imbalance misurato sui piatti
+  — crash_a 0.7 %, ride 13 %, crash_b 11 % di sample GMD.
 
 **F0-T5 · DVC + struttura Medallion + sharding WebDataset · `[F]` `P2`**
 - *📚 Letture:* [`DOSSIER §9.2 — Medallion`](../docs/methodology/DOSSIER_TECNICO.md#medallion) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`F0-T2a §3.8 — tail std`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#tail-standardization).
@@ -990,7 +997,7 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 | F0-T3 | Validazione Gate L2 | F0 | ☑ | — | **L2** *(superato 2026-05-23)* |
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☑ | F0-T3, F0-T4a | **L3** *(superato 2026-05-23 — opzione A, Decision Lock CEO)* |
-| F0-T4c | Data Pipeline Fixes (STRP-001) | F0 | ◐ | — *(2026-05-23 — STRP-001 IN REVIEW, spec `F0-T4c_DATA_PIPELINE_FIXES_SPEC.md`, 5 raccomandazioni B1..B5 pronte per Decision Lock CEO)* | **Gate bloccante per F2-T1 e F2-T3** |
+| F0-T4c | Data Pipeline Fixes (STRP-001) | F0 | ◐ | — *(2026-05-23, agg. 2026-05-24 — STRP-001 IN REVIEW, spec `F0-T4c_DATA_PIPELINE_FIXES_SPEC.md`; 5 raccomandazioni attive B1/B2/B3/B4/B6 + 1 ritirata B5 pronte per Decision Lock CEO)* | **Gate bloccante per F2-T1 e F2-T3** |
 | F0-T5 | DVC + struttura Medallion + sharding | F0 | ☑ | — *(spec sharding LOCKED 2026-05-23 — F0-T5_GOLD_SHARDING_SPEC.md)* | — |
 | F0-T6 | audit_dsp_rigor.py (predisp.) | F0 | ☑ | — *(2026-05-23 — script + 16 regole YAML LOCKED + fixture good/bad + 22 oracoli, gate operativo in F4)* | — |
 | F0-T7 | Classi JUCE (opz.) | F0 | ☐ | — | — |

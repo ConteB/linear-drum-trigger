@@ -111,6 +111,12 @@ def main() -> int:
     parser.add_argument("--reports-root", type=Path, default=Path("reports"),
                         help="Mirror of the canonical HTML report root "
                              "(MODEL_REPORT_BLUEPRINT §1: reports/<YYYY-MM-DD>-<run_id>/).")
+    parser.add_argument("--uniform-sampling", action="store_true",
+                        help="Force uniform DataLoader (no WeightedRandomSampler). "
+                             "Use for self-overfit regression tests where every "
+                             "sample deserves equal opportunity. Otherwise B6a "
+                             "sampler imbalance can starve non-rare samples and "
+                             "cause apparent 'random' predictions on them.")
     args = parser.parse_args()
 
     # --- Load curated 18 sample + pos_weight tuple ---
@@ -148,23 +154,35 @@ def main() -> int:
         lookahead_frames=args.lookahead_frames,
     )
 
-    # B6a — WeightedRandomSampler auto-on with per-bus pos_weight.
-    sampler_weights = _compute_sampler_weights(samples, pos_weight=pos_weight_tuple)
-    assert sampler_weights is not None, "B6a sampler must engage for tuple pos_weight"
-    print(f"[F0-T4c-reg] B6a sampler weights range "
-          f"[{min(sampler_weights):.1f}, {max(sampler_weights):.1f}]")
-    gen = torch.Generator()
-    gen.manual_seed(args.seed)
-    sampler = WeightedRandomSampler(
-        weights=sampler_weights,
-        num_samples=len(samples),
-        replacement=True,
-        generator=gen,
-    )
-    loader = DataLoader(
-        train_ds, batch_size=args.batch_size, sampler=sampler,
-        num_workers=0, drop_last=False,
-    )
+    # B6a — WeightedRandomSampler auto-on with per-bus pos_weight, unless
+    # --uniform-sampling is passed. For self-overfit regression tests on a
+    # small fixed pool, uniform sampling gives every sample equal training
+    # opportunity (the rare-bus oversampling is meant for large training
+    # sets where the rare bus would otherwise be invisible).
+    if args.uniform_sampling:
+        print("[F0-T4c-reg] B6a sampler DISABLED (--uniform-sampling) — "
+              "uniform shuffle for self-overfit equal opportunity.")
+        loader = DataLoader(
+            train_ds, batch_size=args.batch_size, shuffle=True,
+            num_workers=0, drop_last=False,
+        )
+    else:
+        sampler_weights = _compute_sampler_weights(samples, pos_weight=pos_weight_tuple)
+        assert sampler_weights is not None, "B6a sampler must engage for tuple pos_weight"
+        print(f"[F0-T4c-reg] B6a sampler weights range "
+              f"[{min(sampler_weights):.1f}, {max(sampler_weights):.1f}]")
+        gen = torch.Generator()
+        gen.manual_seed(args.seed)
+        sampler = WeightedRandomSampler(
+            weights=sampler_weights,
+            num_samples=len(samples),
+            replacement=True,
+            generator=gen,
+        )
+        loader = DataLoader(
+            train_ds, batch_size=args.batch_size, sampler=sampler,
+            num_workers=0, drop_last=False,
+        )
 
     model = TCNModel(TCNConfig(channels=args.tcn_channels)).to(device)
     n_params = count_parameters(model)
@@ -348,11 +366,15 @@ def main() -> int:
     # supplied as "holdout" — self-overfit, so train == holdout.
     print(f"[F0-T4c-reg] generating blueprint HTML report (LIN-DT-RPTBP-001)…")
     cpu_model = model.to("cpu").eval()
-    eval_n_sample = (args.crop_samples + args.lookahead_frames * ENCODER_STRIDE)
+    # n_sample == crop_samples; the lookahead is applied internally as a
+    # shift on the audio window (the function picks audio[L .. L+n_frame)).
+    eval_n_sample = args.crop_samples
     sample_evals: list[dict[str, Any]] = []
     for s in samples:
         ev = evaluate_sample_for_report(
-            cpu_model, s.audio, s.target, n_sample=eval_n_sample,
+            cpu_model, s.audio, s.target,
+            n_sample=eval_n_sample,
+            lookahead_frames=args.lookahead_frames,
         )
         ev["key"] = s.key
         ev["engine"] = s.engine

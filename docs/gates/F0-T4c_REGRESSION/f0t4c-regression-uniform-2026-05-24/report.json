@@ -4,7 +4,7 @@
     "crop_samples": 196608,
     "device": "mps",
     "epochs": 600,
-    "final_train_loss": 0.2513983517885208,
+    "final_train_loss": 0.2919896185398102,
     "lookahead_frames": 35,
     "loss_config": {
       "focal_gamma": 2.0,
@@ -32,7 +32,7 @@
     ],
     "seed": 0,
     "tcn_channels": 32,
-    "wall_time_s": 51.09602791699581
+    "wall_time_s": 51.101116749923676
   },
   "decision_lock": "CEO 2026-05-24",
   "results": {
@@ -42,7 +42,7 @@
     "f_max_timing_mae_ms": 0.6449987402368355,
     "per_sample": [
       {
-        "best_threshold": 0.5,
+        "best_threshold": 0.7,
         "f_crash_a": 1.0,
         "f_measure_mean": 0.9569097569097569,
         "f_measure_per_bus": [
@@ -55,10 +55,10 @@
           1.0,
           NaN
         ],
-        "hihat_mae": 0.00017069770547095686,
+        "hihat_mae": 7.783479668432847e-05,
         "is_crash_a_bearing": true,
         "key": "LOCAL_RND124-V0T0-J00-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 0.41464204729510856
+        "timing_mae_ms": 0.8292840945902171
       },
       {
         "best_threshold": 0.5,
@@ -74,7 +74,7 @@
           1.0,
           NaN
         ],
-        "hihat_mae": 0.00016141288506332785,
+        "hihat_mae": 7.546077540609986e-05,
         "is_crash_a_bearing": true,
         "key": "LOCAL_RND124-V3T1-J01-DGZ-R0-L1-NONE",
         "timing_mae_ms": 0.3224993701184177
@@ -93,7 +93,7 @@
           1.0,
           NaN
         ],
-        "hihat_mae": 0.0001466404355596751,
+        "hihat_mae": 7.66991070122458e-05,
         "is_crash_a_bearing": true,
         "key": "LOCAL_RND124-V3T1-J02-DGZ-R0-L1-NONE",
         "timing_mae_ms": 0.6449987402368355
@@ -101,176 +101,176 @@
       {
         "best_threshold": 0.4,
         "f_crash_a": NaN,
-        "f_measure_mean": 0.04174014171725493,
+        "f_measure_mean": 0.04981085775214664,
         "f_measure_per_bus": [
-          0.035398230088495575,
-          0.09401709401709402,
-          0.04310344827586207,
-          0.0,
-          0.07792207792207792,
+          0.03278688524590164,
+          0.09322033898305085,
+          0.044444444444444446,
+          NaN,
+          0.07860262008733623,
           0.0,
           NaN,
           NaN
         ],
-        "hihat_mae": 0.0525711365044117,
+        "hihat_mae": 0.05519933998584747,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND003-V0T0-J00-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 17.11470795214638
+        "timing_mae_ms": 15.513331769489405
       },
       {
         "best_threshold": 0.4,
         "f_crash_a": NaN,
-        "f_measure_mean": 0.043017445178120166,
+        "f_measure_mean": 0.051471629398615285,
         "f_measure_per_bus": [
-          0.026666666666666665,
-          0.1021276595744681,
-          0.04310344827586207,
-          0.0,
-          0.08620689655172413,
+          0.02469135802469136,
+          0.10126582278481014,
+          0.044444444444444446,
+          NaN,
+          0.08695652173913045,
           0.0,
           NaN,
           NaN
         ],
-        "hihat_mae": 0.0525711365044117,
+        "hihat_mae": 0.05519933998584747,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND003-V3T1-J01-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 17.41496598639456
+        "timing_mae_ms": 14.8994708994709
       },
       {
         "best_threshold": 0.4,
         "f_crash_a": NaN,
-        "f_measure_mean": 0.04313493355432563,
+        "f_measure_mean": 0.05157133432720329,
         "f_measure_per_bus": [
-          0.035398230088495575,
-          0.09401709401709402,
-          0.05982905982905983,
-          0.0,
-          0.06956521739130435,
+          0.03278688524590164,
+          0.09322033898305085,
+          0.06167400881057269,
+          NaN,
+          0.07017543859649122,
           0.0,
           NaN,
           NaN
         ],
-        "hihat_mae": 0.049966972321271896,
+        "hihat_mae": 0.05266563594341278,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND003-V3T1-J02-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 16.35071806500378
+        "timing_mae_ms": 14.802721088435373
       },
       {
         "best_threshold": 0.4,
         "f_crash_a": NaN,
-        "f_measure_mean": 0.029076955882960775,
+        "f_measure_mean": 0.034317555570709486,
         "f_measure_per_bus": [
-          0.052631578947368425,
-          0.0608695652173913,
-          0.04310344827586207,
-          0.0,
-          0.01785714285714286,
+          0.04878048780487806,
+          0.0603448275862069,
+          0.044444444444444446,
+          NaN,
+          0.018018018018018018,
           0.0,
           NaN,
           NaN
         ],
-        "hihat_mae": 0.086099773645401,
+        "hihat_mae": 0.08791268616914749,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND045-V0T0-J00-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 16.253968253968253
+        "timing_mae_ms": 16.834467120181408
       },
       {
         "best_threshold": 0.4,
         "f_crash_a": NaN,
-        "f_measure_mean": 0.03187582283188788,
+        "f_measure_mean": 0.03771307577052703,
         "f_measure_per_bus": [
-          0.052631578947368425,
-          0.06926406926406925,
-          0.05150214592274678,
-          0.0,
-          0.01785714285714286,
+          0.04878048780487806,
+          0.06866952789699571,
+          0.053097345132743355,
+          NaN,
+          0.018018018018018018,
           0.0,
           NaN,
           NaN
         ],
-        "hihat_mae": 0.084146648645401,
+        "hihat_mae": 0.08600523322820663,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND045-V3T1-J01-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 15.96371882086168
+        "timing_mae_ms": 17.546897546897547
       },
       {
         "best_threshold": 0.4,
         "f_crash_a": NaN,
-        "f_measure_mean": 0.030476039890740433,
+        "f_measure_mean": 0.03598249563286725,
         "f_measure_per_bus": [
-          0.052631578947368425,
-          0.06926406926406925,
-          0.04310344827586207,
-          0.0,
-          0.01785714285714286,
+          0.04878048780487806,
+          0.06866952789699571,
+          0.044444444444444446,
+          NaN,
+          0.018018018018018018,
           0.0,
           NaN,
           NaN
         ],
-        "hihat_mae": 0.0864252969622612,
+        "hihat_mae": 0.08823058009147644,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND045-V3T1-J02-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 17.00032393909945
+        "timing_mae_ms": 16.171039844509234
       },
       {
-        "best_threshold": 0.6,
+        "best_threshold": 0.8,
         "f_crash_a": NaN,
-        "f_measure_mean": 0.926683716965047,
+        "f_measure_mean": 0.8571428571428571,
         "f_measure_per_bus": [
-          0.823529411764706,
-          1.0,
-          0.9565217391304348,
+          0.8571428571428571,
+          0.8571428571428571,
+          0.8571428571428571,
           NaN,
           NaN,
           NaN,
           NaN,
           NaN
         ],
-        "hihat_mae": 0.09384685754776001,
+        "hihat_mae": 0.09391242265701294,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND092-V0T0-J00-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 1.3193156050298906
+        "timing_mae_ms": 0.3224993701184177
       },
       {
         "best_threshold": 0.6,
         "f_crash_a": NaN,
-        "f_measure_mean": 0.891812865497076,
+        "f_measure_mean": 0.7781385281385281,
         "f_measure_per_bus": [
-          0.8421052631578948,
-          1.0,
-          0.8333333333333333,
+          0.75,
+          0.8571428571428571,
+          0.7272727272727273,
           NaN,
           NaN,
           NaN,
           NaN,
           NaN
         ],
-        "hihat_mae": 0.09473207592964172,
+        "hihat_mae": 0.0948880985379219,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND092-V3T1-J01-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 1.5366146458583434
+        "timing_mae_ms": 0.22326879469736613
+      },
+      {
+        "best_threshold": 0.6,
+        "f_crash_a": NaN,
+        "f_measure_mean": 0.8330827067669172,
+        "f_measure_per_bus": [
+          0.7999999999999999,
+          0.8571428571428571,
+          0.8421052631578948,
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "hihat_mae": 0.12382715195417404,
+        "is_crash_a_bearing": false,
+        "key": "LOCAL_RND092-V3T1-J02-DGZ-R0-L1-NONE",
+        "timing_mae_ms": 0.6829398426037081
       },
       {
         "best_threshold": 0.7,
-        "f_crash_a": NaN,
-        "f_measure_mean": 0.9249999999999999,
-        "f_measure_per_bus": [
-          0.875,
-          1.0,
-          0.9,
-          NaN,
-          NaN,
-          NaN,
-          NaN,
-          NaN
-        ],
-        "hihat_mae": 0.12426197528839111,
-        "is_crash_a_bearing": false,
-        "key": "LOCAL_RND092-V3T1-J02-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 0.4353741496598639
-      },
-      {
-        "best_threshold": 0.6,
         "f_crash_a": NaN,
         "f_measure_mean": 0.862962962962963,
         "f_measure_per_bus": [
@@ -283,13 +283,13 @@
           NaN,
           NaN
         ],
-        "hihat_mae": 0.0005828296416439116,
+        "hihat_mae": 0.00018024722521658987,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND093-V0T0-J00-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 0.5374989501973629
+        "timing_mae_ms": 0.6449987402368355
       },
       {
-        "best_threshold": 0.6,
+        "best_threshold": 0.5,
         "f_crash_a": NaN,
         "f_measure_mean": 0.8649122807017545,
         "f_measure_per_bus": [
@@ -302,13 +302,13 @@
           NaN,
           NaN
         ],
-        "hihat_mae": 0.0006401031860150397,
+        "hihat_mae": 0.0001250753120984882,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND093-V3T1-J01-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 0.4146420472951085
+        "timing_mae_ms": 1.0366051182377714
       },
       {
-        "best_threshold": 0.6,
+        "best_threshold": 0.7,
         "f_crash_a": NaN,
         "f_measure_mean": 0.9239316239316239,
         "f_measure_per_bus": [
@@ -321,32 +321,32 @@
           NaN,
           NaN
         ],
-        "hihat_mae": 0.0006373387877829373,
+        "hihat_mae": 0.0001385710056638345,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND093-V3T1-J02-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 0.9329446064139942
+        "timing_mae_ms": 1.0366051182377714
       },
       {
-        "best_threshold": 0.6,
+        "best_threshold": 0.5,
         "f_crash_a": NaN,
-        "f_measure_mean": 0.5,
+        "f_measure_mean": 0.4924924924924925,
         "f_measure_per_bus": [
           0.0,
           0.6666666666666666,
           NaN,
           NaN,
           NaN,
-          0.8333333333333333,
+          0.8108108108108109,
           NaN,
           NaN
         ],
-        "hihat_mae": 0.0005095740198157728,
+        "hihat_mae": 0.0002668035449460149,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND094-V0T0-J00-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 0.5442176870748299
+        "timing_mae_ms": 1.4512471655328798
       },
       {
-        "best_threshold": 0.6,
+        "best_threshold": 0.5,
         "f_crash_a": NaN,
         "f_measure_mean": 0.5029239766081871,
         "f_measure_per_bus": [
@@ -359,13 +359,13 @@
           NaN,
           NaN
         ],
-        "hihat_mae": 0.0004401856567710638,
+        "hihat_mae": 0.00012271376908756793,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND094-V3T1-J01-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 0.34146992130185405
+        "timing_mae_ms": 1.024409763905562
       },
       {
-        "best_threshold": 0.5,
+        "best_threshold": 0.6,
         "f_crash_a": NaN,
         "f_measure_mean": 0.7657657657657657,
         "f_measure_per_bus": [
@@ -378,10 +378,10 @@
           NaN,
           NaN
         ],
-        "hihat_mae": 0.00016746361507102847,
+        "hihat_mae": 0.00012914637045469135,
         "is_crash_a_bearing": false,
         "key": "LOCAL_RND094-V3T1-J02-DGZ-R0-L1-NONE",
-        "timing_mae_ms": 0.6829398426037081
+        "timing_mae_ms": 1.024409763905562
       }
     ]
   },

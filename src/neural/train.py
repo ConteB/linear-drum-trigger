@@ -390,10 +390,12 @@ def train(
                 "lr": lr,
                 "seed": seed,
                 "device": str(device),
+                "lookahead_frames": lookahead_frames,
             },
             run_id=run_id,
             run_title=run_title,
             out_root=report_dir,
+            lookahead_frames=lookahead_frames,
         )
 
     return TrainResult(
@@ -441,19 +443,32 @@ def _emit_training_report(
     run_id: str,
     run_title: str,
     out_root: Path,
+    lookahead_frames: int = 0,
 ) -> Path:
-    """Run the per-sample evaluation and write the Tier-1 HTML report."""
+    """Run the per-sample evaluation and write the Tier-1 HTML report.
+
+    **F0-T4c bugfix 2026-05-24** (Decision Lock CEO): propaga ``lookahead_frames``
+    a :func:`evaluate_sample_for_report` per evitare il drift artefatto di
+    ~L × frame_period_ms nei piano-roll generati dal report. Era ``0``
+    hardcoded → su modelli con PDC=100ms produceva drift visivo +100ms.
+    """
     import datetime as _dt  # noqa: PLC0415
 
     cpu_model = model.to("cpu").eval()
     train_evals: list[dict[str, Any]] = []
     holdout_evals: list[dict[str, Any]] = []
     for s in train_samples:
-        ev = evaluate_sample_for_report(cpu_model, s.audio, s.target, n_sample=131072)
+        ev = evaluate_sample_for_report(
+            cpu_model, s.audio, s.target, n_sample=131072,
+            lookahead_frames=lookahead_frames,
+        )
         ev["key"], ev["engine"], ev["mic_config"] = s.key, s.engine, s.mic_config
         train_evals.append(ev)
     for s in holdout_samples:
-        ev = evaluate_sample_for_report(cpu_model, s.audio, s.target, n_sample=131072)
+        ev = evaluate_sample_for_report(
+            cpu_model, s.audio, s.target, n_sample=131072,
+            lookahead_frames=lookahead_frames,
+        )
         ev["key"], ev["engine"], ev["mic_config"] = s.key, s.engine, s.mic_config
         holdout_evals.append(ev)
 

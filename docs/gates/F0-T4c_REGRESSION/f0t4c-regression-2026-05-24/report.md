@@ -2,7 +2,7 @@
 
 **Decision Lock:** CEO 2026-05-24 — B1+B2+B3+B6a+B6b ratified.
 **Spec:** `docs/methodology/F0-T4c_DATA_PIPELINE_FIXES_SPEC.md`
-**Run:** `f0t4c-regression-2026-05-24` · device=mps · 600 epochs · 50.9 s wall
+**Run:** `f0t4c-regression-2026-05-24` · device=mps · 600 epochs · 51.1 s wall
 
 ## Pass conditions
 

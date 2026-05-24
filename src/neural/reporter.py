@@ -491,12 +491,21 @@ def evaluate_sample_for_report(
     target_np: Any,
     *,
     n_sample: int,
+    lookahead_frames: int = 0,
 ) -> dict[str, Any]:
     """Run the model on one sample, return all the metrics the report needs.
 
     This is the canonical evaluation pass for the report builder; the driver
     ``tools/render_training_report.py`` and the auto-report call from
     ``train.py`` both use it (single source of truth for the numbers).
+
+    **F0-T4c bugfix 2026-05-24** (Decision Lock CEO): the function now applies
+    the same lookahead shift as :func:`neural.train.evaluate_holdout`. Without
+    it, ``pred[t]`` was being compared with ``target[t]`` even though the
+    model — trained with ``lookahead_frames=L`` — emits a prediction for
+    frame ``t`` from audio up to frame ``t+L``. The mismatch produced an
+    apparent ``L * frame_period_ms`` drift in every piano-roll and zeroed
+    per-bus F-scores on samples where the GT was actually well-tracked.
     """
     import torch  # noqa: PLC0415 — torch is heavy; imported lazily.
 
@@ -508,12 +517,20 @@ def evaluate_sample_for_report(
     )
     from neural.model import HIHAT_OPENING_COL  # noqa: PLC0415
 
+    # Lookahead shift: the model at frame t needs audio up to t+L (in frames).
+    L = max(0, int(lookahead_frames))  # noqa: N806
+    # Trim n_sample down so the available audio is enough.
     if audio_np.shape[1] < n_sample:
         n_sample = (audio_np.shape[1] // 128) * 128
-    n_frame = n_sample // 128
+    n_frame_requested = n_sample // 128
+    total_af_frames = audio_np.shape[1] // 128
+    # Cap n_frame so the audio window [L .. L+n_frame) fits in the buffer.
+    n_frame = max(0, min(n_frame_requested, target_np.shape[0], total_af_frames - L))
+    start_sample = L * 128
+    end_sample = start_sample + n_frame * 128
     with torch.no_grad():
         pred = (
-            model(torch.from_numpy(audio_np[:, :n_sample]).unsqueeze(0).float())
+            model(torch.from_numpy(audio_np[:, start_sample:end_sample]).unsqueeze(0).float())
             .squeeze(0).numpy().astype(np.float32, copy=False)
         )
     target_cut = target_np[:n_frame].astype(np.float32, copy=False)

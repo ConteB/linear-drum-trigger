@@ -113,6 +113,27 @@ opening. Il data-loader fa già il reshape `cols 0:24 → [n_frame,8,3]` e `col 
 [n_frame]`: il modello produce direttamente i tensori nello stesso ordine.
 
 <a id="rf-crop-constraint"></a>
+### 3.3 Input agnostico esteso a 9 canali — amendment 2026-05-25 (F0-T4d · B2)
+
+> **Amendment Decision Lock CEO 2026-05-25** ([`F0-T4d §5`](F0-T4d_PREPROCESSING_HARNESS_AND_AUDIT_SPEC.md)).
+> Post mini-L3 cross-kit FAIL ([`F0-T4c §6.5`](F0-T4c_DATA_PIPELINE_FIXES_SPEC.md)),
+> aggiunto un canale di **onset envelope** come 9° input — l'evidenza onset
+> classica MIREX (spectral flux differenziale) entra direttamente nella
+> Input-Agnostic Projection insieme agli 8 mic canonici.
+
+| Aspetto | Pre-amendment | Post-amendment (v1.1) |
+| :-- | :-- | :-- |
+| `TCNConfig.in_channels` | `8` | **`9`** |
+| Canale 0..7 | 8 slot canonici (kick/snare/hihat/tom/floor/oh_L/oh_R/room) | invariato |
+| Canale 8 (nuovo) | — | **onset envelope** (auto-derived dal frontend `OnsetEnvelope`, F0-T4d §4.1 P2) |
+| Conv1d input layer | `in=8 → out=C`, k=1 | **`in=9 → out=C`**, k=1 *(Input-Agnostic Projection assorbe il canale extra senza cambi strutturali)* |
+| Parameter count (C=32) | 83 673 | **84 186** (+513) |
+
+Il 9° canale è generato **al volo** dal `OnsetEnvelope` layer (F0-T4d B2,
+`src/neural/preprocessing.py::OnsetEnvelope`) — l'utente del plugin non lo
+fornisce mai esplicitamente. Nel deployment C++/JUCE (F4), `OnsetEnvelope`
+diventa parte del DSP front-end del plugin, davanti alla TCN.
+
 ### 3.2 Vincolo `crop ≥ RF + lookahead` — amendment 2026-05-24 (F0-T4c · B2)
 
 > **Amendment Decision Lock CEO 2026-05-24** ([`F0-T4c §6.1`](F0-T4c_DATA_PIPELINE_FIXES_SPEC.md)). La

@@ -52,6 +52,7 @@ from neural.metrics import (  # noqa: E402
     tune_threshold,
 )
 from neural.model import TCNConfig, TCNModel, count_parameters  # noqa: E402
+from neural.preprocessing import PreprocessingFrontend  # noqa: E402
 from neural.reporter import (  # noqa: E402
     GateVerdictRow,
     TldrRow,
@@ -111,6 +112,17 @@ def main() -> int:
                              "no jitter). Halves the loaded RAM (656 → ~328) "
                              "and is the recommended workaround for the "
                              "mini-L3 on a 16 GB Mac.")
+    # F0-T4d (Decision Lock CEO 2026-05-25) — preprocessing harness + efficiency.
+    parser.add_argument("--preprocessing", choices=("none", "p1", "p1p2"),
+                        default="none",
+                        help="Front-end preprocessing (F0-T4d): none (default, "
+                             "audio raw); p1 (pre-emphasis + per-channel z-score, "
+                             "8 chan); p1p2 (P1 + onset envelope, 9 chan).")
+    parser.add_argument("--use-cosine-lr", action="store_true",
+                        help="F0-T4d B6 E3 — cosine LR schedule with warmup.")
+    parser.add_argument("--early-stop-patience", type=int, default=0,
+                        help="F0-T4d B6 E4 — early stop after N epochs without "
+                             "loss improvement (0 = disabled).")
     args = parser.parse_args()
 
     # --- Load train + val + density ---
@@ -186,11 +198,42 @@ def main() -> int:
         num_workers=0, drop_last=False,
     )
 
-    model = TCNModel(TCNConfig(channels=args.tcn_channels)).to(device)
+    # F0-T4d preprocessing harness.
+    if args.preprocessing == "none":
+        preprocess = None
+        in_channels = 8
+    elif args.preprocessing == "p1":
+        preprocess = PreprocessingFrontend(n_mic=8, onset_envelope=False).to(device)
+        in_channels = 8
+    elif args.preprocessing == "p1p2":
+        preprocess = PreprocessingFrontend(n_mic=8, onset_envelope=True).to(device)
+        in_channels = 9
+    else:
+        raise ValueError(args.preprocessing)
+    print(f"[mini-L3] preprocessing = {args.preprocessing} → in_channels = {in_channels}",
+          flush=True)
+
+    model = TCNModel(TCNConfig(channels=args.tcn_channels, in_channels=in_channels)).to(device)
     n_params = count_parameters(model)
-    print(f"[mini-L3] parameters = {n_params:,}")
+    if preprocess is not None:
+        n_params_pre = count_parameters(preprocess)
+        print(f"[mini-L3] preprocessing params = {n_params_pre}", flush=True)
+    print(f"[mini-L3] model parameters = {n_params:,}")
     loss_fn = TCNLoss(loss_cfg).to(device)
     optim = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
+    # F0-T4d B6 E3 — cosine LR schedule with warmup (10% of training).
+    if args.use_cosine_lr:
+        warmup_epochs = max(1, args.epochs // 10)
+        from torch.optim.lr_scheduler import LambdaLR  # noqa: PLC0415
+        def _lr_lambda(epoch: int) -> float:
+            if epoch < warmup_epochs:
+                return (epoch + 1) / warmup_epochs
+            progress = (epoch - warmup_epochs) / max(1, args.epochs - warmup_epochs)
+            return 0.5 * (1.0 + math.cos(math.pi * progress))
+        scheduler = LambdaLR(optim, lr_lambda=_lr_lambda)
+        print(f"[mini-L3] cosine LR + warmup ({warmup_epochs} epoch)", flush=True)
+    else:
+        scheduler = None
 
     use_amp = device.type in {"cuda", "mps"}
     autocast_ctx: Any
@@ -203,27 +246,60 @@ def main() -> int:
     t0 = time.perf_counter()
     last_loss = math.nan
     history: list[dict[str, float]] = []
+    # F0-T4d B6 E4 — early stop tracking.
+    best_loss = float("inf")
+    epochs_without_improvement = 0
+    early_stopped_at = None
     for epoch in range(1, args.epochs + 1):
         model.train()
+        if preprocess is not None:
+            preprocess.train()
         epoch_total = 0.0
         n_steps = 0
         for batch in loader:
             audio = batch["audio"].to(device, non_blocking=True)
             target = batch["target"].to(device, non_blocking=True)
             optim.zero_grad(set_to_none=True)
+            # F0-T4d B1+B2 bugfix 2026-05-25 (post-NaN diagnosis): preprocessing
+            # runs OUTSIDE autocast in fp32. STFT in fp16/MPS, divisions in
+            # ChannelNorm with small variance, and OnsetEnvelope normalization
+            # all explode in mixed-precision. Keep them fp32; only the TCN
+            # itself goes through autocast.
+            if preprocess is not None:
+                audio = preprocess(audio.float())
             with autocast_ctx:
                 pred = model(audio)
                 losses = loss_fn(pred, target)
             losses["total"].backward()
+            # F0-T4d B6 bugfix 2026-05-25: gradient clipping per evitare
+            # gradient explosion (osservata epoch 70: loss 0.93 → inf con
+            # autocast fp16 + cosine LR). Max norm = 1.0 standard per AMP.
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optim.step()
             epoch_total += float(losses["total"].detach())
             n_steps += 1
+        if scheduler is not None:
+            scheduler.step()
         last_loss = epoch_total / max(n_steps, 1)
         history.append({"epoch": float(epoch), "train_loss": last_loss})
         if epoch % 10 == 0 or epoch == 1:
-            print(f"[mini-L3] epoch {epoch:4d}  train_loss = {last_loss:.4f}")
+            lr_now = optim.param_groups[0]["lr"]
+            print(f"[mini-L3] epoch {epoch:4d}  train_loss = {last_loss:.4f}  lr = {lr_now:.2e}")
+        # F0-T4d B6 E4 — early stop.
+        if args.early_stop_patience > 0:
+            if last_loss < best_loss - 1e-4:
+                best_loss = last_loss
+                epochs_without_improvement = 0
+            else:
+                epochs_without_improvement += 1
+                if epochs_without_improvement >= args.early_stop_patience:
+                    early_stopped_at = epoch
+                    print(f"[mini-L3] EARLY STOP at epoch {epoch} "
+                          f"(no improvement for {args.early_stop_patience} epochs)")
+                    break
     wall = time.perf_counter() - t0
-    print(f"[mini-L3] training done in {wall:.1f} s")
+    print(f"[mini-L3] training done in {wall:.1f} s "
+          f"(epochs run: {len(history)}, early_stopped={early_stopped_at})")
 
     # Save checkpoint.
     if args.save_to:
@@ -241,10 +317,29 @@ def main() -> int:
     # --- Cross-kit evaluation on val pool (ShittyKit only) ---
     print(f"[mini-L3] evaluating on val pool ({len(val_samples)} ShittyKit samples)…")
     cpu_model = model.to("cpu").eval()
+    cpu_preprocess = preprocess.to("cpu").eval() if preprocess is not None else None
+
+    # If preprocessing is active, wrap the model so evaluate_sample_for_report
+    # sees the pre-processed input. We compose a simple nn.Sequential-like
+    # callable that does preprocess → model in one forward.
+    class _ComposedModel(torch.nn.Module):
+        def __init__(self, pre: torch.nn.Module | None, mdl: torch.nn.Module) -> None:
+            super().__init__()
+            self.pre = pre
+            self.mdl = mdl
+            # evaluate_sample_for_report checks .config.channels; forward it.
+            self.config = mdl.config
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            if self.pre is not None:
+                x = self.pre(x)
+            return self.mdl(x)
+    eval_model = _ComposedModel(cpu_preprocess, cpu_model)
+    eval_model.eval()
+
     val_evals: list[dict[str, Any]] = []
     for s in val_samples:
         ev = evaluate_sample_for_report(
-            cpu_model, s.audio, s.target,
+            eval_model, s.audio, s.target,
             n_sample=args.crop_samples,
             lookahead_frames=args.lookahead_frames,
         )
@@ -266,7 +361,7 @@ def main() -> int:
     train_evals: list[dict[str, Any]] = []
     for s in train_subset:
         ev = evaluate_sample_for_report(
-            cpu_model, s.audio, s.target,
+            eval_model, s.audio, s.target,
             n_sample=args.crop_samples,
             lookahead_frames=args.lookahead_frames,
         )

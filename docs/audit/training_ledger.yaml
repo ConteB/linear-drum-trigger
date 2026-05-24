@@ -1,0 +1,342 @@
+schema_version: '1.0'
+runs:
+- run_id: f0t4c-regression-2026-05-24
+  date: 2026-05-24 22:30:00+00:00
+  git_commit: 796312a
+  status: PASS
+  purpose: "F0-T4c regression test (self-overfit) \u2014 ratifica B1+B2+B3+B6a+B6b"
+  dataset:
+    pool_root: data/gold/mix_2026-05-24
+    n_train_samples: 18
+    n_val_samples: 18
+    train_kits:
+    - DRSKit
+    val_kits:
+    - DRSKit
+    n_crash_a_bearing: 3
+    midi_source: "local_rnd synthetic (200 grooves \xD7 3 jitter)"
+  model:
+    arch: F0-T4a TCN
+    channels: 32
+    in_channels: 8
+    params: 83673
+  preprocessing:
+    kind: none
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=2)
+    audio_post_F0T15post: disabled
+  loss:
+    pos_weight:
+    - 87.2
+    - 51.2
+    - 69.5
+    - 84.5
+    - 82.9
+    - 102.2
+    - 137.0
+    - 121.1
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+  training:
+    epochs: 600
+    batch_size: 4
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a, cap=200)
+    device: mps
+    wall_time_s: 51.7
+  metrics:
+    final_train_loss: 0.2514
+    F_max: 0.958
+    F_crash_a_max: 1.0
+    timing_mae_ms_best: 0.64
+  verdict:
+    gate: F_max >= 0.80 AND F_crash_a_max >= 0.30 AND timing_mae_ms_best <= 5
+    outcome: PASS
+    notes: "Ratifica architetturale F0-T4c. Self-overfit di prova \u2014 non test\
+      \ di generalizzazione."
+  report_html: docs/gates/F0-T4c_REGRESSION/f0t4c-regression-2026-05-24/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 0.86
+- run_id: f0t4c-regression-uniform-2026-05-24
+  date: 2026-05-24 22:50:00+00:00
+  git_commit: 2d6348c
+  status: PASS
+  purpose: "F0-T4c regression test con uniform sampling (no B6a) \u2014 verifica che\
+    \ il sampler non fosse l'unico responsabile del successo"
+  dataset:
+    pool_root: data/gold/mix_2026-05-24
+    n_train_samples: 18
+    n_val_samples: 18
+    train_kits:
+    - DRSKit
+    val_kits:
+    - DRSKit
+  model:
+    arch: F0-T4a TCN
+    channels: 32
+    in_channels: 8
+    params: 83673
+  preprocessing:
+    kind: none
+  training:
+    epochs: 600
+    batch_size: 4
+    lr: 0.001
+    optimizer: AdamW
+    sampler: shuffled (no WeightedRandomSampler)
+    device: mps
+    wall_time_s: 51.1
+  metrics:
+    final_train_loss: 0.292
+    F_max: 0.958
+    F_crash_a_max: 1.0
+    timing_mae_ms_best: 0.64
+  verdict:
+    gate: F_max >= 0.80 AND F_crash_a_max >= 0.30 AND timing_mae_ms_best <= 5
+    outcome: PASS
+    notes: "Uniform sampling salva i sample non-crash (RND092 F: 0.07\u21920.86).\
+      \ RND003/045 restano outlier patologici (audio molto lungo, density 1.6%) \u2014\
+      \ non risolvibile via sampler."
+  report_html: docs/gates/F0-T4c_REGRESSION/f0t4c-regression-uniform-2026-05-24/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 0.85
+- run_id: mini-l3-crosskit-2026-05-24
+  date: 2026-05-25 00:00:00+00:00
+  git_commit: 32fc9ff
+  status: FAIL
+  purpose: 'Mini-L3 cross-kit test (CEO directive 2026-05-24): la rete impara l''evento
+    fisico o solo il timbro?'
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 331
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+  model:
+    arch: F0-T4a TCN
+    channels: 32
+    in_channels: 8
+    params: 83673
+  preprocessing:
+    kind: none
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter applied)
+    audio_post_F0T15post: disabled
+  loss:
+    pos_weight:
+    - 132.1
+    - 64.3
+    - 200.4
+    - 269.4
+    - 234.8
+    - 243.4
+    - 1000.0
+    - 1000.0
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+  training:
+    epochs: 120
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a, cap=200)
+    device: mps
+    wall_time_s: 660
+  metrics:
+    final_train_loss: 1.09
+    val_F_mean: 0.049
+    val_F_range:
+    - 0.005
+    - 0.151
+    val_per_bus_F:
+      kick: 0.021
+      snare: 0.051
+      hihat: 0.015
+      tom_hi_mid: 0.012
+      floor_tom: 0.012
+      ride: 0.012
+      crash_a: 0.01
+      crash_b_misc: 0.005
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    notes: Sample collapse 'predici ovunque' sui timbri ShittyKit (Recall ~1.00, Precision
+      ~0.01). Mini-L3 fallisce. La rete impara il timbro, non l'evento fisico.
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-crosskit-2026-05-24/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 11.0
+- run_id: mini-l3-crosskit-fulldata-2026-05-25
+  date: 2026-05-25 00:30:00+00:00
+  git_commit: 32fc9ff
+  status: FAIL
+  purpose: 'Mini-L3 re-run con 2x dei dati (CEO directive 2026-05-25): conferma se
+    il fail era data starvation'
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 600
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    val_kits:
+    - ShittyKit
+  model:
+    arch: F0-T4a TCN
+    channels: 32
+    in_channels: 8
+    params: 83673
+  preprocessing:
+    kind: none
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1)
+    audio_post_F0T15post: disabled
+  loss:
+    pos_weight:
+    - 132.1
+    - 64.3
+    - 200.4
+    - 269.4
+    - 234.8
+    - 243.4
+    - 1000.0
+    - 1000.0
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a, cap=200)
+    device: mps
+    wall_time_s: 563.3
+  metrics:
+    final_train_loss: 1.11
+    val_F_mean: 0.021
+    val_F_range:
+    - 0.005
+    - 0.04
+    val_per_bus_F:
+      kick: 0.023
+      snare: 0.051
+      hihat: 0.016
+      tom_hi_mid: 0.012
+      floor_tom: 0.013
+      ride: 0.013
+      crash_a: 0.0
+      crash_b_misc: 0.006
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    delta_vs_previous: "-0.028 vs mini-l3-crosskit-2026-05-24 (PEGGIO con pi\xF9 dati)"
+    notes: "Conferma: il problema NON \xE8 data starvation. Pi\xF9 dati amplifica\
+      \ il sample collapse perch\xE9 la rete impara meglio su train ma peggio cross-kit.\
+      \ Diagnosi: serve preprocessing input-side (F0-T4d) o audio augmentation (F0-T16-post)."
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-crosskit-fulldata-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 9.4
+- run_id: mini-l3-crosskit-p1p2-2026-05-25
+  date: 2026-05-25 01:30:00+00:00
+  git_commit: 32fc9ff
+  status: FAIL
+  purpose: "Mini-L3 cross-kit con preprocessing P1+P2 (F0-T4d B5) \u2014 primo test\
+    \ del harness"
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 331
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+  model:
+    arch: F0-T4a TCN
+    channels: 32
+    in_channels: 9
+    params: 83705
+  preprocessing:
+    kind: p1p2
+    P1_pre_emphasis:
+      alpha: 0.97
+    P1_channel_norm:
+      ema_decay: 0.99
+    P2_onset_envelope:
+      n_fft: 2048
+      hop: 128
+      n_mels: 80
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter applied)
+    audio_post_F0T15post: disabled
+  loss:
+    pos_weight:
+    - 132.1
+    - 64.3
+    - 200.4
+    - 269.4
+    - 234.8
+    - 243.4
+    - 1000.0
+    - 1000.0
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a, cap=200)
+    device: mps
+    wall_time_s: 548.9
+    efficiency: cosine_lr_with_warmup + early_stop_patience=30 + grad_clip(1.0)
+  metrics:
+    final_train_loss: 0.6503
+    val_F_mean: 0.068
+    val_F_range:
+    - 0.011
+    - 0.29
+    val_per_bus_F:
+      kick: 0.075
+      snare: 0.122
+      hihat: 0.071
+      tom_hi_mid: 0.054
+      floor_tom: 0.036
+      ride: 0.07
+      crash_a: 0.625
+      crash_b_misc: 0.01
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    delta_vs_previous: "+0.047 vs mini-l3-crosskit-2026-05-24 (no preproc); +224%\
+      \ relativo. F_max 7\xD7 (0.04\u21920.29). crash_a 0\u21920.625. Train loss esce\
+      \ dal plateau (1.11\u21920.65) \u2014 la rete IMPARA, non pi\xF9 sample collapse."
+    notes: "P1+P2 funziona come predetto dalla letteratura (Bock & Schedl ablation).\
+      \ Lift sostanziale ma non basta per gate 0.55. Mitigations rimaste in ordine\
+      \ di priorit\xE0: (1) F0-T16-post audio augmentation, (2) C=64 capacity bump,\
+      \ (3) curriculum learning. Bugfix scoperti: preprocessing in fp32 outside autocast\
+      \ (STFT instabile FP16), gradient clip=1.0 (esplosione epoch 70 con cosine LR)."
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-crosskit-p1p2-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 9.2

@@ -41,9 +41,17 @@ HIHAT_OPENING_COL = 24
 
 @dataclass(frozen=True)
 class TCNConfig:
-    """Hyperparameters of the F0-T4a TCN baseline."""
+    """Hyperparameters of the F0-T4a TCN baseline.
+
+    **F0-T4d B2 amendment** (Decision Lock CEO 2026-05-25): ``in_channels``
+    now parametrizes the Input-Agnostic Projection. Default = ``N_INPUT_SLOTS``
+    (= 8, 8 canonical mic slots). When the F0-T4d preprocessing frontend
+    is active (PreprocessingFrontend with onset_envelope=True), pass
+    ``in_channels=9`` to consume the 8 mic + 1 onset envelope channel.
+    """
 
     channels: int = 32  # F0-T4a §3 baseline C
+    in_channels: int = N_INPUT_SLOTS  # F0-T4a §3.3 (8 default; 9 with F0-T4d preprocessing)
     encoder_kernel: int = ENCODER_KERNEL
     encoder_strides: tuple[int, ...] = ENCODER_STRIDES
     trunk_kernel: int = TRUNK_KERNEL
@@ -166,7 +174,7 @@ class TCNModel(nn.Module):
         super().__init__()
         self.config = config or TCNConfig()
         C = self.config.channels  # noqa: N806 — match the spec notation
-        self.projection = nn.Conv1d(N_INPUT_SLOTS, C, kernel_size=1)
+        self.projection = nn.Conv1d(self.config.in_channels, C, kernel_size=1)
         self.encoder = StridedEncoder(
             C, self.config.encoder_kernel, self.config.encoder_strides
         )

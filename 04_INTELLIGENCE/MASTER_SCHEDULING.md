@@ -998,6 +998,7 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 | F0-T4a | Topologia TCN concreta (STRP-001) | F0 | ☑ | — | — |
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☑ | F0-T3, F0-T4a | **L3** *(superato 2026-05-23 — opzione A, Decision Lock CEO)* |
 | F0-T4c | Data Pipeline Fixes (STRP-001) | F0 | ☑(partial) | — *(2026-05-24 — **PARTIAL-LOCK v1.0.0** Decision Lock CEO: B1/B2/B3/B6a/B6b/B6c ratificati; **B4 deferred** (rinviato a post-regression test); B5 ritirata. Spec `F0-T4c_DATA_PIPELINE_FIXES_SPEC.md` §6.1)* | **Gate F2-T3 sbloccato architetturalmente; F2-T1 resta ⊘ in attesa di B4** |
+| F0-T4d | Preprocessing Harness + Training Audit (STRP-001) | F0 | ☑ | — *(2026-05-25 — **LOCKED v1.0.0** Decision Lock CEO: B1..B6 tutte ratificate. Spec `F0-T4d_PREPROCESSING_HARNESS_AND_AUDIT_SPEC.md`. Implementazione completa: src/neural/preprocessing.py (P1 PreEmphasis + ChannelNorm + P2 OnsetEnvelope + Frontend), TCNConfig.in_channels parametrizzato (8 default / 9 con P2, F0-T4a §3.3 amendment), docs/audit/training_ledger.yaml + tools/training_ledger.py (add/list/diff/query), mini_l3_train.py wired con --preprocessing + --use-cosine-lr + --early-stop-patience, backfill 4 run storiche + nuova entry per re-run P1+P2)* | **Fortemente raccomandato prima di F2-T3 A100** |
 | F0-T5 | DVC + struttura Medallion + sharding | F0 | ☑ | — *(spec sharding LOCKED 2026-05-23 — F0-T5_GOLD_SHARDING_SPEC.md)* | — |
 | F0-T6 | audit_dsp_rigor.py (predisp.) | F0 | ☑ | — *(2026-05-23 — script + 16 regole YAML LOCKED + fixture good/bad + 22 oracoli, gate operativo in F4)* | — |
 | F0-T7 | Classi JUCE (opz.) | F0 | ☐ | — | — |
@@ -1167,6 +1168,28 @@ del DOSSIER §3.1 moltiplica la recipe matrix di F2-T1, non quella di F2-T2).
   renderizzato avrebbe sample troppo brevi (< RF + lookahead) e la rete non
   potrebbe consumarlo. Costo della pausa: ZERO. Costo dell'evitare: ~$60 di
   render + ~$50-80 di training A100 su una rete strutturalmente rotta.
+
+· **2026-05-25 — F0-T4d Preprocessing Harness LOCKED + re-run mini-L3 P1+P2
+  → FAIL ❌ ma +224 % lift, conferma del razionale.** Decision Lock CEO
+  2026-05-25 ratifica tutte le 6 raccomandazioni B1..B6 (P1 pre-emphasis +
+  per-channel z-score; P2 onset envelope come 9° canale; Training Audit
+  Ledger versionato; backfill 4 run storiche; re-run mini-L3 con
+  preprocessing; training efficiency cosine LR + early stop + grad clip).
+  **Sessione completa $0 Azure**: spec F0-T4d LOCKED v1.0.0,
+  `src/neural/preprocessing.py` (4 layer: PreEmphasis, ChannelNorm,
+  OnsetEnvelope, PreprocessingFrontend), TCNConfig.in_channels parametrizzato
+  (F0-T4a §3.3 amendment), `tools/training_ledger.py` (add/list/diff/query)
+  + `docs/audit/training_ledger.yaml`, `tools/mini_l3_train.py` wired
+  con --preprocessing/--use-cosine-lr/--early-stop-patience. **Re-run
+  mini-L3 P1+P2**: val F_mean 0.021 → **0.068** (+224 %), F_max 0.04 →
+  **0.29** (7×), crash_a F 0.00 → **0.625** ✨ (la rete riconosce il
+  bus più raro su un kit mai visto), train loss 1.11 → **0.65** (esce
+  dal plateau). 2 bugfix scoperti: preprocessing in fp32 outside
+  autocast (STFT instabile FP16), gradient clip max_norm=1.0 (esplosione
+  epoch 70 con cosine LR). **Verdetto:** P1+P2 funziona come predetto
+  dalla letteratura ma da solo non chiude il gap fino a F=0.55 — serve
+  combinare con F0-T16-post (audio augmentation) o C=64 capacity bump.
+  Costo: $0 Azure.
 
 · **2026-05-25 — Mini-L3 cross-kit (CEO directive 2026-05-24) → FAIL ❌,
   campanello d'allarme strutturale.** Test locale (0$ Azure): 656 sample

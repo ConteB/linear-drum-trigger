@@ -56,7 +56,7 @@ Documenti indicizzati: **49** · senza frontmatter: **11**.
 | `LIN-DT-RUNBOOK-F2T1QUOTA` | Runbook F2-T1 — Quota Request Azure (per il CEO) | runbook | ACTIVE | F2 | `docs/runbooks/F2-T1_QUOTA_REQUEST_CEO.md` |
 | `LIN-DT-SCHED-001` | Scheduling Doctrine — OP-NEUROTRIGGER | doctrine | ACTIVE | cross-cutting | `04_INTELLIGENCE/SCHEDULING_DOCTRINE.md` |
 | `LIN-DT-SIA-001` | Strategic Infrastructure Audit | reference | ACTIVE | cross-cutting | `04_INTELLIGENCE/STRATEGIC_INFRASTRUCTURE_AUDIT.md` |
-| `LIN-DT-SPEC-F0T15POST` | F0-T15-post — Audio Augmentation Spec (post-rendering) + agnosticità d'ingresso — STRP-001 | spec | STRP-001-IN-REVIEW | F0 | `docs/methodology/F0-T15-post_AUDIO_AUGMENTATION_SPEC.md` |
+| `LIN-DT-SPEC-F0T15POST` | F0-T15-post — Audio Augmentation Spec (post-rendering) + agnosticità d'ingresso — STRP-001 | spec | LOCKED | F0 | `docs/methodology/F0-T15-post_AUDIO_AUGMENTATION_SPEC.md` |
 | `LIN-DT-SPEC-F0T15PRE` | F0-T15-pre — MIDI Augmentation Spec (Time/Velocity/Component) — STRP-001 | spec | LOCKED | F0 | `docs/methodology/F0-T15-pre_MIDI_AUGMENTATION_SPEC.md` |
 | `LIN-DT-SPEC-F0T17` | F0-T17 — Statistical Test Plan (Data Audit + Evaluation Suite) | spec | LOCKED | F0 | `docs/methodology/F0-T17_STATISTICAL_TEST_PLAN.md` |
 | `LIN-DT-SPEC-F0T2a` | F0-T2a — Spec Recipe + Contratto Dati | spec | LOCKED | F0 | `docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md` |

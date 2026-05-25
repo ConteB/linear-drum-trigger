@@ -18,6 +18,7 @@ import hashlib
 import numpy as np
 
 from .voices import (
+    apply_channel_mask,
     apply_gain_perturbation,
     apply_mic_balance_jitter,
     apply_noise_floor,
@@ -65,6 +66,8 @@ def apply_audio_augmentation(
     enable_noise: bool = True,
     enable_gain: bool = True,
     enable_mic_balance: bool = True,
+    enable_channel_mask: bool = True,
+    channel_mask_prob: float = 0.20,
 ) -> np.ndarray:
     """Run the full ``[normalize →] noise_floor → gain → mic_balance`` pipeline.
 
@@ -107,6 +110,11 @@ def apply_audio_augmentation(
         out = apply_gain_perturbation(out, range_db=gain_range_db, rng=rng)
     if enable_mic_balance:
         out = apply_mic_balance_jitter(out, range_db=mic_balance_range_db, rng=rng)
+    # F0-T15-post B3 (Decision Lock CEO 2026-05-25) — channel masking
+    # come ultimo step: simula assenza di un mic specifico, force agnosticità
+    # cross-kit (fix diretto del fail mini-L3 ShittyKit).
+    if enable_channel_mask:
+        out = apply_channel_mask(out, prob=channel_mask_prob, rng=rng)
 
     peak = float(np.abs(out.astype(np.float32)).max())
     if peak < _SILENCE_FLOOR:

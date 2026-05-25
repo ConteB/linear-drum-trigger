@@ -340,3 +340,85 @@ runs:
   cost:
     azure_usd: 0.0
     local_compute_min: 9.2
+- run_id: mini-l3-crosskit-p1p2-audioaug-2026-05-25
+  date: 2026-05-25 03:00:00+00:00
+  git_commit: 17e2b52
+  status: ABANDONED
+  purpose: "Mini-L3 P1+P2 + audio augmentation (F0-T16-post MVP) \u2014 primo test\
+    \ della pipeline audio aug post-Decision Lock F0-T15-post"
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 331
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+  model:
+    arch: F0-T4a TCN
+    channels: 32
+    in_channels: 9
+    params: 83705
+  preprocessing:
+    kind: p1p2
+    P1_pre_emphasis:
+      alpha: 0.97
+    P1_channel_norm:
+      ema_decay: 0.99
+    P2_onset_envelope:
+      n_fft: 2048
+      hop: 128
+      n_mels: 80
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter applied)
+    audio_post_F0T15post: "enabled (MVP \u2014 peak_normalize + pink_noise + gain\
+      \ + mic_balance + channel_mask 20% prob)"
+    audio_aug_master_seed: 20260525
+  loss:
+    pos_weight:
+    - 132.1
+    - 64.3
+    - 200.4
+    - 269.4
+    - 234.8
+    - 243.4
+    - 1000.0
+    - 1000.0
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a, cap=200)
+    device: mps
+    wall_time_s: 2820
+    efficiency: cosine_lr_with_warmup + early_stop_patience=30 + grad_clip(1.0)
+  metrics:
+    train_loss_progression:
+      epoch_1: 1.5083
+      epoch_50: 0.937
+      epoch_100: 0.7426
+      epoch_110: inf
+    final_train_loss: inf
+    val_F_mean: null
+    val_F_range: null
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: ABANDONED
+    notes: "Gradient explosion @ epoch 110 (inf), nonostante clip_grad_norm=1.0. Loss\
+      \ in discesa monotonica fino a epoch 100 (1.50 \u2192 0.74) \u2014 il modulo\
+      \ audio_augment funziona end-to-end. Bug ortogonale al codice F0-T16-post: il\
+      \ regime audio_aug aggiunge varianza al gradiente, serve clip pi\xF9 stretto\
+      \ (0.5) o LR ridotto (5e-4) o disabilitare autocast. Fix nella prossima sessione,\
+      \ then re-run."
+  report_html: null
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 47.0

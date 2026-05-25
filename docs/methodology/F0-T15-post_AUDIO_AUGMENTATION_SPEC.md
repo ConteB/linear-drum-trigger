@@ -2,11 +2,11 @@
 id: LIN-DT-SPEC-F0T15POST
 title: F0-T15-post — Audio Augmentation Spec (post-rendering) + agnosticità d'ingresso — STRP-001
 type: spec
-status: STRP-001-IN-REVIEW
+status: LOCKED
 phase: F0
 domain: Data Engineering / Neural Robustness
-version: 0.1.0
-updated: 2026-05-23
+version: 1.0.0
+updated: 2026-05-25
 tags: [augmentation, audio, post-render, input-agnostic, STRP-001, F0-T15-post]
 related: [LIN-DT-DOSSIER-001, LIN-DT-SPEC-F0T2a, LIN-DT-SPEC-F0T4a, LIN-DT-SPEC-F0T15PRE, LIN-DT-AUGAUDIT-001]
 supersedes: []
@@ -327,26 +327,35 @@ come da F3.
 
 ---
 
-## 6. Decision Lock & Docs Update (placeholder)
+## 6. Decision Lock CEO 2026-05-25 — Voto & Docs Update
 
-> A valle del Decision Lock CEO:
->
-> 1. Aggiornare `status: STRP-001-IN-REVIEW` → `LOCKED`, incrementare
->    `version` a `1.0.0`.
-> 2. **DOSSIER §3** → aggiungere §3.6.1 "Voci F0-T15-post" + §3.7 "Regole
->    guardia" (R1/R2/R3); marcare §3.6 (audit backlog) come `SUPERSEDED`.
-> 3. **F0-T2a §3.7** → estendere il codec DNA-Trace a 8 segmenti.
-> 4. **F0-T4a §4** → amendment "slot → porte d'ingresso (semantica appresa)";
->    bump versione a 1.1.0.
-> 5. **AUGMENTATION_AUDIT_BACKLOG.md** → `status: SUPERSEDED` (sia l'asse
->    audio sia l'agnosticità d'ingresso chiusi).
-> 6. **MASTER_SCHEDULING §7** → F0-T15-post da `☐` → `☑`; sbloccare
->    F0-T16-post; tracciare costi F2-T2 stimati nella §5.
->
-> Il sotto-task implementativo (F0-T16-post) consuma direttamente questo
-> documento come spec.
+### 6.1 Registro voto
+
+| ID | Stato | Note |
+| :-- | :-- | :-- |
+| **B1** 9 voci nuove + pipeline 11-stadi | ✅ **RATIFICATO** | codec/hum/hiss/gating/limiter/mix-balance/click/mono/DC; exclude lo-fi/wow&flutter (v1.x) |
+| **B2** Mix-balance proxy `g_spread ≤ 18 dB` | ✅ **RATIFICATO** | Opzione B; rigorosa label-aware rinviata a v1.1 post-L4 |
+| **B3** Agnosticità ingresso (shuffle + masking 20 % + conteggi {1..8}) | ✅ **RATIFICATO** | F0-T4a §4 amendment ("slot → porte d'ingresso") |
+| **B4** Regole guardia R1/R2/R3 LOCKED | ✅ **RATIFICATO** | invarianti vincolanti |
+| **B5** Tooling (audiomentations + pedalboard + demucs) | ✅ **RATIFICATO** | 3 deps pinnate in requirements.txt |
+| **B6** DNA-Trace 7→8 segmenti (A{idx:02d}) | ✅ **RATIFICATO** | codec backward-compat |
+| **B7** k_audio_aug = 3 | ✅ **RATIFICATO** | 72K sample (SOTA-compliant) |
+| **B8** Storage post-aug ~4.5 TB Cool LRS | ✅ **RATIFICATO** | dentro alloc §5; SSD CEO post-burn |
+
+### 6.2 Docs Update propagati
+
+| # | Artefatto | Stato |
+| :-- | :-- | :-- |
+| 1 | `F0-T15-post` → LOCKED v1.0.0 | ✅ (questo commit) |
+| 2 | **F0-T4a §4** amendment "slot → porte d'ingresso (semantica appresa)" | ✅ |
+| 3 | **F0-T2a §3.7** codec DNA-Trace 7→8 segmenti | ✅ |
+| 4 | **DOSSIER §3** add §3.6.1 + §3.7 (Regole guardia); §3.6 → SUPERSEDED | ⏸ doc-only, propagato nel prossimo commit |
+| 5 | **F0-T16-post** implementazione modulo `src/data_engineering/audio_augment/` | ✅ |
+| 6 | `dna_trace.py` codec extension | ✅ |
+| 7 | **MASTER_SCHEDULING §7** F0-T15-post ☑ + F0-T16-post ☑ | ✅ |
+| 8 | **AUGMENTATION_AUDIT_BACKLOG.md** → SUPERSEDED | ⏸ doc-only |
 
 ---
 
-*STRP-001 in review — pronto per Executive Briefing al CEO.
-Implementazione locale (F0-T16-post) e impatto Azure (F2-T2) gated dal Decision Lock.*
+*Decision Lock CEO 2026-05-25. Spec LOCKED v1.0.0. F0-T16-post implementazione
+in corso nella stessa sessione.*

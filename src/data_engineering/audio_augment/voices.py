@@ -151,6 +151,43 @@ def apply_gain_perturbation(
     return out
 
 
+def apply_channel_mask(
+    audio: np.ndarray,
+    *,
+    prob: float = 0.20,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    """Random zero su 1 canale (F0-T15-post §4.4 B3 — agnosticità ingresso).
+
+    Decision Lock CEO 2026-05-25. Simula "uno dei microfoni è morto" →
+    forza la rete a essere robusta all'assenza di un canale specifico.
+    **Direttamente collegato al fix cross-kit del mini-L3** (ShittyKit non
+    aveva mic Hihat dedicato; con channel masking la rete impara a non
+    fare affidamento su quel singolo canale).
+
+    Args:
+        audio: ``[n_mic, n_sample]`` audio.
+        prob: probabilità di applicare il masking (default 0.20 — F0-T15-post §4.4).
+        rng: caller-managed Generator.
+
+    Returns:
+        Audio con un canale azzerato (con prob ``prob``) o input unchanged.
+        Mai applicato se ``n_mic ≤ 1`` (mono).
+    """
+    _check_audio(audio, "apply_channel_mask")
+    if not 0.0 <= prob <= 1.0:
+        raise ValueError(f"prob must be in [0, 1], got {prob}")
+    n_mic = audio.shape[0]
+    if n_mic <= 1:
+        return audio
+    if float(rng.random()) >= prob:
+        return audio
+    mask_ch = int(rng.integers(0, n_mic))
+    out: np.ndarray = audio.copy()
+    out[mask_ch] = 0.0
+    return out
+
+
 def apply_mic_balance_jitter(
     audio: np.ndarray,
     *,

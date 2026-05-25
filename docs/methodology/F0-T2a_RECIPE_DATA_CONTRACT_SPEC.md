@@ -253,18 +253,25 @@ verità del Gold.
 ## 4. DNA-Trace — formato (DOSSIER §3.5)
 
 ### 4.1 Barcode (parte `key`, privo di punti)
-Schema: `{MIDISRC}-{MIDIALT}-{JITTERVAR}-{ENGINE}-{REVERB}-{AUDIOALT}-{SABOTEUR}` *(7
-segment — emendamento Decision Lock CEO 2026-05-23, bivio B3 di [`F0-T15-pre §5`](F0-T15-pre_MIDI_AUGMENTATION_SPEC.md))*.
+Schema: `{MIDISRC}-{MIDIALT}-{JITTERVAR}-{AUDIOAUG}-{ENGINE}-{REVERB}-{AUDIOALT}-{SABOTEUR}` *(8
+segment — emendamento Decision Lock CEO 2026-05-25, bivio B6 di [`F0-T15-post §6.1`](F0-T15-post_AUDIO_AUGMENTATION_SPEC.md);
+era 7 segment pre-2026-05-25, era 6 segment pre-2026-05-23)*.
 
 | Segmento | Esempio | Significato |
 | :-- | :-- | :-- |
 | `MIDISRC` | `GMD042` | dataset + indice file MIDI |
 | `MIDIALT` | `V1T1` | flag binari: `V`=velocity-jitter ON/OFF, `T`=time-jitter ON/OFF |
 | `JITTERVAR` | `J01` | **jitter-variant idx** — `J00` = baseline (no jitter), `J01..Jkk` = `k` varianti sintetizzate; ortogonale a MIDIALT (distingue varianti con stesso set di flag ma seed diverso, [`DOSSIER §3.1`](DOSSIER_TECNICO.md#aug-prerender)) |
+| `AUDIOAUG` | `A02` | **audio-augmentation variant idx** — `A00` = baseline (no audio aug), `A01..Ann` = `k_audio_aug` varianti F0-T15-post (codec, hum, hiss, gating, mix-balance, click, mono, DC, ...) |
 | `ENGINE` | `DGZ` | `DGZ`=DrumGizmo, `SFZ`=Sfizz |
 | `REVERB` | `R2` | indice Impulse Response · `R0` = dry |
 | `AUDIOALT` | `C1H0` | codice mutilation (clipping/phase/comp…) |
 | `SABOTEUR` | `SLK102` | sorgente+indice saboteur · `NONE` se assente |
+
+**Backward compatibility:** il decoder DNA-Trace accetta sia 7-seg (legacy) sia 8-seg
+(post-amendment). Encode emette sempre 8-seg, con `A00` per i sample senza audio
+augmentation. I sample Gold pre-2026-05-25 (es. tutto `mix_2026-05-24`, `local_rnd`,
+`mini_l3_*`) sono 7-seg legacy e restano leggibili.
 
 ### 4.2 `dna.json` — "Libretto Sanitario"
 JSON che permette il reverse-engineering totale del campione:

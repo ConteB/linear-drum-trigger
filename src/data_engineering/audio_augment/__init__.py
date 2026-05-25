@@ -28,6 +28,7 @@ from .pipeline import (
     derive_audio_seed,
 )
 from .voices import (
+    apply_channel_mask,
     apply_gain_perturbation,
     apply_mic_balance_jitter,
     apply_noise_floor,
@@ -37,6 +38,7 @@ from .voices import (
 __all__ = [
     "AudioAugmentError",
     "apply_audio_augmentation",
+    "apply_channel_mask",
     "apply_gain_perturbation",
     "apply_mic_balance_jitter",
     "apply_noise_floor",

@@ -180,6 +180,34 @@ L'**Input-Agnostic Projection** (Conv1D k=1) impara a estrarre la "verità" indi
 dalla densità informativa ([`DOSSIER §2.1`](DOSSIER_TECNICO.md#input-agnostic)). L'assegnazione dei mic reali agli slot in fase
 di plugin (UI) è materia di **F4**; qui si fissa solo il contratto del tensore.
 
+### 4.1 Amendment 2026-05-25 (F0-T15-post · B3) — slot → "porte d'ingresso"
+
+> **Amendment Decision Lock CEO 2026-05-25** ([`F0-T15-post §6.1`](F0-T15-post_AUDIO_AUGMENTATION_SPEC.md)).
+> Conseguenza dei findings mini-L3 cross-kit ([F0-T4c §6.5](F0-T4c_DATA_PIPELINE_FIXES_SPEC.md)):
+> la rete impara la *semantica* dei singoli slot (kick=0, snare=1, ...)
+> e fallisce quando l'ordine dei mic cambia (es. ShittyKit ha mic layout
+> diverso). La cura ratificata da F0-T15-post B3 è **insegnare l'agnosticità
+> sull'ordine direttamente al training**:
+
+| Aspetto | Pre-amendment (v1.0) | Post-amendment (v1.1) |
+| :-- | :-- | :-- |
+| Semantica degli slot 0..7 | **fissa** (kick/snare/hihat/...) | **convenzionale per il preprocessing**, **appresa dalla rete** |
+| Etichetta della tabella §4 | "Etichetta canonica" | "Porta d'ingresso 0..7 (semantica appresa)" |
+| Conteggi mic in training | {1, 2, 4, 8} (canonici) | **{1..8} con probabilità sbilanciata su 8** |
+| Permutazione canali | identità | **shuffle uniforme** in training |
+| Channel masking | non presente | **20 % prob** di azzerare 1 canale random in training |
+| Implementazione | hardcoded canonical | `src/data_engineering/audio_augment/channel_masking.py` (F0-T16-post) |
+
+**Cosa cambia praticamente:**
+- La tabella mic_config (mono/solo_stereo/glyn_johns/multitrack_full) resta valida come
+  **convention della pipeline dati** (F0-T2a) ma non vincola più il modello a interpretare
+  "slot 0 = kick" — durante training, lo stesso sample può essere shufflato (kick → slot 5,
+  hihat → slot 2) e la rete deve produrre lo stesso output.
+- A inferenza nel plugin (F4): l'utente assegna i suoi mic ai 9 slot (8 mic + 1 onset
+  envelope) tramite UI. La rete è agnostica all'ordine.
+- Conseguenza: **eliminata** la fragilità "se il kit ha mic layout diverso, la rete crolla"
+  — è esattamente la diagnosi del mini-L3 P1+P2 (ShittyKit cross-kit).
+
 <a id="pdc"></a>
 ## 5. Non-causalità / Look-ahead / PDC
 

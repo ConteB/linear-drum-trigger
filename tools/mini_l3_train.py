@@ -53,6 +53,9 @@ from neural.metrics import (  # noqa: E402
 )
 from neural.model import TCNConfig, TCNModel, count_parameters  # noqa: E402
 from neural.preprocessing import PreprocessingFrontend  # noqa: E402
+from data_engineering.audio_augment import (  # noqa: E402
+    apply_audio_augmentation, AudioAugmentError,
+)
 from neural.reporter import (  # noqa: E402
     GateVerdictRow,
     TldrRow,
@@ -123,6 +126,14 @@ def main() -> int:
     parser.add_argument("--early-stop-patience", type=int, default=0,
                         help="F0-T4d B6 E4 — early stop after N epochs without "
                              "loss improvement (0 = disabled).")
+    # F0-T16-post (Decision Lock CEO 2026-05-25) — audio augmentation on-the-fly.
+    parser.add_argument("--audio-aug", action="store_true",
+                        help="F0-T16-post — apply audio augmentation pipeline "
+                             "(pink noise + gain + mic balance + channel mask) "
+                             "on every training batch. Per-sample seed derived "
+                             "from sha256(master_seed|key|epoch).")
+    parser.add_argument("--audio-aug-master-seed", type=int, default=20260525,
+                        help="Master seed for the audio augmentation pipeline.")
     args = parser.parse_args()
 
     # --- Load train + val + density ---
@@ -259,6 +270,28 @@ def main() -> int:
         for batch in loader:
             audio = batch["audio"].to(device, non_blocking=True)
             target = batch["target"].to(device, non_blocking=True)
+            # F0-T16-post (Decision Lock CEO 2026-05-25) — audio augmentation
+            # on-the-fly PRIMA del preprocessing P1+P2 (per simulare audio
+            # reale che entra nel plugin).
+            if args.audio_aug:
+                # Per-sample augmentation: build a key per batch position +
+                # epoch index to ensure determinism + diversity.
+                audio_np = audio.detach().cpu().float().numpy()
+                augmented = np.empty_like(audio_np)
+                for i in range(audio_np.shape[0]):
+                    try:
+                        augmented[i] = apply_audio_augmentation(
+                            audio_np[i],
+                            sample_key=f"batch_{epoch}_pos_{i}",
+                            variant_idx=1,                      # always variant 1 (always augment)
+                            master_seed=args.audio_aug_master_seed,
+                            enable_channel_mask=True,
+                            channel_mask_prob=0.20,
+                        )
+                    except AudioAugmentError:
+                        # R2/R3 violation — fallback to non-augmented sample.
+                        augmented[i] = audio_np[i]
+                audio = torch.from_numpy(augmented).to(device)
             optim.zero_grad(set_to_none=True)
             # F0-T4d B1+B2 bugfix 2026-05-25 (post-NaN diagnosis): preprocessing
             # runs OUTSIDE autocast in fp32. STFT in fp16/MPS, divisions in

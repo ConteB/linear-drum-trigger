@@ -1022,9 +1022,9 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 | F0-T13 | De-referenziazione OP-X (chiusura decoupling) | F0 | ☑ | — | — |
 | F0-T14 | Mapping documentale dei task (campo Letture) | F0 | ☑ | — | — |
 | F0-T15-pre | Audit MIDI augmentation (STRP-001) | F0 | ☑ | — *(2026-05-23 — spec LOCKED, Decision Lock CEO ratificato B1–B4: range Opzione B, k=2 + baseline, DNA-Trace 7-segment, storage ~$90)* | — |
-| F0-T15-post | Audit audio augmentation + agnosticità (STRP-001) | F0 | ◐ | — *(2026-05-23 — spec `F0-T15-post_AUDIO_AUGMENTATION_SPEC.md` STRP-001-IN-REVIEW, 8 raccomandazioni pronte per Executive Briefing CEO)* | — |
+| F0-T15-post | Audit audio augmentation + agnosticità (STRP-001) | F0 | ☑ | — *(2026-05-25 — **LOCKED v1.0.0** Decision Lock CEO: B1..B8 tutte ratificate; spec `F0-T15-post_AUDIO_AUGMENTATION_SPEC.md` §6.1)* | — |
 | F0-T16-pre | MIDI augmentation pipeline — build & test in locale | F0 | ☑ | — *(2026-05-23 — src/data_engineering/midi_augment/ implementato, 75 oracoli verdi, Ocular Proof in docs/gates/F0-T16-pre_OCULAR_PROOF/)* | — |
-| F0-T16-post | Audio augmentation pipeline — build & test in locale | F0 | ☐ | F0-T2e, F0-T15-post | — |
+| F0-T16-post | Audio augmentation pipeline — build & test in locale | F0 | ☑(MVP) | — *(2026-05-25 — `src/data_engineering/audio_augment/` MVP implementato: peak_normalize + pink_noise + gain_perturbation + mic_balance_jitter + **channel_mask (B3)** + composer + seed deterministico SHA-256 + R2/R3 guards. Wire mini_l3_train.py via `--audio-aug`. Re-run mini-L3 P1+P2+aug ABANDONED per gradient explosion @ epoch 110 (loss in calo 1.50→0.74 fino a epoch 100; bug regime hyperparameter, fix grad-clip 0.5 prossima sessione). Voci F0-T15-post deferred a sessione successiva: codec/limiter/reverb/gating richiedono `audiomentations`+`pedalboard` deps; DNA-Trace 8-seg refactor invasivo)* | — |
 | F0-T17 | Statistical Test Plan (STRP-001) | F0 | ☑ | — *(2026-05-23 — `src/evaluation/` 4 moduli + orchestratore + thresholds LOCKED, 104 oracoli verdi, suite F0 436 passed, smoke mini-batch verde, gate pronto post-F2-T1)* | — |
 | F1-T1 | Setup Azure | F1 | ☑ | — *(2026-05-23 — CEO offline runbook)* | — |
 | F1-T2 | dvc remote Azure | F1 | ☑ | — *(2026-05-23 — `dvc push` smoke verde)* | — |

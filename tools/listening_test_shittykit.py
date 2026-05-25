@@ -7,6 +7,11 @@ ha saturazione confermata a ~0.10 val F. La domanda residua: ShittyKit è
 del setup mini-L3) o è *pathologically defective* (il kit ha un problema
 specifico che la rete coglie in modo anomalo)?
 
+**2026-05-25 (post-listening-test) — extended for loss design competition:**
+the test now accepts ``--checkpoint`` + ``--run-id`` to compare multiple
+training runs under the same evaluation protocol. Each run produces its own
+output subdir under ``docs/gates/F0-T4c_MINI_L3/listening_test_<run_id>/``.
+
 Diagnosi:
   - Per-bus F sul val ShittyKit (aggregate + per-sample distribution)
   - Confronto con 5 DRSKit train sample (in-distribution baseline)
@@ -14,7 +19,7 @@ Diagnosi:
   - Waveform/spettrogramma di 2 sample selezionati
 
 Output:
-  docs/gates/F0-T4c_MINI_L3/listening_test_shittykit_2026-05-25/
+  docs/gates/F0-T4c_MINI_L3/listening_test_<run_id>/
     ├── per_bus_summary.json
     ├── per_bus_comparison.png
     └── waveform_comparison.png
@@ -45,8 +50,7 @@ BUS_NAMES = [
     "kick", "snare", "hihat", "tom_hi_mid", "floor",
     "ride", "crash_a", "crash_b_misc",
 ]
-OUT_DIR = _REPO_ROOT / "docs" / "gates" / "F0-T4c_MINI_L3" / \
-          "listening_test_shittykit_2026-05-25"
+GATE_ROOT = _REPO_ROOT / "docs" / "gates" / "F0-T4c_MINI_L3"
 
 
 class _Composed(torch.nn.Module):
@@ -63,13 +67,77 @@ class _Composed(torch.nn.Module):
 
 
 def load_model_from_checkpoint(ckpt_path: Path) -> _Composed:
-    """Load the C=64 mixed-5kit checkpoint."""
+    """Load a TCN checkpoint with P1+P2 preprocessing frontend."""
     ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     tcn = TCNModel(TCNConfig(channels=ckpt["config"]["channels"], in_channels=9))
     tcn.load_state_dict(ckpt["model_state"])
     pre = PreprocessingFrontend(n_mic=8, onset_envelope=True)
     eval_model = _Composed(pre, tcn).eval()
     return eval_model
+
+
+def evaluate_with_fixed_threshold(
+    model: Any, audio_np: Any, target_np: Any,
+    *, n_sample: int, lookahead_frames: int, threshold: float = 0.1,
+) -> dict[str, Any]:
+    """Evaluate one sample with a *fixed* peak-pick threshold (no tuning).
+
+    `evaluate_sample_for_report` always tunes the threshold per sample
+    (which inflates the F-mean — useful for L3 de-risking but not
+    representative of production). This variant uses a fixed threshold,
+    the production setting.
+    """
+    import torch  # noqa: PLC0415
+    from neural.metrics import match_onsets, peak_pick  # noqa: PLC0415
+
+    L = max(0, int(lookahead_frames))
+    audio = torch.from_numpy(audio_np[None, :, :n_sample]).float()
+    with torch.no_grad():
+        pred = model(audio).squeeze(0).cpu().numpy()
+    # Lookahead shift on target.
+    if L > 0:
+        target = target_np[L:]
+        pred = pred[:target.shape[0]]
+    else:
+        target = target_np[:pred.shape[0]]
+    # flat-25: onset cols are 0,3,6,9,12,15,18,21
+    onset_pred = pred[:, 0:24:3]
+    onset_target = target[:, 0:24:3]
+
+    n_true_per_bus, n_pred_per_bus, n_matched_per_bus = [], [], []
+    f_per_bus = []
+    confusion = []
+    for b in range(8):
+        peaks_pred = peak_pick(onset_pred[:, b], threshold=threshold)
+        peaks_true = peak_pick(onset_target[:, b], threshold=0.5)
+        n_m, _ = match_onsets(peaks_pred, peaks_true)
+        n_t, n_p = len(peaks_true), len(peaks_pred)
+        n_true_per_bus.append(n_t); n_pred_per_bus.append(n_p)
+        n_matched_per_bus.append(n_m)
+        precision = n_m / n_p if n_p > 0 else None
+        recall = n_m / n_t if n_t > 0 else None
+        f = (2 * precision * recall / (precision + recall)
+             if precision and recall and precision + recall > 0 else None)
+        f_per_bus.append(f if f is not None else float("nan"))
+        confusion.append({
+            "TP": n_m,
+            "FP": n_p - n_m,
+            "FN": n_t - n_m,
+            "TN": 0,
+        })
+
+    f_finite = [f for f in f_per_bus if not np.isnan(f)]
+    f_mean = float(np.mean(f_finite)) if f_finite else float("nan")
+
+    return {
+        "f_mean": f_mean,
+        "f_per_bus": f_per_bus,
+        "n_true_per_bus": n_true_per_bus,
+        "n_pred_per_bus": n_pred_per_bus,
+        "n_matched_per_bus": n_matched_per_bus,
+        "confusion": confusion,
+        "threshold": threshold,
+    }
 
 
 def aggregate_per_bus(evals: list[dict[str, Any]]) -> dict[str, Any]:
@@ -205,12 +273,27 @@ def plot_waveform_comparison(
 
 
 def main() -> int:
-    ckpt_path = _REPO_ROOT / "artifacts" / "mini_l3_tcn_p1p2_c64_mixed5kit.pt"
+    import argparse  # noqa: PLC0415
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--checkpoint", type=Path,
+        default=_REPO_ROOT / "artifacts" / "mini_l3_tcn_p1p2_c64_mixed5kit.pt",
+    )
+    parser.add_argument("--run-id", default="shittykit_2026-05-25",
+                         help="Sub-directory name for the output.")
+    parser.add_argument("--fixed-threshold", type=float, default=0.1,
+                         help="Threshold for the production-style evaluation.")
+    args = parser.parse_args()
+
+    ckpt_path = args.checkpoint
     if not ckpt_path.exists():
         print(f"ERROR: missing checkpoint {ckpt_path}", flush=True)
         return 1
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir = GATE_ROOT / f"listening_test_{args.run_id}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    global OUT_DIR  # noqa: PLW0603 — back-compat for any closure capture
+    OUT_DIR = out_dir
 
     print(f"[listening] loading checkpoint {ckpt_path.name}…", flush=True)
     model = load_model_from_checkpoint(ckpt_path)
@@ -231,43 +314,84 @@ def main() -> int:
     crop_samples = 196608
     lookahead = DEFAULT_LOOKAHEAD_FRAMES
 
-    print(f"[listening] evaluating ShittyKit ({len(val_samples)} samples)…",
-          flush=True)
-    shitty_evals = [
+    print(f"[listening] evaluating ShittyKit ({len(val_samples)} samples) — "
+          f"tuned threshold…", flush=True)
+    shitty_evals_tuned = [
         evaluate_sample_for_report(model, s.audio, s.target,
                                     n_sample=crop_samples,
                                     lookahead_frames=lookahead)
         for s in val_samples
     ]
-    print(f"[listening] evaluating DRSKit train ({len(drs_samples)} samples)…",
-          flush=True)
-    drs_evals = [
+    print(f"[listening] evaluating ShittyKit ({len(val_samples)} samples) — "
+          f"fixed threshold {args.fixed_threshold}…", flush=True)
+    shitty_evals_fixed = [
+        evaluate_with_fixed_threshold(model, s.audio, s.target,
+                                       n_sample=crop_samples,
+                                       lookahead_frames=lookahead,
+                                       threshold=args.fixed_threshold)
+        for s in val_samples
+    ]
+    print(f"[listening] evaluating DRSKit train ({len(drs_samples)} samples) — "
+          f"tuned threshold…", flush=True)
+    drs_evals_tuned = [
         evaluate_sample_for_report(model, s.audio, s.target,
                                     n_sample=crop_samples,
                                     lookahead_frames=lookahead)
         for s in drs_samples
     ]
+    print(f"[listening] evaluating DRSKit train ({len(drs_samples)} samples) — "
+          f"fixed threshold {args.fixed_threshold}…", flush=True)
+    drs_evals_fixed = [
+        evaluate_with_fixed_threshold(model, s.audio, s.target,
+                                       n_sample=crop_samples,
+                                       lookahead_frames=lookahead,
+                                       threshold=args.fixed_threshold)
+        for s in drs_samples
+    ]
 
-    shitty_summary = aggregate_per_bus(shitty_evals)
-    drs_summary = aggregate_per_bus(drs_evals)
+    # Aggregate both protocols.
+    shitty_summary_tuned = aggregate_per_bus(shitty_evals_tuned)
+    shitty_summary_fixed = aggregate_per_bus(shitty_evals_fixed)
+    drs_summary_tuned = aggregate_per_bus(drs_evals_tuned)
+    drs_summary_fixed = aggregate_per_bus(drs_evals_fixed)
 
-    f_overall_shitty = float(np.mean([
-        e["f_mean"] for e in shitty_evals if not np.isnan(e["f_mean"])
+    f_overall_shitty_tuned = float(np.mean([
+        e["f_mean"] for e in shitty_evals_tuned if not np.isnan(e["f_mean"])
     ]))
-    f_overall_drs = float(np.mean([
-        e["f_mean"] for e in drs_evals if not np.isnan(e["f_mean"])
+    f_overall_shitty_fixed = float(np.mean([
+        e["f_mean"] for e in shitty_evals_fixed if not np.isnan(e["f_mean"])
+    ]))
+    f_overall_drs_tuned = float(np.mean([
+        e["f_mean"] for e in drs_evals_tuned if not np.isnan(e["f_mean"])
+    ]))
+    f_overall_drs_fixed = float(np.mean([
+        e["f_mean"] for e in drs_evals_fixed if not np.isnan(e["f_mean"])
     ]))
 
+    ckpt_abs = ckpt_path.resolve()
+    try:
+        ckpt_rel = str(ckpt_abs.relative_to(_REPO_ROOT))
+    except ValueError:
+        ckpt_rel = str(ckpt_abs)
     summary = {
-        "checkpoint": str(ckpt_path.relative_to(_REPO_ROOT)),
+        "checkpoint": ckpt_rel,
+        "run_id": args.run_id,
+        "fixed_threshold": args.fixed_threshold,
         "n_shittykit_val_samples": len(val_samples),
         "n_drskit_train_samples_eval": len(drs_samples),
-        "f_overall_shittykit": f_overall_shitty,
-        "f_overall_drskit_train": f_overall_drs,
-        "f_ratio_train_to_val": f_overall_drs / max(f_overall_shitty, 1e-6),
-        "per_bus_shittykit_val": shitty_summary,
-        "per_bus_drskit_train": drs_summary,
+        "f_overall_shittykit_tuned": f_overall_shitty_tuned,
+        "f_overall_shittykit_fixed": f_overall_shitty_fixed,
+        "f_overall_drskit_train_tuned": f_overall_drs_tuned,
+        "f_overall_drskit_train_fixed": f_overall_drs_fixed,
+        "per_bus_shittykit_val_tuned": shitty_summary_tuned,
+        "per_bus_shittykit_val_fixed": shitty_summary_fixed,
+        "per_bus_drskit_train_tuned": drs_summary_tuned,
+        "per_bus_drskit_train_fixed": drs_summary_fixed,
     }
+    # For backward-compat with plot functions (single set of summaries).
+    shitty_summary = shitty_summary_fixed
+    drs_summary = drs_summary_fixed
+    shitty_evals = shitty_evals_fixed
 
     (OUT_DIR / "per_bus_summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True)
@@ -290,28 +414,34 @@ def main() -> int:
     print(f"[listening] wrote waveform_comparison.png", flush=True)
 
     # Console summary
-    print("\n" + "=" * 72)
-    print("LISTENING TEST SUMMARY")
-    print("=" * 72)
-    print(f"ShittyKit val F_overall:       {f_overall_shitty:.4f} "
-          f"(n={len(val_samples)})")
-    print(f"DRSKit train F_overall:        {f_overall_drs:.4f} "
-          f"(n={len(drs_samples)})")
-    print(f"Ratio train/val:               {f_overall_drs / max(f_overall_shitty, 1e-6):.2f}×")
+    print("\n" + "=" * 88)
+    print(f"LISTENING TEST SUMMARY  [run_id = {args.run_id}]")
+    print("=" * 88)
+    print(f"ShittyKit val F (tuned per-sample):    {f_overall_shitty_tuned:.4f}")
+    print(f"ShittyKit val F (fixed thr {args.fixed_threshold}):       "
+          f"{f_overall_shitty_fixed:.4f}")
+    print(f"DRSKit train F (tuned per-sample):     {f_overall_drs_tuned:.4f}")
+    print(f"DRSKit train F (fixed thr {args.fixed_threshold}):        "
+          f"{f_overall_drs_fixed:.4f}")
+    print(f"Ratio DRS_tuned/Shitty_tuned: "
+          f"{f_overall_drs_tuned / max(f_overall_shitty_tuned, 1e-6):.2f}×")
+    print(f"Ratio DRS_fixed/Shitty_fixed: "
+          f"{f_overall_drs_fixed / max(f_overall_shitty_fixed, 1e-6):.2f}×")
     print()
-    print(f"{'Bus':<14} | {'ShittyKit val F':>15} | {'DRSKit train F':>15} | "
-          f"{'FP/FN':>8}")
-    print("-" * 72)
+    print("Per-bus (FIXED threshold — production-style):")
+    print(f"{'Bus':<14} | {'ShittyKit F':>11} | {'DRSKit F':>9} | "
+          f"{'FP/FN (Shitty)':>14}")
+    print("-" * 88)
     for b in BUS_NAMES:
-        s = shitty_summary[b]
-        d = drs_summary[b]
+        s = shitty_summary_fixed[b]
+        d = drs_summary_fixed[b]
         f_s = s["f_mean_sample"]
         f_d = d["f_mean_sample"]
         ratio = s["fp_to_fn_ratio"]
         f_s_str = f"{f_s:.3f}" if f_s is not None else "—"
         f_d_str = f"{f_d:.3f}" if f_d is not None else "—"
         ratio_str = f"{ratio:.2f}" if ratio is not None else "—"
-        print(f"{b:<14} | {f_s_str:>15} | {f_d_str:>15} | {ratio_str:>8}")
+        print(f"{b:<14} | {f_s_str:>11} | {f_d_str:>9} | {ratio_str:>14}")
 
     return 0
 

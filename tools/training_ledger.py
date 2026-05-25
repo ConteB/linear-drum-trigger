@@ -96,7 +96,7 @@ def cmd_add(args: argparse.Namespace) -> int:
 def cmd_list(args: argparse.Namespace) -> int:
     """One-line summary per run, sorted by date."""
     payload = _load()
-    runs = sorted(payload["runs"], key=lambda r: r.get("date", ""))
+    runs = sorted(payload["runs"], key=lambda r: str(r.get("date", "")))
     if not runs:
         print("(ledger empty)")
         return 0

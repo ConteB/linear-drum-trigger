@@ -712,3 +712,570 @@ runs:
   cost:
     azure_usd: 0.0
     local_compute_min: 21.8
+- run_id: mini-l3-loss-A-2026-05-25
+  date: '2026-05-25 16:00:00+00:00'
+  git_commit: 7e98017+loss-competition
+  status: FAIL
+  purpose: "Loss Competition candidate A: cap pos_weight=50 (uniforme), \u03B3=2,\
+    \ fp=3"
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    - Aasimonster
+    - BigRustyDrums
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+  model:
+    arch: F0-T4a TCN
+    channels: 64
+    in_channels: 9
+    params: 331225
+  preprocessing:
+    kind: p1p2
+    P1_pre_emphasis:
+      alpha: 0.97
+    P1_channel_norm:
+      ema_decay: 0.99
+    P2_onset_envelope:
+      n_fft: 2048
+      hop: 128
+      n_mels: 80
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter)
+    audio_post_F0T15post: disabled
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a)
+    device: mps
+    efficiency: cosine_lr_with_warmup + early_stop_patience=30 + grad_clip(0.5) +
+      skip_nonfinite_step
+  loss:
+    kind: afl
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+    focal_gamma: 2.0
+    fp_to_fn_ratio: 3.0
+    pos_weight:
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+  training_extras:
+    wall_time_s: 1320
+    epochs_run: 145
+    n_nonfinite_loss_skips: 1
+  metrics:
+    final_train_loss: 0.219
+    val_F_mean: 0.098
+    val_F_shittykit_fixed_0.1: 0.076
+    val_F_drskit_fixed_0.1: 0.12
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    notes: See docs/gates/F0-T4c_MINI_L3/LOSS_COMPETITION_2026-05-25.md for full analysis.
+      Per-bus FP/FN report in listening_test_loss-A-2026-05-25/.
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-loss-A-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 22.0
+- run_id: mini-l3-loss-B-2026-05-25
+  date: '2026-05-25 16:00:00+00:00'
+  git_commit: 7e98017+loss-competition
+  status: FAIL
+  purpose: "Loss Competition candidate B: per-bus density-based, \u03B3=2, fp=30"
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    - Aasimonster
+    - BigRustyDrums
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+  model:
+    arch: F0-T4a TCN
+    channels: 64
+    in_channels: 9
+    params: 331225
+  preprocessing:
+    kind: p1p2
+    P1_pre_emphasis:
+      alpha: 0.97
+    P1_channel_norm:
+      ema_decay: 0.99
+    P2_onset_envelope:
+      n_fft: 2048
+      hop: 128
+      n_mels: 80
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter)
+    audio_post_F0T15post: disabled
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a)
+    device: mps
+    efficiency: cosine_lr_with_warmup + early_stop_patience=30 + grad_clip(0.5) +
+      skip_nonfinite_step
+  loss:
+    kind: afl
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+    focal_gamma: 2.0
+    fp_to_fn_ratio: 30.0
+    pos_weight:
+    - 132.1
+    - 64.3
+    - 200.4
+    - 269.4
+    - 234.8
+    - 243.4
+    - 1000.0
+    - 1000.0
+  training_extras:
+    wall_time_s: 1440
+    epochs_run: 145
+    n_nonfinite_loss_skips: 25
+  metrics:
+    final_train_loss: 0.784
+    val_F_mean: 0.095
+    val_F_shittykit_fixed_0.1: 0.087
+    val_F_drskit_fixed_0.1: 0.114
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    notes: See docs/gates/F0-T4c_MINI_L3/LOSS_COMPETITION_2026-05-25.md for full analysis.
+      Per-bus FP/FN report in listening_test_loss-B-2026-05-25/.
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-loss-B-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 24.0
+- run_id: mini-l3-loss-C-2026-05-25
+  date: '2026-05-25 16:00:00+00:00'
+  git_commit: 7e98017+loss-competition
+  status: FAIL
+  purpose: "Loss Competition candidate C: cap=50, \u03B3=4, fp=3 (vanishing FAIL)"
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    - Aasimonster
+    - BigRustyDrums
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+  model:
+    arch: F0-T4a TCN
+    channels: 64
+    in_channels: 9
+    params: 331225
+  preprocessing:
+    kind: p1p2
+    P1_pre_emphasis:
+      alpha: 0.97
+    P1_channel_norm:
+      ema_decay: 0.99
+    P2_onset_envelope:
+      n_fft: 2048
+      hop: 128
+      n_mels: 80
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter)
+    audio_post_F0T15post: disabled
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a)
+    device: mps
+    efficiency: cosine_lr_with_warmup + early_stop_patience=30 + grad_clip(0.5) +
+      skip_nonfinite_step
+  loss:
+    kind: afl
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+    focal_gamma: 4.0
+    fp_to_fn_ratio: 3.0
+    pos_weight:
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+  training_extras:
+    wall_time_s: 1500
+    epochs_run: 150
+    n_nonfinite_loss_skips: 0
+  metrics:
+    final_train_loss: 0.103
+    val_F_mean: 0.082
+    val_F_shittykit_fixed_0.1: 0.069
+    val_F_drskit_fixed_0.1: 0.104
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    notes: See docs/gates/F0-T4c_MINI_L3/LOSS_COMPETITION_2026-05-25.md for full analysis.
+      Per-bus FP/FN report in listening_test_loss-C-2026-05-25/.
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-loss-C-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 25.0
+- run_id: mini-l3-loss-D-2026-05-25
+  date: '2026-05-25 16:00:00+00:00'
+  git_commit: 7e98017+loss-competition
+  status: FAIL
+  purpose: "Loss Competition candidate D: Tversky \u03B1=0.7 \u03B2=0.3 (cold-start\
+    \ FAIL)"
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    - Aasimonster
+    - BigRustyDrums
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+  model:
+    arch: F0-T4a TCN
+    channels: 64
+    in_channels: 9
+    params: 331225
+  preprocessing:
+    kind: p1p2
+    P1_pre_emphasis:
+      alpha: 0.97
+    P1_channel_norm:
+      ema_decay: 0.99
+    P2_onset_envelope:
+      n_fft: 2048
+      hop: 128
+      n_mels: 80
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter)
+    audio_post_F0T15post: disabled
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a)
+    device: mps
+    efficiency: cosine_lr_with_warmup + early_stop_patience=30 + grad_clip(0.5) +
+      skip_nonfinite_step
+  loss:
+    kind: tversky
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+    focal_gamma: 2.0
+    fp_to_fn_ratio: 30.0
+    pos_weight:
+    - 132.1
+    - 64.3
+    - 200.4
+    - 269.4
+    - 234.8
+    - 243.4
+    - 1000.0
+    - 1000.0
+    tversky_alpha: 0.7
+    tversky_beta: 0.3
+  training_extras:
+    wall_time_s: 900
+    epochs_run: 88
+    n_nonfinite_loss_skips: 0
+  metrics:
+    final_train_loss: 1.767
+    val_F_mean: 0.02
+    val_F_shittykit_fixed_0.1: 0.045
+    val_F_drskit_fixed_0.1: 0.068
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    notes: See docs/gates/F0-T4c_MINI_L3/LOSS_COMPETITION_2026-05-25.md for full analysis.
+      Per-bus FP/FN report in listening_test_loss-D-2026-05-25/.
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-loss-D-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 15.0
+- run_id: mini-l3-loss-E-2026-05-25
+  date: '2026-05-25 17:00:00+00:00'
+  git_commit: 7e98017+loss-competition
+  status: FAIL
+  purpose: 'Loss Competition candidate E: A+B combinato (cap=50, fp=30)'
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    - Aasimonster
+    - BigRustyDrums
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+  model:
+    arch: F0-T4a TCN
+    channels: 64
+    in_channels: 9
+    params: 331225
+  preprocessing:
+    kind: p1p2
+    P1_pre_emphasis:
+      alpha: 0.97
+    P1_channel_norm:
+      ema_decay: 0.99
+    P2_onset_envelope:
+      n_fft: 2048
+      hop: 128
+      n_mels: 80
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter)
+    audio_post_F0T15post: disabled
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a)
+    device: mps
+    efficiency: cosine_lr_with_warmup + early_stop_patience=30 + grad_clip(0.5) +
+      skip_nonfinite_step
+  loss:
+    kind: afl
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+    focal_gamma: 2.0
+    fp_to_fn_ratio: 30.0
+    pos_weight:
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+  training_extras:
+    wall_time_s: 1320
+    epochs_run: 145
+    n_nonfinite_loss_skips: 0
+  metrics:
+    final_train_loss: 0.394
+    val_F_mean: 0.089
+    val_F_shittykit_fixed_0.1: 0.087
+    val_F_drskit_fixed_0.1: 0.106
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    notes: See docs/gates/F0-T4c_MINI_L3/LOSS_COMPETITION_2026-05-25.md for full analysis.
+      Per-bus FP/FN report in listening_test_loss-E-2026-05-25/.
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-loss-E-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 22.0
+- run_id: mini-l3-loss-F-2026-05-25
+  date: '2026-05-25 17:00:00+00:00'
+  git_commit: 7e98017+loss-competition
+  status: FAIL
+  purpose: 'Loss Competition candidate F: Tversky con warmup AFL 30 ep (FAIL)'
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    - Aasimonster
+    - BigRustyDrums
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+  model:
+    arch: F0-T4a TCN
+    channels: 64
+    in_channels: 9
+    params: 331225
+  preprocessing:
+    kind: p1p2
+    P1_pre_emphasis:
+      alpha: 0.97
+    P1_channel_norm:
+      ema_decay: 0.99
+    P2_onset_envelope:
+      n_fft: 2048
+      hop: 128
+      n_mels: 80
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter)
+    audio_post_F0T15post: disabled
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a)
+    device: mps
+    efficiency: cosine_lr_with_warmup + early_stop_patience=30 + grad_clip(0.5) +
+      skip_nonfinite_step
+  loss:
+    kind: tversky
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+    focal_gamma: 2.0
+    fp_to_fn_ratio: 30.0
+    pos_weight:
+    - 132.1
+    - 64.3
+    - 200.4
+    - 269.4
+    - 234.8
+    - 243.4
+    - 1000.0
+    - 1000.0
+    tversky_alpha: 0.7
+    tversky_beta: 0.3
+  training_extras:
+    wall_time_s: 660
+    epochs_run: 60
+    n_nonfinite_loss_skips: 0
+  metrics:
+    final_train_loss: 1.38
+    val_F_mean: 0.003
+    val_F_shittykit_fixed_0.1: null
+    val_F_drskit_fixed_0.1: null
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    notes: See docs/gates/F0-T4c_MINI_L3/LOSS_COMPETITION_2026-05-25.md for full analysis.
+      Per-bus FP/FN report in listening_test_loss-F-2026-05-25/.
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-loss-F-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 11.0
+- run_id: mini-l3-loss-G-2026-05-25
+  date: '2026-05-25 17:00:00+00:00'
+  git_commit: 7e98017+loss-competition
+  status: FAIL
+  purpose: 'Loss Competition candidate G: smart-cap (50 bus comuni, 150 bus rari),
+    fp=30'
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    - Aasimonster
+    - BigRustyDrums
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+  model:
+    arch: F0-T4a TCN
+    channels: 64
+    in_channels: 9
+    params: 331225
+  preprocessing:
+    kind: p1p2
+    P1_pre_emphasis:
+      alpha: 0.97
+    P1_channel_norm:
+      ema_decay: 0.99
+    P2_onset_envelope:
+      n_fft: 2048
+      hop: 128
+      n_mels: 80
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter)
+    audio_post_F0T15post: disabled
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a)
+    device: mps
+    efficiency: cosine_lr_with_warmup + early_stop_patience=30 + grad_clip(0.5) +
+      skip_nonfinite_step
+  loss:
+    kind: afl
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+    focal_gamma: 2.0
+    fp_to_fn_ratio: 30.0
+    pos_weight:
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 50.0
+    - 150.0
+    - 150.0
+    - 150.0
+  training_extras:
+    wall_time_s: 1380
+    epochs_run: 150
+    n_nonfinite_loss_skips: 1
+  metrics:
+    final_train_loss: 0.415
+    val_F_mean: 0.1
+    val_F_shittykit_fixed_0.1: 0.082
+    val_F_drskit_fixed_0.1: 0.106
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    notes: See docs/gates/F0-T4c_MINI_L3/LOSS_COMPETITION_2026-05-25.md for full analysis.
+      Per-bus FP/FN report in listening_test_loss-G-2026-05-25/.
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-loss-G-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 23.0

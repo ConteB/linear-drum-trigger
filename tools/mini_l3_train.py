@@ -134,6 +134,26 @@ def main() -> int:
                              "from sha256(master_seed|key|epoch).")
     parser.add_argument("--audio-aug-master-seed", type=int, default=20260525,
                         help="Master seed for the audio augmentation pipeline.")
+    # 2026-05-25 (post-listening-test): concorrente loss design experiment.
+    # Preset choices fissano un design di loss distinto a parità di pool, arch
+    # e training schedule. Il "ctrl" è il status-quo (AFL + per-bus pos_weight
+    # density-based + γ=2, fp_ratio=3). A/B/C/D sono i 4 candidati ratificati
+    # dal CEO 2026-05-25.
+    parser.add_argument("--loss-preset", default="ctrl",
+                        choices=("ctrl", "A", "B", "C", "D", "E", "F", "G"),
+                        help="ctrl = status quo (AFL + per-bus + γ=2 + fp=3); "
+                             "A = cap pos_weight 50 (fix minimal); "
+                             "B = per-bus + fp_ratio=30 (compensa asimmetria); "
+                             "C = γ=4 + cap 50 (focal aggressivo); "
+                             "D = Tversky α=0.7 β=0.3 (paradigma alternativo); "
+                             "E = A+B combinato (cap 50 + fp_ratio=30, γ=2); "
+                             "F = Tversky con warmup AFL (CTRL per N epoch, "
+                             "poi switch a Tversky); "
+                             "G = smart-cap (50 bus comuni, 150 bus rari) + "
+                             "fp_ratio=30, γ=2.")
+    parser.add_argument("--loss-warmup-epochs", type=int, default=30,
+                        help="For preset F: number of epochs to train with "
+                             "AFL (CTRL config) before switching to Tversky.")
     # F0-T16-post bugfix 2026-05-25 (post-abandon): clip e skip non-finite
     # parametrizzati, dopo che `clip_grad_norm=1.0` non bastava nel regime
     # audio_aug (Inf @ epoch 110, run mini-l3-crosskit-p1p2-audioaug).
@@ -190,7 +210,75 @@ def main() -> int:
     np.random.seed(args.seed)
     print(f"[mini-L3] device = {device}")
 
-    loss_cfg = LossConfig(pos_weight=pos_weight_tuple)
+    # Loss preset dispatch — Decision Lock CEO 2026-05-25 (post-listening-test).
+    # The status-quo (ctrl) uses the density-derived per-bus pos_weight. The
+    # competing candidates A..D vary along orthogonal axes to discriminate
+    # *which* part of the loss design causes the predict-everywhere collapse.
+    if args.loss_preset == "ctrl":
+        loss_cfg = LossConfig(pos_weight=pos_weight_tuple)
+    elif args.loss_preset == "A":
+        # A — cap pos_weight a 50 per ogni bus (uniforme, asimmetria max 17×).
+        capped = tuple(min(float(w), 50.0) for w in pos_weight_tuple)
+        loss_cfg = LossConfig(pos_weight=capped)
+    elif args.loss_preset == "B":
+        # B — mantiene density-based pos_weight, alza fp_to_fn_ratio a 30.
+        loss_cfg = LossConfig(
+            pos_weight=pos_weight_tuple, fp_to_fn_ratio=30.0,
+        )
+    elif args.loss_preset == "C":
+        # C — focal γ=4 + cap pos_weight=50.
+        capped = tuple(min(float(w), 50.0) for w in pos_weight_tuple)
+        loss_cfg = LossConfig(pos_weight=capped, focal_gamma=4.0)
+    elif args.loss_preset == "D":
+        # D — paradigma Tversky α=0.7 β=0.3. pos_weight resta (per backcompat
+        # del LossConfig schema) ma non viene usato dal forward su kind=tversky.
+        loss_cfg = LossConfig(
+            pos_weight=pos_weight_tuple, kind="tversky",
+            tversky_alpha=0.7, tversky_beta=0.3,
+        )
+    elif args.loss_preset == "E":
+        # E — cap pos_weight 50 (da A) + fp_to_fn_ratio=30 (da B) + γ=2.
+        # Ipotesi: i due fix sono ortogonali, la combinazione calibra TUTTI
+        # i bus (rari + comuni). Vedi `LOSS_COMPETITION_2026-05-25.md` §
+        # "Hypothesis: A+B combinato".
+        capped = tuple(min(float(w), 50.0) for w in pos_weight_tuple)
+        loss_cfg = LossConfig(
+            pos_weight=capped, fp_to_fn_ratio=30.0,
+        )
+    elif args.loss_preset == "F":
+        # F — Tversky con warmup AFL (CTRL config). Train loop selects which
+        # of two TCNLoss instances to use based on epoch number. The warmup
+        # config is the CTRL (status quo) — it gives the network non-zero
+        # confidence on the true positives before Tversky takes over (the
+        # smooth=1.0 term then no longer dominates the gradient).
+        loss_cfg = LossConfig(
+            pos_weight=pos_weight_tuple, kind="tversky",
+            tversky_alpha=0.7, tversky_beta=0.3,
+        )
+    elif args.loss_preset == "G":
+        # G — smart-cap differenziato (post-E findings). E ha avuto
+        # `crash zero-detect` (pos_weight 50 troppo basso per crash con
+        # density 0.7-1.5 %). G ripristina pos_weight più alto sui bus rari
+        # (ride/crash_a/crash_b, indici 5-7) mantenendo 50 sui bus comuni
+        # (0-4 = kick/snare/hihat/tom/floor). Cap 150 = punto medio tra
+        # CTRL (1000) e E (50). fp_ratio resta 30 come E/B.
+        rare_indices = {5, 6, 7}  # ride, crash_a, crash_b_misc
+        capped = tuple(
+            min(float(w), 150.0) if i in rare_indices else min(float(w), 50.0)
+            for i, w in enumerate(pos_weight_tuple)
+        )
+        loss_cfg = LossConfig(pos_weight=capped, fp_to_fn_ratio=30.0)
+    else:
+        raise ValueError(args.loss_preset)
+    print(f"[mini-L3] loss_preset = {args.loss_preset}  kind = {loss_cfg.kind}",
+          flush=True)
+    if loss_cfg.kind == "afl":
+        print(f"[mini-L3]   pos_weight = {loss_cfg.pos_weight}  "
+              f"γ = {loss_cfg.focal_gamma}  fp_ratio = {loss_cfg.fp_to_fn_ratio}",
+              flush=True)
+    else:
+        print(f"[mini-L3]   tversky α = {loss_cfg.tversky_alpha}  "
+              f"β = {loss_cfg.tversky_beta}", flush=True)
     train_ds = GoldDataset(
         train_samples,
         crop_samples=args.crop_samples,
@@ -242,6 +330,18 @@ def main() -> int:
         print(f"[mini-L3] preprocessing params = {n_params_pre}", flush=True)
     print(f"[mini-L3] model parameters = {n_params:,}")
     loss_fn = TCNLoss(loss_cfg).to(device)
+    # F-preset warmup: instantiate a second loss (CTRL AFL config) used for
+    # the first `loss_warmup_epochs` epochs. The training loop dispatches to
+    # this loss until the warmup window closes, then switches to the target
+    # loss (Tversky). The warmup gives the network non-zero confidence on
+    # true positives before Tversky takes over.
+    loss_fn_warmup: TCNLoss | None = None
+    if args.loss_preset == "F" and args.loss_warmup_epochs > 0:
+        warmup_cfg = LossConfig(pos_weight=pos_weight_tuple)  # CTRL AFL
+        loss_fn_warmup = TCNLoss(warmup_cfg).to(device)
+        print(f"[mini-L3]   F warmup: AFL (CTRL) for first "
+              f"{args.loss_warmup_epochs} epochs, then Tversky.",
+              flush=True)
     optim = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     # F0-T4d B6 E3 — cosine LR schedule with warmup (10% of training).
     if args.use_cosine_lr:
@@ -282,6 +382,17 @@ def main() -> int:
         model.train()
         if preprocess is not None:
             preprocess.train()
+        # F-preset warmup: pick loss_fn based on epoch.
+        if loss_fn_warmup is not None and epoch <= args.loss_warmup_epochs:
+            active_loss = loss_fn_warmup
+            if epoch == 1:
+                print("[mini-L3]   F-warmup phase ACTIVE (AFL CTRL)", flush=True)
+        else:
+            active_loss = loss_fn
+            if (loss_fn_warmup is not None
+                    and epoch == args.loss_warmup_epochs + 1):
+                print(f"[mini-L3]   F-warmup phase ENDED at epoch {epoch} "
+                      f"— switching to Tversky", flush=True)
         epoch_total = 0.0
         n_steps = 0
         epoch_grad_norm_max = 0.0
@@ -320,7 +431,7 @@ def main() -> int:
                 audio = preprocess(audio.float())
             with autocast_ctx:
                 pred = model(audio)
-                losses = loss_fn(pred, target)
+                losses = active_loss(pred, target)
             loss_val = losses["total"]
             # F0-T16-post bugfix 2026-05-25: skip step when loss is non-finite.
             # The audio_aug regime occasionally produced Inf loss at epoch 110
@@ -518,6 +629,12 @@ def main() -> int:
         "n_nonfinite_grad_skips": n_nonfinite_grad,
         "audio_aug": args.audio_aug,
         "preprocessing": args.preprocessing,
+        "loss_preset": args.loss_preset,
+        "loss_kind": loss_cfg.kind,
+        "loss_focal_gamma": loss_cfg.focal_gamma,
+        "loss_fp_to_fn_ratio": loss_cfg.fp_to_fn_ratio,
+        "loss_tversky_alpha": loss_cfg.tversky_alpha,
+        "loss_tversky_beta": loss_cfg.tversky_beta,
     }
 
     import datetime as _dt

@@ -55,16 +55,49 @@ class LossConfig:
     w_hihat: float = 0.25
     # Asymmetric Focal hyperparameters (F0-T4a §6).
     focal_gamma: float = 2.0
-    # Doctrinal asymmetry — FP weighted 3× the FN (F0-T4a §6, DOSSIER §6.2).
-    fp_to_fn_ratio: float = 3.0
+    # FP/FN asymmetry. **F0-T4a §6 doctrine superseded by Loss Competition
+    # 2026-05-25** — Decision Lock CEO: the original doctrine
+    # ``fp_to_fn_ratio = 3`` produced "predict-everywhere" collapse on the
+    # non-kick buses (FP/FN 23–86× on snare/hihat/floor/ride/crash,
+    # confirmed by `docs/gates/F0-T4c_MINI_L3/listening_test_*` and
+    # ratified by the loss competition: candidate B
+    # (`fp_to_fn_ratio = 30`) emerged as the empirical winner
+    # (ShittyKit val F 0.087 vs CTRL 0.084, hihat FP/FN 86→16). The new
+    # default of 30 is the LOCKED operational value; the old 3.0 is
+    # available via explicit override for backcompat with the F0-T4c
+    # regression test.
+    fp_to_fn_ratio: float = 30.0
     # Class-imbalance correction (alpha-balance term implicit in Focal Loss).
     # Scalar -> broadcast on all 8 buses; tuple of 8 -> per-bus weight (B6b).
     pos_weight: float | tuple[float, ...] = 200.0
     # Mask threshold on the Gaussian-smeared onset target — above this the
     # frame is considered "on" and the velocity/microtiming L1 contributes.
     onset_mask_threshold: float = 0.5
+    # 2026-05-25 — sessione post-listening-test, CEO directive: testare design
+    # di loss alternativi per il "predict-everywhere" collapse sui bus non-kick.
+    # ``kind = "afl"`` (default, backcompat) = Asymmetric Focal BCE come sopra.
+    # ``kind = "tversky"`` = soft Tversky loss `1 - TP/(TP + αFP + βFN)` su
+    # probabilità continue, paradigma alternativo che penalizza FP letteralmente
+    # invece che via BCE pesata.
+    kind: str = "afl"
+    tversky_alpha: float = 0.7  # FP penalty (Tversky)
+    tversky_beta: float = 0.3   # FN penalty (Tversky)
+    tversky_smooth: float = 1.0  # numerical stability + cold-start anchor
 
     def __post_init__(self) -> None:
+        if self.kind not in {"afl", "tversky"}:
+            raise ValueError(
+                f"kind must be 'afl' or 'tversky', got {self.kind!r}"
+            )
+        if self.kind == "tversky":
+            if not 0.0 < self.tversky_alpha:
+                raise ValueError(
+                    f"tversky_alpha must be > 0, got {self.tversky_alpha}"
+                )
+            if not 0.0 < self.tversky_beta:
+                raise ValueError(
+                    f"tversky_beta must be > 0, got {self.tversky_beta}"
+                )
         # Fail-loud on per-bus ``pos_weight`` tuple of wrong length or
         # out-of-range values (F0-T4c B6b).
         if isinstance(self.pos_weight, tuple):
@@ -124,12 +157,20 @@ class TCNLoss(nn.Module):
         microtiming_t = target[..., 2:24:3]
         hihat_t = target[..., HIHAT_OPENING_COL]
 
-        loss_onset = _asymmetric_focal_bce(
-            onset_p, onset_t,
-            gamma=self.config.focal_gamma,
-            fp_to_fn_ratio=self.config.fp_to_fn_ratio,
-            pos_weight=self._pos_weight,
-        )
+        if self.config.kind == "tversky":
+            loss_onset = _tversky_loss(
+                onset_p, onset_t,
+                alpha=self.config.tversky_alpha,
+                beta=self.config.tversky_beta,
+                smooth=self.config.tversky_smooth,
+            )
+        else:
+            loss_onset = _asymmetric_focal_bce(
+                onset_p, onset_t,
+                gamma=self.config.focal_gamma,
+                fp_to_fn_ratio=self.config.fp_to_fn_ratio,
+                pos_weight=self._pos_weight,
+            )
 
         # Velocity / microtiming: L1, masked by the ground-truth onset.
         mask = (onset_t > self.config.onset_mask_threshold).to(pred.dtype)
@@ -185,6 +226,39 @@ def _asymmetric_focal_bce(
     fp = -(1.0 - t) * (p_safe ** gamma) * torch.log(1.0 - p_safe)
     # pos_weight broadcasts over [B, T, N_BUSES] on the last dim.
     return torch.mean(pos_weight * fn + fp_to_fn_ratio * fp)
+
+
+def _tversky_loss(
+    p: torch.Tensor,
+    t: torch.Tensor,
+    *,
+    alpha: float,
+    beta: float,
+    smooth: float,
+) -> torch.Tensor:
+    """Soft Tversky loss on the onset head (2026-05-25 candidate D).
+
+    Tversky index (generalisation of Dice for asymmetric FP/FN):
+      ``T = (TP + smooth) / (TP + α·FP + β·FN + smooth)``
+    Loss = ``1 - T``, averaged across buses.
+
+    Operates on continuous probabilities (the Gaussian-smeared target is
+    treated as soft 0..1; ``p * t`` is the soft TP). ``smooth`` anchors the
+    cold start (when TP ≈ 0 the gradient is dominated by the constant
+    smooth term, preventing the loss from saturating at 1.0).
+
+    Per-bus computation: TP/FP/FN are summed across (B, T) but the loss is
+    averaged across the bus dim, so each bus has equal weight in the total
+    gradient (no class-imbalance correction needed — the formula handles it
+    structurally via α/β).
+    """
+    # Soft confusion components per bus. ``p`` is already in [0, 1] (sigmoid
+    # output upstream), ``t`` is the Gaussian-smeared target also in [0, 1].
+    tp = (p * t).sum(dim=(0, 1))            # [N_BUSES]
+    fp = (p * (1.0 - t)).sum(dim=(0, 1))    # [N_BUSES]
+    fn = ((1.0 - p) * t).sum(dim=(0, 1))    # [N_BUSES]
+    tversky = (tp + smooth) / (tp + alpha * fp + beta * fn + smooth)
+    return (1.0 - tversky).mean()
 
 
 def _masked_l1(p: torch.Tensor, t: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:

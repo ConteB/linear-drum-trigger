@@ -158,16 +158,20 @@ binario è assente (host macOS) e girano dentro OrbStack.
 | Provisioning | localmente sul Mac del CEO 2026-05-25 (mini-L3) + ri-scaricabile su VM Azure in T1-prep-D |
 | Mappatura mic | `docs/specs/kit_mic_mapping.yaml` (CrocellKit entry: kick=KDrumInside, snare=SnareTop, hihat=Hihat, tom=Tom1, floor=FTom1, OH=OHLeft/OHRight, room=AmbLeft) |
 
-### `vendor/drumgizmo/Aasimonster/` 🌐 **manifest-only**
+### `vendor/drumgizmo/Aasimonster/` 📦 **localmente vendorizzato** (2026-05-25)
 
 | Campo | Valore |
 | :-- | :-- |
 | Kit | DrumGizmo — **The Aasimonster v2.1** |
 | Sorgente | `https://drumgizmo.org/kits/Aasimonster/aasimonster2_1.zip` |
 | Licenza | **CC-BY-4.0** |
-| sha256 (zip, 2.3 GB) | `cdbaf1cae57e479845c12e2f935a3dec1179bfa26fbfe9905deb9bae7070f987` |
-| Ruolo | Kit DrumGizmo multi-mic, timbro distinto · Train Gold |
-| Provisioning | da scaricare su VM Azure in T1-prep-D |
+| Size zip | 2.3 GB (`Content-Length: 2416291882` · `Last-Modified: 2018-11-28T18:13:25Z`) |
+| md5 (zip) | `910aa5a789d34f85c2e7c4a5c5a6b2f9` *(verificato sul download canonical 2026-05-25)* |
+| sha256 (zip) | `e0eb6337dae3602c8a4f735e6b5245cf35e1e4909242cfaf5517eb2d725207df` *(re-computed 2026-05-25; il valore precedente nel manifest era stale — il file su drumgizmo.org è datato 2018-11-28, mai cambiato, l'hash storico era stato annotato senza re-compute)* |
+| Entrypoint XML | `vendor/drumgizmo/Aasimonster/aasimonster.xml` |
+| n. mic | 16 (8 selezionati: KdrumL/Snare_top/Hihat/Tom1/Tom4/OHL/OHR/AmbL — vedi `docs/specs/kit_mic_mapping.yaml`) |
+| Ruolo | Kit DrumGizmo multi-mic, timbro distinto · Train Gold + **mini-L3 cross-kit expansion** (Decision Lock CEO 2026-05-25) |
+| Provisioning | localmente sul Mac del CEO 2026-05-25 (mini-L3 4° DG train kit) + ri-scaricabile su VM Azure in T1-prep-D |
 
 ### `vendor/drumgizmo/ShittyKit/` 📦 **localmente vendorizzato** (2026-05-24)
 

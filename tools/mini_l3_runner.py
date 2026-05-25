@@ -112,11 +112,22 @@ MIN_MIDI_DURATION_S = 5.0
 #: well past the 20 GB cap.
 MAX_MIDI_DURATION_S = 15.0
 
-#: Train kits — 3 kit del roster F0-T1b training partition.
-TRAIN_KITS: tuple[tuple[str, str], ...] = (
-    ("DRSKit", "vendor/drumgizmo/DRSKit/DRSKit_full.xml"),
-    ("MuldjordKit", "vendor/drumgizmo/MuldjordKit3/MuldjordKit3.xml"),
-    ("CrocellKit", ""),  # filled at runtime — scan vendor/drumgizmo/Crocell*
+#: Train kits — roster F0-T1b training partition.
+#: Decision Lock CEO 2026-05-25 (post C=64 FAIL): paradigma misto DG+SFZ per
+#: chiudere il distribution shift cross-kit. Sfizz è single-stereo → ricade
+#: sui canali OH_L/OH_R del layout 8-canale canonico (data.py: solo_stereo
+#: → slots 5,6); gli altri 6 canali sono zero (channel masking della aug
+#: B3 li gestisce). Aasimonster aggiunto come 4° kit DG (provisioning
+#: 2026-05-25 mattina), Big Rusty Drums come 1° kit Sfizz (già provisioned
+#: in vendor/sfz/).
+#:
+#: Schema: tuple[(engine, kit_label, kit_path_or_xml), ...]
+TRAIN_KITS_MIXED: tuple[tuple[str, str, str], ...] = (
+    ("drumgizmo", "DRSKit",      "vendor/drumgizmo/DRSKit/DRSKit_full.xml"),
+    ("drumgizmo", "MuldjordKit", "vendor/drumgizmo/MuldjordKit3/MuldjordKit3.xml"),
+    ("drumgizmo", "CrocellKit",  ""),    # filled at runtime
+    ("drumgizmo", "Aasimonster", ""),    # filled at runtime
+    ("sfizz",     "BigRustyDrums", "vendor/sfz/big-rusty-drums/Programs/01-full.sfz"),
 )
 
 #: Val "vergine" kit — Decision Lock 2026-05-23 (vendor/README.md):
@@ -147,35 +158,72 @@ GATE_F_MEAN_VAL = 0.55
 
 
 def _find_main_kit_xml(kit_dir: Path) -> str:
-    """Locate the 'main' kit XML inside ``kit_dir`` (relative to repo root)."""
+    """Locate the 'main' kit XML inside ``kit_dir`` (relative to repo root).
+
+    Resolution order (most specific first):
+      1. ``<stem>_full.xml`` / ``*_full*`` (DRSKit / CrocellKit convention)
+      2. ``<dirname>.xml`` (Aasimonster: ``aasimonster.xml`` in
+         ``Aasimonster/``)
+      3. First XML that is *not* labelled ``-minimal`` / ``midimap`` /
+         contains a per-component XML (drop ``china_*.xml`` etc.)
+
+    The ``-minimal`` and per-component XMLs are explicitly excluded —
+    they expose a tiny subset of the kit (designed for low-RAM previews)
+    and crash with -9 when fed full GMD grooves.
+    """
+    skip = {"midimap", "minimal"}
     candidates = [
-        c for c in (sorted(kit_dir.glob("*.xml")) + sorted(kit_dir.glob("*/*.xml")))
-        if "midimap" not in c.name.lower()
+        c for c in sorted(kit_dir.glob("*.xml"))
+        if not any(s in c.name.lower() for s in skip)
     ]
+    if not candidates:
+        return ""
+    # Preference order.
+    dir_stem = kit_dir.name.lower()
     for c in candidates:
-        if c.name.lower().endswith("_full.xml") or "_full" in c.stem.lower():
+        stem = c.stem.lower()
+        if stem.endswith("_full") or "_full" in stem:
             return str(c.relative_to(_REPO_ROOT))
-    return str(candidates[0].relative_to(_REPO_ROOT)) if candidates else ""
+    for c in candidates:
+        if c.stem.lower() == dir_stem:
+            return str(c.relative_to(_REPO_ROOT))
+    # Last resort: first non-minimal XML.
+    return str(candidates[0].relative_to(_REPO_ROOT))
 
 
-def _resolve_kit_paths() -> tuple[list[tuple[str, str]], tuple[str, str]]:
-    """Resolve the kit XML paths for the mini-L3 train + val pools."""
-    base = _REPO_ROOT / "vendor" / "drumgizmo"
+def _resolve_kit_paths() -> tuple[list[tuple[str, str, str]], tuple[str, str]]:
+    """Resolve the kit XML paths for the mini-L3 train + val pools.
+
+    Returns ``(train_kits, val_kit)`` where train_kits is a list of
+    ``(engine, label, path)`` triples (mixed engines DG+SFZ) and val_kit
+    is a single DG kit tuple ``(label, xml_path)``.
+    """
+    dg_base = _REPO_ROOT / "vendor" / "drumgizmo"
     # Default hardcoded paths for the kits that are stable and already
     # provisioned; for newer kits use a directory-prefix scan.
     crocell_xml = ""
+    aasimonster_xml = ""
     shitty_xml = ""
-    for d in base.iterdir():
-        if not d.is_dir():
-            continue
-        if d.name.startswith("Crocell"):
-            crocell_xml = _find_main_kit_xml(d)
-        elif d.name.startswith("Shitty"):
-            shitty_xml = _find_main_kit_xml(d)
+    if dg_base.exists():
+        for d in dg_base.iterdir():
+            if not d.is_dir():
+                continue
+            if d.name.startswith("Crocell"):
+                crocell_xml = _find_main_kit_xml(d)
+            elif d.name.lower().startswith("aasi"):
+                aasimonster_xml = _find_main_kit_xml(d)
+            elif d.name.startswith("Shitty"):
+                shitty_xml = _find_main_kit_xml(d)
+    # SFZ kit path — Big Rusty Drums (CC0, full kit GM-compatible).
+    big_rusty_sfz = "vendor/sfz/big-rusty-drums/Programs/01-full.sfz"
+    if not (_REPO_ROOT / big_rusty_sfz).exists():
+        big_rusty_sfz = ""
     train_kits = [
-        ("DRSKit", "vendor/drumgizmo/DRSKit/DRSKit_full.xml"),
-        ("MuldjordKit", "vendor/drumgizmo/MuldjordKit3/MuldjordKit3.xml"),
-        ("CrocellKit", crocell_xml),
+        ("drumgizmo", "DRSKit",        "vendor/drumgizmo/DRSKit/DRSKit_full.xml"),
+        ("drumgizmo", "MuldjordKit",   "vendor/drumgizmo/MuldjordKit3/MuldjordKit3.xml"),
+        ("drumgizmo", "CrocellKit",    crocell_xml),
+        ("drumgizmo", "Aasimonster",   aasimonster_xml),
+        ("sfizz",     "BigRustyDrums", big_rusty_sfz),
     ]
     val_kit = ("ShittyKit", shitty_xml)
     return train_kits, val_kit
@@ -253,39 +301,51 @@ def select_midi_subset() -> list[Path]:
 
 @dataclass(frozen=True)
 class MiniL3Entry:
-    """One render entry — wraps RecipeMatrixEntry + the resolved kit path."""
+    """One render entry — wraps RecipeMatrixEntry + the resolved kit path.
+
+    Decision Lock CEO 2026-05-25: extended with ``engine`` to support the
+    mixed DG+SFZ training pool. The Sfizz path is the absolute ``.sfz`` file
+    (e.g. ``Programs/01-full.sfz``); for DrumGizmo it is the main XML.
+    """
 
     source_midi_id: str
     variant_idx: int
     jitter_seed: int
+    engine: str       # "drumgizmo" | "sfizz"
     kit_label: str
-    kit_xml: str
+    kit_xml: str      # XML for DG; .sfz for Sfizz
 
 
 def build_entries_for_split(
     midi_ids: list[str],
-    kits: list[tuple[str, str]],
+    kits: list[tuple[str, str, str]],
     *,
     k_variants: int,
 ) -> list[MiniL3Entry]:
-    """Build the per-split entries: M × kits × (k + 1) variants."""
-    # We use build_recipe_matrix_entries to get the deterministic per-variant
-    # jitter seed; then we cross with the kits list.
+    """Build the per-split entries: M × kits × (k + 1) variants.
+
+    ``kits`` is a list of ``(engine, label, path)`` triples (mixed engines
+    supported since the C=64 capacity bump branched into the mixed-paradigm
+    train pool). The recipe-matrix machinery uses ``(engine, label)`` for
+    barcode derivation; we resolve the path locally.
+    """
     base_entries = build_recipe_matrix_entries(
         source_midi_ids=midi_ids,
-        engines_kits=[("drumgizmo", k[0]) for k in kits],
+        engines_kits=[(eng, lbl) for eng, lbl, _ in kits],
         k_variants=k_variants,
         master_seed=MASTER_SEED,
     )
-    kit_xml_by_label = {label: xml for label, xml in kits}
+    path_by_kit = {lbl: path for _eng, lbl, path in kits}
+    engine_by_kit = {lbl: eng for eng, lbl, _ in kits}
     out: list[MiniL3Entry] = []
     for e in base_entries:
         out.append(MiniL3Entry(
             source_midi_id=e.source_midi_id,
             variant_idx=e.variant_idx,
             jitter_seed=e.jitter_seed,
+            engine=engine_by_kit[e.kit],
             kit_label=e.kit,
-            kit_xml=kit_xml_by_label[e.kit],
+            kit_xml=path_by_kit[e.kit],
         ))
     return out
 
@@ -293,7 +353,23 @@ def build_entries_for_split(
 def _recipe_from_mini_entry(
     entry: MiniL3Entry, midi_relpath: str, split: Split,
 ) -> Recipe:
-    """Build a Recipe directly — no YAML."""
+    """Build a Recipe directly — no YAML.
+
+    Engine-aware: Sfizz renders single stereo (``mic_config=solo_stereo``),
+    while DrumGizmo renders 8-mic multitrack (``mic_config=multitrack_full``).
+    On the consumer side, ``src/neural/data.py:_apply_canonical_slots`` lifts
+    Sfizz stereo to the 8-channel canonical layout placing L/R on the OH
+    slots (5,6) and zeroing the rest — exactly what the F0-T15-post B3
+    channel-mask trains the network to handle.
+    """
+    if entry.engine == "drumgizmo":
+        engine_enum = Engine.DRUMGIZMO
+        mic_cfg = MicConfig.MULTITRACK_FULL
+    elif entry.engine == "sfizz":
+        engine_enum = Engine.SFIZZ
+        mic_cfg = MicConfig.SOLO_STEREO
+    else:
+        raise ValueError(f"unknown engine {entry.engine!r}")
     return Recipe(
         recipe_id=f"R-MINI_L3-{entry.source_midi_id}-V{entry.variant_idx}-{entry.kit_label}",
         schema_version="1.0",
@@ -314,11 +390,11 @@ def _recipe_from_mini_entry(
             variant_idx=entry.variant_idx,
         ),
         render=RenderSpec(
-            engine=Engine.DRUMGIZMO,
+            engine=engine_enum,
             kit=entry.kit_label,
             kit_path=entry.kit_xml,
             sample_rate=44100,
-            mic_config=MicConfig.MULTITRACK_FULL,
+            mic_config=mic_cfg,
         ),
         augmentation=AugmentationSpec(
             level=1,                  # raw — no audio aug (F0-T16-post out of scope)
@@ -438,7 +514,7 @@ def _discover_midi_paths() -> dict[str, Path]:
     return out
 
 
-def _render_split(split_name: str, kits: list[tuple[str, str]],
+def _render_split(split_name: str, kits: list[tuple[str, str, str]],
                   k_variants: int, out_dir: Path, split: Split) -> None:
     midi_paths = _discover_midi_paths()
     if not midi_paths:
@@ -456,17 +532,28 @@ def _render_split(split_name: str, kits: list[tuple[str, str]],
           f"elapsed={elapsed:.0f}s ({elapsed/60:.1f} min)")
 
 
-def stage_render_train() -> None:
+def stage_render_train(engine_filter: str = "all") -> None:
     train_kits, _ = _resolve_kit_paths()
-    # Skip kits not yet extracted (XML path empty) — supports the "start now,
-    # add Crocell later" workflow chosen by the CEO 2026-05-24. Re-run with
-    # the missing kit available will add the remaining samples
-    # (skip_existing=True keeps the run idempotent).
-    available_kits = [k for k in train_kits if k[1]]
-    missing = [k[0] for k in train_kits if not k[1]]
+    # Skip kits not yet extracted (path empty) — supports the "start now,
+    # add later" workflow. Re-run with the missing kit available will add
+    # the remaining samples (skip_existing=True keeps the run idempotent).
+    available_kits = [k for k in train_kits if k[2]]
+    missing = [k[1] for k in train_kits if not k[2]]
     if missing:
         print(f"[mini-L3:train] ⚠ SKIPPING (not yet provisioned): {missing}")
-    print(f"[mini-L3:train] kits = {[k[0] for k in available_kits]}")
+    # Engine filter — Decision Lock CEO 2026-05-25 (mixed DG+SFZ pool).
+    # Sfizz binary is macOS-only (vendor/sfizz/sfizz_render), DrumGizmo
+    # binary is Linux-only (apt in OrbStack VM). The render is split
+    # across two hosts: `--engine-filter drumgizmo` on OrbStack,
+    # `--engine-filter sfizz` on macOS. Idempotent skip via
+    # skip_existing means the second pass only adds the missing kits.
+    if engine_filter != "all":
+        before = len(available_kits)
+        available_kits = [k for k in available_kits if k[0] == engine_filter]
+        print(f"[mini-L3:train] --engine-filter={engine_filter}: "
+              f"{before} → {len(available_kits)} kits")
+    print(f"[mini-L3:train] kits = "
+          f"{[(eng, lbl) for eng, lbl, _ in available_kits]}")
     if not available_kits:
         print("ERROR: no train kits available — nothing to render.")
         sys.exit(1)
@@ -480,8 +567,9 @@ def stage_render_val() -> None:
               f"(no XML found under vendor/drumgizmo/Shitty*).")
         sys.exit(1)
     print(f"[mini-L3:val] kit = {val_kit[0]}")
-    # Val: 1 kit, 1 variant (baseline only — no jitter).
-    _render_split("val", [val_kit], 0, GOLD_VAL_DIR, Split.VAL)
+    # Val: 1 DG kit, 1 variant (baseline only — no jitter).
+    val_triple = [("drumgizmo", val_kit[0], val_kit[1])]
+    _render_split("val", val_triple, 0, GOLD_VAL_DIR, Split.VAL)
 
 
 # Training is delegated to a sibling tool (next file) — keeps this runner
@@ -496,12 +584,17 @@ def main() -> int:
         "--stage", required=True,
         choices=("select-midi", "render-train", "render-val", "all"),
     )
+    parser.add_argument(
+        "--engine-filter", default="all",
+        choices=("all", "drumgizmo", "sfizz"),
+        help="Filter train kits by engine (mixed DG+SFZ pool, 2026-05-25).",
+    )
     args = parser.parse_args()
 
     if args.stage in ("select-midi", "all"):
         stage_select_midi()
     if args.stage in ("render-train", "all"):
-        stage_render_train()
+        stage_render_train(engine_filter=args.engine_filter)
     if args.stage in ("render-val", "all"):
         stage_render_val()
     return 0

@@ -1271,6 +1271,37 @@ del DOSSIER §3.1 moltiplica la recipe matrix di F2-T1, non quella di F2-T2).
   diagnostica chiusa fino a P1+P2+aug. Bugfix collaterale: `training_ledger.py
   list` formatter di NoneType.
 
+· **2026-05-25 15:00 / 16:00 — Capacity bump C=64 + train pool expansion
+  → FAIL ❌, saturazione confermata (val F = 0.099, gate 0.55).** Due run
+  consecutivi sullo stesso asse. (1) **C=64 sui 3 kit DG (P1+P2, no aug):
+  val F = 0.093, F_max 0.321** (+41 % vs C=32+aug 0.066), train loss
+  0.423, 11 min wall — capacity bump funziona, scopre che l'aug aveva
+  grosso overhead CPU↔MPS (`detach().cpu().numpy()` + loop per-sample).
+  (2) **C=64 + expanded mixed-paradigm pool (4 DG + 1 SFZ):** Aasimonster
+  provisioned (2.3 GB, sha256 re-computed `e0eb6337…`, +229 triple, 5
+  silent-zero MIDI patologici drummer7 — Component Dropping che svuota
+  grooves brevi), Big Rusty Drums Sfizz già provisioned (+234 triple,
+  zero fail) che ricade su slot OH_L/OH_R (5,6) del canonical 8-channel
+  layout via `solo_stereo` → `_apply_canonical_slots` in `data.py`.
+  Pool baseline-only 577 sample (+74 % vs 331). Train loss 0.357,
+  22 min wall, early-stop @ ep 145. **val F = 0.099, F_max 0.296**
+  (+6 % vs 3-kit, **diminishing return chiaro**: lift cumulativo 0.049 →
+  0.099 = +102 % da baseline ma siamo ancora a 1/5.5 del gate).
+  **Verdetto strategico:** saturazione capacità + dataset confermata.
+  Il mini-L3 con 5 kit totali + 1 val "vergine" ShittyKit è uno
+  **stress test cross-kit irrealistico**; floor empirico ~0.10. ShittyKit
+  ha distribuzione timbrica troppo distante (lo `kit_mic_mapping.yaml` ha
+  l'hihat che ricade sul bleed OH per assenza di mic dedicato — sintomo).
+  Resta ratificata l'architettura F0-T4a + il fix data pipeline F0-T4c:
+  il modello impara (train loss 0.36, lift cross-kit confermato). Il
+  vero gate di validazione operativa resta **L4 / E-GMD** con ~30 kit
+  reali — distribuzione molto meno OOD del singolo ShittyKit. Tooling:
+  `tools/mini_l3_runner.py` esteso con paradigma misto DG+SFZ +
+  `--engine-filter` (DG su OrbStack, SFZ su macOS); resolver
+  `_find_main_kit_xml` corretto (skip `-minimal` + preferenza `_full` /
+  `<dirname>.xml`); `docs/specs/kit_mic_mapping.yaml` esteso con
+  Aasimonster (16 mic → 8 canonical). Costo Azure: $0. Ledger: 9 entry.
+
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 
 ---

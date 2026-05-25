@@ -521,3 +521,194 @@ runs:
   cost:
     azure_usd: 0.0
     local_compute_min: 41.2
+- run_id: mini-l3-crosskit-p1p2-c64-2026-05-25
+  date: 2026-05-25 15:00:00+00:00
+  git_commit: d37fda7
+  status: FAIL
+  purpose: "Mini-L3 P1+P2 con C=64 capacity bump (no audio aug) \u2014 verifica se\
+    \ la capacit\xE0 \xE8 il bottleneck residuo dopo P1+P2"
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 331
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+  model:
+    arch: F0-T4a TCN
+    channels: 64
+    in_channels: 9
+    params: 331225
+  preprocessing:
+    kind: p1p2
+    P1_pre_emphasis:
+      alpha: 0.97
+    P1_channel_norm:
+      ema_decay: 0.99
+    P2_onset_envelope:
+      n_fft: 2048
+      hop: 128
+      n_mels: 80
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter applied)
+    audio_post_F0T15post: disabled
+  loss:
+    pos_weight:
+    - 132.1
+    - 64.3
+    - 200.4
+    - 269.4
+    - 234.8
+    - 243.4
+    - 1000.0
+    - 1000.0
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a, cap=200)
+    device: mps
+    wall_time_s: 658
+    efficiency: cosine_lr_with_warmup + early_stop_patience=30 + grad_clip(0.5) +
+      skip_nonfinite_step
+    n_nonfinite_loss_skips: 213
+    n_nonfinite_grad_skips: 0
+  metrics:
+    train_loss_progression:
+      epoch_1: 1.3472
+      epoch_50: 0.7666
+      epoch_100: 0.4712
+      epoch_150: 0.4231
+    final_train_loss: 0.4231
+    best_train_loss: 0.4231
+    val_F_mean: 0.093
+    val_F_range:
+    - 0.018
+    - 0.321
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    delta_vs_previous: "+0.027 vs mini-l3-crosskit-p1p2-aug-clip05 (C=32+aug, 0.066)\
+      \ \u2192 +41 % relativo. F_max 0.212 \u2192 0.321 (+52 %). Capacity bump funziona\
+      \ ma non chiude il gap."
+    notes: "C=64 (331 225 param, 3.96\xD7 di C=32). Wall time 11 min (era 41 min con\
+      \ aug \u2014 l'aug aveva overhead CPU\u2194MPS notevole). Train loss 0.423 vs\
+      \ val F 0.093 \u2192 overfit timbrico-non-evento sui 3 kit DG train. Diagnosi:\
+      \ bottleneck \xE8 distribution shift kit\u2192kit, non capacit\xE0 del modello\
+      \ n\xE9 stabilit\xE0 (il fix grad-clip resta acquisito)."
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-crosskit-p1p2-c64-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 11.0
+- run_id: mini-l3-crosskit-p1p2-c64-mixed5kit-2026-05-25
+  date: 2026-05-25 16:00:00+00:00
+  git_commit: d37fda7+train-pool-expansion
+  status: FAIL
+  purpose: "Mini-L3 P1+P2 + C=64 + expanded mixed-paradigm train pool (4 DG + 1 SFZ)\
+    \ \u2014 testa l'ipotesi del distribution shift cross-kit"
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    - Aasimonster
+    - BigRustyDrums
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+    notes: 'Pool 5-kit mixed-paradigm. 4 DrumGizmo multi-mic 8-channel (1 nuovo: Aasimonster,
+      229 triple, 5 silent-zero MIDI patologici) + 1 Sfizz stereo Big Rusty Drums
+      (234 triple, 0 fail) che ricade su slot OH_L/OH_R (5,6) del canonical 8-channel
+      layout (data.py:_apply_canonical_slots), altri 6 canali zero. Total train baseline-only
+      577 sample (+74 % vs 331 precedente).'
+  model:
+    arch: F0-T4a TCN
+    channels: 64
+    in_channels: 9
+    params: 331225
+  preprocessing:
+    kind: p1p2
+    P1_pre_emphasis:
+      alpha: 0.97
+    P1_channel_norm:
+      ema_decay: 0.99
+    P2_onset_envelope:
+      n_fft: 2048
+      hop: 128
+      n_mels: 80
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter applied)
+    audio_post_F0T15post: disabled
+  loss:
+    pos_weight:
+    - 132.1
+    - 64.3
+    - 200.4
+    - 269.4
+    - 234.8
+    - 243.4
+    - 1000.0
+    - 1000.0
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a, cap=200)
+    device: mps
+    wall_time_s: 1307
+    efficiency: cosine_lr_with_warmup + early_stop_patience=30 + grad_clip(0.5) +
+      skip_nonfinite_step
+    n_nonfinite_loss_skips: 325
+    n_nonfinite_grad_skips: 0
+    early_stopped_at: 145
+  metrics:
+    train_loss_progression:
+      epoch_1: 1.2743
+      epoch_50: 0.5726
+      epoch_100: 0.3911
+      epoch_130: 0.3559
+      epoch_145: 0.3573
+    final_train_loss: 0.3573
+    best_train_loss: 0.3559
+    val_F_mean: 0.099
+    val_F_range:
+    - 0.015
+    - 0.296
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    delta_vs_previous: "+0.006 vs mini-l3-crosskit-p1p2-c64 (3 kit, 0.093) \u2192\
+      \ +6 % relativo. F_max regredito 0.321 \u2192 0.296 (-8 %). Train loss 0.423\
+      \ \u2192 0.357 (-16 %, accelerata da +75 % dati). Lift modesto sul cross-kit\
+      \ val nonostante l'espansione."
+    notes: "L'espansione del train pool (+1 kit DG Aasimonster + 1 kit SFZ Big Rusty\
+      \ Drums via solo_stereo \u2192 slot OH del canonical 8-channel layout) ha portato\
+      \ lift di solo +6 % sul cross-kit val F. Pipeline cumulativa 0.049 \u2192 0.099\
+      \ (+102 %) da baseline, ma ancora 1/5.5 del gate 0.55. Verdetto strategico:\
+      \ il mini-L3 con 5 kit totali + 1 val vergine \xE8 uno **stress test cross-kit\
+      \ irrealistico**; il limite empirico \xE8 ~0.10. Per chiudere il gap servirebbe\
+      \ o un val pool meno patologico (ShittyKit timbrico-OOD) o spostare la barra\
+      \ di validazione su L4 / E-GMD reale (~30+ kit, distribuzione pi\xF9 naturale).\
+      \ Saturazione capacit\xE0 + dataset confermata: diminishing return (0.068 \u2192\
+      \ 0.093 +37 % poi 0.093 \u2192 0.099 +6 %)."
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-crosskit-p1p2-c64-mixed5kit-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 21.8

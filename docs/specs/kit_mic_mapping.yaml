@@ -99,10 +99,24 @@ kits:
     oh_R:   OHRight
     room:   AmbLeft
 
+  Aasimonster:
+    # 16 mic — selezione 8/16. Decision Lock CEO 2026-05-25 (mini-L3 cross-kit
+    # expansion, mixed paradigm DG+SFZ). Snare_bottom/Snare_trigger/Trigger
+    # dropped (rebound triggers, ridondanti con Snare_top per il task).
+    # Ride mantenuto come bleed nel mic oh_R (no slot dedicato per ride nel
+    # layout 8-canonical). Tom1=highest, Tom4=floor.
+    kick:   KdrumL
+    snare:  Snare_top
+    hihat:  Hihat
+    tom:    Tom1
+    floor:  Tom4
+    oh_L:   OHL
+    oh_R:   OHR
+    room:   AmbL
+
   # ------------------------------------------------------------------------
   # Kit ratificati dal roster F0-T1b ma non ancora consumati dal codice.
   # Aggiunte = bump `schema_version` minor + commit doc-only.
   # ------------------------------------------------------------------------
 
-  # Aasimonster:   # TODO — manifest-only nel roster F0-T1b
-  # Swirly:        # TODO — manifest-only
+  # Swirly:        # TODO — manifest-only (Sfizz val kit)

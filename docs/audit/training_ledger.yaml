@@ -422,3 +422,102 @@ runs:
   cost:
     azure_usd: 0.0
     local_compute_min: 47.0
+- run_id: mini-l3-crosskit-p1p2-aug-clip05-2026-05-25
+  date: 2026-05-25 14:00:00+00:00
+  git_commit: a142d25+grad-clip-fix
+  status: FAIL
+  purpose: "Mini-L3 P1+P2 + audio augmentation con grad-clip 0.5 + skip-nonfinite\
+    \ \u2014 re-run del run ABANDONED, validazione fix gradient explosion"
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 331
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+  model:
+    arch: F0-T4a TCN
+    channels: 32
+    in_channels: 9
+    params: 83705
+  preprocessing:
+    kind: p1p2
+    P1_pre_emphasis:
+      alpha: 0.97
+    P1_channel_norm:
+      ema_decay: 0.99
+    P2_onset_envelope:
+      n_fft: 2048
+      hop: 128
+      n_mels: 80
+  augmentation:
+    midi_pre_F0T15pre: enabled (k_variants=1, baseline-only filter applied)
+    audio_post_F0T15post: "enabled (MVP \u2014 peak_normalize + pink_noise + gain\
+      \ + mic_balance + channel_mask 20% prob)"
+    audio_aug_master_seed: 20260525
+  loss:
+    pos_weight:
+    - 132.1
+    - 64.3
+    - 200.4
+    - 269.4
+    - 234.8
+    - 243.4
+    - 1000.0
+    - 1000.0
+    w_onset: 2.0
+    w_velocity: 0.1
+    w_microtiming: 0.1
+    w_hihat: 0.25
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    optimizer: AdamW
+    sampler: WeightedRandomSampler (B6a, cap=200)
+    device: mps
+    wall_time_s: 2471
+    efficiency: cosine_lr_with_warmup + early_stop_patience=30 + grad_clip(0.5) +
+      skip_nonfinite_step
+    n_nonfinite_loss_skips: 139
+    n_nonfinite_grad_skips: 0
+  metrics:
+    train_loss_progression:
+      epoch_1: 1.5083
+      epoch_50: 0.9415
+      epoch_100: 0.7533
+      epoch_110: 0.736
+      epoch_130: 0.7214
+      epoch_150: 0.727
+    final_train_loss: 0.727
+    best_train_loss: 0.7214
+    val_F_mean: 0.066
+    val_F_range:
+    - 0.013
+    - 0.212
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    delta_vs_previous: "-0.002 vs mini-l3-crosskit-p1p2 (no aug) \u2014 audio aug\
+      \ NON porta lift incrementale. F_max regredisce 0.29 \u2192 0.212 sul groove\
+      \ migliore. P1+P2 da solo cattura quasi tutto il lift della preprocessing su\
+      \ questa scala."
+    notes: "Grad explosion FIX VALIDATO \u2014 ep 110 superato (era inf nella run\
+      \ abandoned), 150/150 epoch completati. Safety net assorbe 139 skip su ~12k\
+      \ step (~1.2%), 0 grad skip. Il regime fp16+aug richiede clip 0.5, clip 1.0\
+      \ troppo lasco. La rete impara (train loss 1.51\u21920.72), ma cross-kit val\
+      \ resta floor 0.066. Bottleneck residuo non \xE8 stabilit\xE0 n\xE9 rumore d'ingresso:\
+      \ capacit\xE0 o coverage del task. Mitigations rimanenti in ordine: (1) C=64/128\
+      \ capacity bump (il candidato pi\xF9 probabile, validato dalla diagnostica T1-DIAG-A\
+      \ che aveva escluso il bottleneck capacit\xE0 SOLO per il regime causality+RF\
+      \ rotti), (2) voci avanzate F0-T15-post B5 deferred (codec/limiter/reverb via\
+      \ audiomentations+pedalboard), (3) curriculum learning, (4) rivalutare se ShittyKit\
+      \ ha pathology timbrica specifica."
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-crosskit-p1p2-aug-clip05-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 41.2

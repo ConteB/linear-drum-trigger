@@ -1024,7 +1024,7 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 | F0-T15-pre | Audit MIDI augmentation (STRP-001) | F0 | ☑ | — *(2026-05-23 — spec LOCKED, Decision Lock CEO ratificato B1–B4: range Opzione B, k=2 + baseline, DNA-Trace 7-segment, storage ~$90)* | — |
 | F0-T15-post | Audit audio augmentation + agnosticità (STRP-001) | F0 | ☑ | — *(2026-05-25 — **LOCKED v1.0.0** Decision Lock CEO: B1..B8 tutte ratificate; spec `F0-T15-post_AUDIO_AUGMENTATION_SPEC.md` §6.1)* | — |
 | F0-T16-pre | MIDI augmentation pipeline — build & test in locale | F0 | ☑ | — *(2026-05-23 — src/data_engineering/midi_augment/ implementato, 75 oracoli verdi, Ocular Proof in docs/gates/F0-T16-pre_OCULAR_PROOF/)* | — |
-| F0-T16-post | Audio augmentation pipeline — build & test in locale | F0 | ☑(MVP) | — *(2026-05-25 — `src/data_engineering/audio_augment/` MVP implementato: peak_normalize + pink_noise + gain_perturbation + mic_balance_jitter + **channel_mask (B3)** + composer + seed deterministico SHA-256 + R2/R3 guards. Wire mini_l3_train.py via `--audio-aug`. Re-run mini-L3 P1+P2+aug ABANDONED per gradient explosion @ epoch 110 (loss in calo 1.50→0.74 fino a epoch 100; bug regime hyperparameter, fix grad-clip 0.5 prossima sessione). Voci F0-T15-post deferred a sessione successiva: codec/limiter/reverb/gating richiedono `audiomentations`+`pedalboard` deps; DNA-Trace 8-seg refactor invasivo)* | — |
+| F0-T16-post | Audio augmentation pipeline — build & test in locale | F0 | ☑(MVP) | — *(2026-05-25 — `src/data_engineering/audio_augment/` MVP implementato: peak_normalize + pink_noise + gain_perturbation + mic_balance_jitter + **channel_mask (B3)** + composer + seed deterministico SHA-256 + R2/R3 guards. Wire mini_l3_train.py via `--audio-aug`. **Update 2026-05-25 14:00** — re-run con grad-clip 0.5 + skip-nonfinite (CLI: `--grad-clip-max-norm 0.5 --skip-nonfinite-step`): training **completato 150/150 epoch** in 41 min, ep 110 superato (era inf in run abandoned), 139 skip su ~12k step (~1.2 %) assorbiti; val F_mean=**0.066** (gate 0.55) → FAIL ❌ ma fix stabilità validato. L'audio aug non porta lift incrementale vs solo P1+P2 (0.068 → 0.066); bottleneck residuo è capacità o coverage, non rumore/varianza. Voci F0-T15-post deferred restano: codec/limiter/reverb/gating richiedono `audiomentations`+`pedalboard` deps; DNA-Trace 8-seg refactor invasivo)* | — |
 | F0-T17 | Statistical Test Plan (STRP-001) | F0 | ☑ | — *(2026-05-23 — `src/evaluation/` 4 moduli + orchestratore + thresholds LOCKED, 104 oracoli verdi, suite F0 436 passed, smoke mini-batch verde, gate pronto post-F2-T1)* | — |
 | F1-T1 | Setup Azure | F1 | ☑ | — *(2026-05-23 — CEO offline runbook)* | — |
 | F1-T2 | dvc remote Azure | F1 | ☑ | — *(2026-05-23 — `dvc push` smoke verde)* | — |
@@ -1245,6 +1245,31 @@ del DOSSIER §3.1 moltiplica la recipe matrix di F2-T1, non quella di F2-T2).
   pytest 537 passed. F2-T3 sbloccato architetturalmente; F2-T1 resta ⊘ in
   attesa del **voto B4** (ora ripresentabile al CEO con numeri reali in
   mano). Costo Azure: $0.
+
+· **2026-05-25 14:00 — Grad-clip fix VALIDATO + re-run P1+P2+aug → FAIL ❌,
+  audio aug ortogonale al gap.** Re-run del mini-L3 abbandonato della
+  sessione precedente, con due hook diagnostici in `tools/mini_l3_train.py`:
+  (1) `--grad-clip-max-norm 0.5` (era hardcoded 1.0 → insufficiente nel
+  regime audio_aug); (2) `--skip-nonfinite-step` (safety net: loss/grad
+  NaN/Inf → `zero_grad` + log + continue, no esplosione). **Training
+  completato 150/150 epoch** in 41 min sul Mac M5 (era inf @ ep 110 nella
+  run abandoned). 139 skip su ~12k step (~1.2 %), 0 grad skip — la safety
+  net assorbe il rumore senza killare la run. Train loss converge: 1.51 →
+  0.72 (best 0.7214 @ ep 130). **Val F_mean = 0.066** (vs gate 0.55) →
+  FAIL ❌, F range [0.013, 0.212]. **Verdetto strategico:** l'audio aug
+  della pipeline MVP (peak_norm + pink noise + gain + mic balance + channel
+  mask) **NON porta lift incrementale** vs solo P1+P2 (0.068 → 0.066);
+  F_max regredisce lievemente (0.29 → 0.212). Bottleneck residuo NON è
+  stabilità (fix acquisito) né rumore d'ingresso (P1+P2 + aug sat): è
+  **capacità del modello** (C=32 / 83 705 param) o **coverage del task**
+  (1 solo kit val è uno stress test estremo). Mitigations rimanenti in
+  ordine di priorità per la prossima sessione: (1) **C=64 capacity bump**
+  con P1+P2 (no aug — risparmio del rumore); (2) voci avanzate F0-T15-post
+  B5 deferred (codec/limiter/reverb via `audiomentations` + `pedalboard`,
+  ~15 min provisioning); (3) listening test ShittyKit per individuare
+  pathology timbrica. Costo Azure: $0. Ledger: 7 entry totali, pipeline
+  diagnostica chiusa fino a P1+P2+aug. Bugfix collaterale: `training_ledger.py
+  list` formatter di NoneType.
 
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 

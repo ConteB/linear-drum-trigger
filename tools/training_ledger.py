@@ -109,10 +109,12 @@ def cmd_list(args: argparse.Namespace) -> int:
         prep = r.get("preprocessing", {}).get("kind", "?") if isinstance(r.get("preprocessing"), dict) else "?"
         # Pick the most relevant metric depending on purpose.
         m = r.get("metrics", {})
-        if "val_F_mean" in m:
-            metric = f"val_F={m['val_F_mean']:.3f}"
-        elif "F_max" in m:
-            metric = f"F_max={m['F_max']:.3f}"
+        val_f = m.get("val_F_mean")
+        f_max = m.get("F_max")
+        if isinstance(val_f, (int, float)):
+            metric = f"val_F={val_f:.3f}"
+        elif isinstance(f_max, (int, float)):
+            metric = f"F_max={f_max:.3f}"
         else:
             metric = "—"
         notes_short = (r.get("verdict", {}).get("notes") or "")[:50]

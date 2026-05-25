@@ -134,6 +134,17 @@ def main() -> int:
                              "from sha256(master_seed|key|epoch).")
     parser.add_argument("--audio-aug-master-seed", type=int, default=20260525,
                         help="Master seed for the audio augmentation pipeline.")
+    # F0-T16-post bugfix 2026-05-25 (post-abandon): clip e skip non-finite
+    # parametrizzati, dopo che `clip_grad_norm=1.0` non bastava nel regime
+    # audio_aug (Inf @ epoch 110, run mini-l3-crosskit-p1p2-audioaug).
+    parser.add_argument("--grad-clip-max-norm", type=float, default=1.0,
+                        help="Max norm for gradient clipping (default 1.0). "
+                             "Reduce to 0.5 in the audio_aug regime where the "
+                             "added variance pushed grads past the prev cap.")
+    parser.add_argument("--skip-nonfinite-step", action="store_true",
+                        help="Skip the optimizer step when loss or grad_norm "
+                             "are NaN/Inf (zero-grad + log, no explosion). "
+                             "Safety net for unstable regimes.")
     args = parser.parse_args()
 
     # --- Load train + val + density ---
@@ -261,12 +272,19 @@ def main() -> int:
     best_loss = float("inf")
     epochs_without_improvement = 0
     early_stopped_at = None
+    # F0-T16-post bugfix 2026-05-25: diagnostic counters for non-finite events.
+    n_nonfinite_loss = 0
+    n_nonfinite_grad = 0
+    epoch_grad_norm_max = 0.0
+    print(f"[mini-L3] grad_clip_max_norm = {args.grad_clip_max_norm}  "
+          f"skip_nonfinite = {args.skip_nonfinite_step}", flush=True)
     for epoch in range(1, args.epochs + 1):
         model.train()
         if preprocess is not None:
             preprocess.train()
         epoch_total = 0.0
         n_steps = 0
+        epoch_grad_norm_max = 0.0
         for batch in loader:
             audio = batch["audio"].to(device, non_blocking=True)
             target = batch["target"].to(device, non_blocking=True)
@@ -303,21 +321,51 @@ def main() -> int:
             with autocast_ctx:
                 pred = model(audio)
                 losses = loss_fn(pred, target)
-            losses["total"].backward()
+            loss_val = losses["total"]
+            # F0-T16-post bugfix 2026-05-25: skip step when loss is non-finite.
+            # The audio_aug regime occasionally produced Inf loss at epoch 110
+            # (run mini-l3-crosskit-p1p2-audioaug-2026-05-25); fp16 autocast +
+            # the added variance from the channel-mask + gain perturbation
+            # can spike loss beyond range. Skip = zero_grad + log + continue.
+            if args.skip_nonfinite_step and not torch.isfinite(loss_val):
+                n_nonfinite_loss += 1
+                optim.zero_grad(set_to_none=True)
+                continue
+            loss_val.backward()
             # F0-T4d B6 bugfix 2026-05-25: gradient clipping per evitare
             # gradient explosion (osservata epoch 70: loss 0.93 → inf con
-            # autocast fp16 + cosine LR). Max norm = 1.0 standard per AMP.
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            # autocast fp16 + cosine LR). Max norm parametrizzato — 0.5
+            # raccomandato nel regime audio_aug (F0-T16-post handoff).
+            grad_norm = torch.nn.utils.clip_grad_norm_(
+                model.parameters(), max_norm=args.grad_clip_max_norm,
+            )
+            grad_norm_val = float(grad_norm)
+            if args.skip_nonfinite_step and not math.isfinite(grad_norm_val):
+                # Non-finite grad even after clipping (sentinel returned by
+                # clip_grad_norm_ when any param has NaN/Inf). Skip step.
+                n_nonfinite_grad += 1
+                optim.zero_grad(set_to_none=True)
+                continue
+            epoch_grad_norm_max = max(epoch_grad_norm_max, grad_norm_val)
             optim.step()
-            epoch_total += float(losses["total"].detach())
+            epoch_total += float(loss_val.detach())
             n_steps += 1
         if scheduler is not None:
             scheduler.step()
         last_loss = epoch_total / max(n_steps, 1)
-        history.append({"epoch": float(epoch), "train_loss": last_loss})
+        history.append({
+            "epoch": float(epoch),
+            "train_loss": last_loss,
+            "grad_norm_max": epoch_grad_norm_max,
+        })
         if epoch % 10 == 0 or epoch == 1:
             lr_now = optim.param_groups[0]["lr"]
-            print(f"[mini-L3] epoch {epoch:4d}  train_loss = {last_loss:.4f}  lr = {lr_now:.2e}")
+            extra = ""
+            if n_nonfinite_loss or n_nonfinite_grad:
+                extra = (f"  skip(loss={n_nonfinite_loss}, "
+                         f"grad={n_nonfinite_grad})")
+            print(f"[mini-L3] epoch {epoch:4d}  train_loss = {last_loss:.4f}  "
+                  f"lr = {lr_now:.2e}  grad_max = {epoch_grad_norm_max:.2f}{extra}")
         # F0-T4d B6 E4 — early stop.
         if args.early_stop_patience > 0:
             if last_loss < best_loss - 1e-4:
@@ -333,6 +381,9 @@ def main() -> int:
     wall = time.perf_counter() - t0
     print(f"[mini-L3] training done in {wall:.1f} s "
           f"(epochs run: {len(history)}, early_stopped={early_stopped_at})")
+    if n_nonfinite_loss or n_nonfinite_grad:
+        print(f"[mini-L3] non-finite skips: loss={n_nonfinite_loss}, "
+              f"grad={n_nonfinite_grad}")
 
     # Save checkpoint.
     if args.save_to:
@@ -461,6 +512,12 @@ def main() -> int:
         "wall_time_s": f"{wall:.1f}",
         "n_train_samples": len(train_samples),
         "n_val_samples": len(val_samples),
+        "grad_clip_max_norm": args.grad_clip_max_norm,
+        "skip_nonfinite_step": args.skip_nonfinite_step,
+        "n_nonfinite_loss_skips": n_nonfinite_loss,
+        "n_nonfinite_grad_skips": n_nonfinite_grad,
+        "audio_aug": args.audio_aug,
+        "preprocessing": args.preprocessing,
     }
 
     import datetime as _dt

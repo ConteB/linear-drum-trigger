@@ -1279,3 +1279,83 @@ runs:
   cost:
     azure_usd: 0.0
     local_compute_min: 23.0
+- run_id: mini-l3-loss-B-planA-2026-05-25
+  date: 2026-05-25 22:00:00+00:00
+  git_commit: f944c44+planA
+  status: FAIL
+  purpose: "Plan A \u2014 Loss B su pool con midimap.xml patchato (5 kit DG re-renderizzati).\
+    \ Verifica finale che il bug midimap sia la causa dominante del cross-kit gap."
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    train_kits:
+    - DRSKit
+    - MuldjordKit3
+    - CrocellKit
+    - Aasimonster
+    - BigRustyDrums
+    val_kits:
+    - ShittyKit
+    midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
+    notes: "Plan A applicato: 11 patches ai midimap.xml dei 5 kit DG (3 DRSKit, 2\
+      \ Muldjord, 2 Crocell, 2 Aasimonster fix, 2 ShittyKit). I 460 sample J00 train\
+      \ + 115 val ri-renderizzati con coerenza audio\u2194target. BigRusty non toccato\
+      \ (SFZ pipeline)."
+  model:
+    arch: F0-T4a TCN
+    channels: 64
+    in_channels: 9
+    params: 331225
+  preprocessing:
+    kind: p1p2
+  loss:
+    kind: afl
+    pos_weight:
+    - 132.1
+    - 64.3
+    - 200.4
+    - 269.4
+    - 234.8
+    - 243.4
+    - 1000.0
+    - 1000.0
+    focal_gamma: 2.0
+    fp_to_fn_ratio: 30.0
+    edge_skip_frames: 0
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    device: mps
+    wall_time_s: 1235
+    epochs_run: 145
+    early_stopped_at: 145
+    n_nonfinite_loss_skips: 20
+  metrics:
+    final_train_loss: 0.7375
+    val_F_mean: 0.123
+    val_F_shittykit_fixed_0.1: 0.089
+    val_F_drskit_fixed_0.1: 0.118
+    val_F_shittykit_crop_rf: 0.122
+    val_F_drskit_crop_rf: 0.125
+    per_bus_full:
+      kick: 0.098
+      snare: 0.092
+      hihat: 0.059
+      tom_hi_mid: 0.118
+      floor: 0.087
+      ride: 0.089
+  verdict:
+    gate: val_F_mean >= 0.55
+    outcome: FAIL
+    notes: "Plan A confermato: F tuned 0.123 (massimo storico, +30 % vs B base 0.095).\
+      \ Bus tom_hi_mid RECUPERATO: F=0.118 (era '\u2014' in B-kitaware perch\xE9 val\
+      \ target svuotato; ora valutabile con audio+target coerenti). Train loss 0.74\
+      \ (vs 0.78 B base): rete impara di pi\xF9 con dataset coerente. Gap residuo\
+      \ vs gate 0.55: pipeline ora pulita, l'architettura non \xE8 il problema. Per\
+      \ chiudere il gap servono molti pi\xF9 kit e MIDI (= F2-T1 + F2-T3 Azure scale)."
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-loss-B-planA-2026-05-25/report.html
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 32

@@ -83,11 +83,25 @@ class LossConfig:
     tversky_alpha: float = 0.7  # FP penalty (Tversky)
     tversky_beta: float = 0.3   # FN penalty (Tversky)
     tversky_smooth: float = 1.0  # numerical stability + cold-start anchor
+    # 2026-05-25 — sessione post-piano-roll-diagnostic. CEO directive: la
+    # diagnostica edge_crop ha rivelato che 77 % dei FP totali sul val
+    # ShittyKit cade nei primi 1024 frame (zona dove la convoluzione causale
+    # vede zero-pad → output diffuso). ``edge_skip_frames`` skippa quel
+    # range dal calcolo della loss (sia onset che velocity/microtiming/hihat
+    # heads): la rete non viene punita per non discriminare in una zona
+    # strutturalmente impossibile. Default 0 = backcompat con tutti i
+    # checkpoint precedenti; usare 1024 (≈ 2.97 s, RF size) per i nuovi
+    # training. Combinato con crop in valutazione, atteso F lift +20-40 %.
+    edge_skip_frames: int = 0
 
     def __post_init__(self) -> None:
         if self.kind not in {"afl", "tversky"}:
             raise ValueError(
                 f"kind must be 'afl' or 'tversky', got {self.kind!r}"
+            )
+        if self.edge_skip_frames < 0:
+            raise ValueError(
+                f"edge_skip_frames must be >= 0, got {self.edge_skip_frames}"
             )
         if self.kind == "tversky":
             if not 0.0 < self.tversky_alpha:
@@ -156,6 +170,23 @@ class TCNLoss(nn.Module):
         velocity_t = target[..., 1:24:3]
         microtiming_t = target[..., 2:24:3]
         hihat_t = target[..., HIHAT_OPENING_COL]
+
+        # Edge mask — Decision Lock CEO 2026-05-25 (post-piano-roll). Skip
+        # the first ``edge_skip_frames`` of every batch sample from BOTH
+        # heads: the causal TCN's RF is filled with zero-pad in this range
+        # so any signal there is structurally unreliable. Training without
+        # punishment in this zone keeps the network from learning
+        # spurious patterns at the file edge.
+        n_skip = self.config.edge_skip_frames
+        if n_skip > 0 and onset_p.shape[1] > n_skip:
+            onset_p = onset_p[:, n_skip:]
+            onset_t = onset_t[:, n_skip:]
+            velocity_p = velocity_p[:, n_skip:]
+            velocity_t = velocity_t[:, n_skip:]
+            microtiming_p = microtiming_p[:, n_skip:]
+            microtiming_t = microtiming_t[:, n_skip:]
+            hihat_p = hihat_p[:, n_skip:]
+            hihat_t = hihat_t[:, n_skip:]
 
         if self.config.kind == "tversky":
             loss_onset = _tversky_loss(

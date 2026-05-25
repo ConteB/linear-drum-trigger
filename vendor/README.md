@@ -115,6 +115,24 @@ binario è assente (host macOS) e girano dentro OrbStack.
 
 ---
 
+## ⚠️ Midimap patches — Decision Lock CEO 2026-05-25 (Plan A)
+
+I 5 kit DrumGizmo del mini-L3 hanno avuto i loro `midimap.xml` patchati per coprire note GM mancanti e correggere mappature semantically wrong. **Causa root**: il listening test del 2026-05-25 ha mostrato che ~9.2 % degli onset target del mini-L3 erano "fantasma" (target dice "TOM!" ma audio silente). Si veda `docs/gates/F0-T4c_MINI_L3/LOSS_COMPETITION_2026-05-25.md` (addendum Plan A) e l'audit JSON in `docs/gates/F0-T4c_MINI_L3/kitaware_audit_2026-05-25.json`.
+
+**11 patches applicate** (tool `tools/patch_midimaps.py`, idempotente; backup `*.orig` preservato):
+
+| Kit | Patch applicate |
+| :-- | :-- |
+| DRSKit | + GM 48 → `Tom1`, + GM 50 → `Tom1`, + GM 45 → `Tom2` |
+| MuldjordKit3 | + GM 50 → `Tom1`, + GM 43 → `Tom4` |
+| CrocellKit | + GM 50 → `Tom1`, + GM 45 → `Tom2` |
+| Aasimonster | ~ GM 50: `crash1_stop` → `tom_1`; ~ GM 41: `hihat_closed2` → `tom_4` |
+| ShittyKit | + GM 48 → `Tom-RH`, + GM 50 → `Tom-RH` |
+
+**Per F2-T1**: questi patches devono essere applicati a ogni kit del render Azure 1.5 TB (provisioning automatico via `tools/patch_midimaps.py` come step pre-render). Altrimenti il bug "tom-fantasma" si riproduce a scala 1000×.
+
+---
+
 ## Kit DrumGizmo (multi-mic)
 
 ### `vendor/drumgizmo/DRSKit/` 📦 **localmente vendorizzato**

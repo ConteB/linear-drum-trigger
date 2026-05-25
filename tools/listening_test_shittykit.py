@@ -79,6 +79,7 @@ def load_model_from_checkpoint(ckpt_path: Path) -> _Composed:
 def evaluate_with_fixed_threshold(
     model: Any, audio_np: Any, target_np: Any,
     *, n_sample: int, lookahead_frames: int, threshold: float = 0.1,
+    skip_edge_frames: int = 0,
 ) -> dict[str, Any]:
     """Evaluate one sample with a *fixed* peak-pick threshold (no tuning).
 
@@ -86,6 +87,12 @@ def evaluate_with_fixed_threshold(
     (which inflates the F-mean — useful for L3 de-risking but not
     representative of production). This variant uses a fixed threshold,
     the production setting.
+
+    **2026-05-25 (post-piano-roll diagnostic):** ``skip_edge_frames``
+    crops the first N frames from BOTH prediction and target before
+    peak-picking. This isolates the network's true behaviour from the
+    receptive-field-warmup edge effect (which contains ~77 % of total FP
+    on the ShittyKit val pool — see `LOSS_COMPETITION` §addendum).
     """
     import torch  # noqa: PLC0415
     from neural.metrics import match_onsets, peak_pick  # noqa: PLC0415
@@ -100,6 +107,10 @@ def evaluate_with_fixed_threshold(
         pred = pred[:target.shape[0]]
     else:
         target = target_np[:pred.shape[0]]
+    # Edge crop — drop the first ``skip_edge_frames`` from both pred and target.
+    if skip_edge_frames > 0:
+        pred = pred[skip_edge_frames:]
+        target = target[skip_edge_frames:]
     # flat-25: onset cols are 0,3,6,9,12,15,18,21
     onset_pred = pred[:, 0:24:3]
     onset_target = target[:, 0:24:3]

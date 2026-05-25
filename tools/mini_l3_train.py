@@ -154,6 +154,12 @@ def main() -> int:
     parser.add_argument("--loss-warmup-epochs", type=int, default=30,
                         help="For preset F: number of epochs to train with "
                              "AFL (CTRL config) before switching to Tversky.")
+    parser.add_argument("--loss-edge-skip-frames", type=int, default=0,
+                        help="Skip the first N frames from the loss "
+                             "calculation (Decision Lock CEO 2026-05-25). "
+                             "Use 1024 (= TCN F0-T4a RF size) to mask the "
+                             "zone where the causal convolution sees zero-pad. "
+                             "Default 0 = backcompat with previous training.")
     # F0-T16-post bugfix 2026-05-25 (post-abandon): clip e skip non-finite
     # parametrizzati, dopo che `clip_grad_norm=1.0` non bastava nel regime
     # audio_aug (Inf @ epoch 110, run mini-l3-crosskit-p1p2-audioaug).
@@ -270,6 +276,11 @@ def main() -> int:
         loss_cfg = LossConfig(pos_weight=capped, fp_to_fn_ratio=30.0)
     else:
         raise ValueError(args.loss_preset)
+    # Propagate edge skip override to the loss config (LossConfig is frozen,
+    # so rebuild it preserving the preset's other fields).
+    if args.loss_edge_skip_frames > 0:
+        from dataclasses import replace  # noqa: PLC0415
+        loss_cfg = replace(loss_cfg, edge_skip_frames=args.loss_edge_skip_frames)
     print(f"[mini-L3] loss_preset = {args.loss_preset}  kind = {loss_cfg.kind}",
           flush=True)
     if loss_cfg.kind == "afl":
@@ -279,6 +290,8 @@ def main() -> int:
     else:
         print(f"[mini-L3]   tversky α = {loss_cfg.tversky_alpha}  "
               f"β = {loss_cfg.tversky_beta}", flush=True)
+    print(f"[mini-L3]   edge_skip_frames = {loss_cfg.edge_skip_frames}",
+          flush=True)
     train_ds = GoldDataset(
         train_samples,
         crop_samples=args.crop_samples,

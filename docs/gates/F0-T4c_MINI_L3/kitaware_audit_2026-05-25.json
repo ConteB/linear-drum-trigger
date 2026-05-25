@@ -1,0 +1,208 @@
+{
+  "per_kit": {
+    "Aasimonster": {
+      "covered_notes": [
+        35,
+        36,
+        37,
+        38,
+        40,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        51,
+        52,
+        53,
+        57,
+        59
+      ],
+      "missing_notes": [
+        41,
+        50,
+        55
+      ],
+      "n_onsets_after": 13728,
+      "n_onsets_before": 14023,
+      "n_samples": 115,
+      "onsets_dropped": 295,
+      "onsets_dropped_pct": 2.103686800256721,
+      "split": "train"
+    },
+    "BigRustyDrums": {
+      "covered_notes": [
+        35,
+        36,
+        37,
+        38,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        55,
+        57,
+        59
+      ],
+      "missing_notes": [],
+      "n_onsets_after": 14101,
+      "n_onsets_before": 14101,
+      "n_samples": 117,
+      "onsets_dropped": 0,
+      "onsets_dropped_pct": 0.0,
+      "split": "train"
+    },
+    "CrocellKit": {
+      "covered_notes": [
+        35,
+        36,
+        38,
+        41,
+        42,
+        43,
+        44,
+        46,
+        47,
+        48,
+        49,
+        51,
+        52,
+        53,
+        55,
+        57
+      ],
+      "missing_notes": [
+        37,
+        40,
+        45,
+        50,
+        59
+      ],
+      "n_onsets_after": 12491,
+      "n_onsets_before": 14023,
+      "n_samples": 115,
+      "onsets_dropped": 1532,
+      "onsets_dropped_pct": 10.92490907794338,
+      "split": "train"
+    },
+    "DRSKit": {
+      "covered_notes": [
+        35,
+        36,
+        37,
+        38,
+        40,
+        41,
+        42,
+        43,
+        44,
+        46,
+        47,
+        49,
+        51,
+        53,
+        55,
+        57
+      ],
+      "missing_notes": [
+        45,
+        48,
+        50,
+        52,
+        59
+      ],
+      "n_onsets_after": 12261,
+      "n_onsets_before": 14023,
+      "n_samples": 115,
+      "onsets_dropped": 1762,
+      "onsets_dropped_pct": 12.565071667974042,
+      "split": "train"
+    },
+    "MuldjordKit": {
+      "covered_notes": [
+        35,
+        36,
+        37,
+        38,
+        41,
+        42,
+        45,
+        46,
+        47,
+        48,
+        49,
+        51,
+        52,
+        53,
+        57,
+        59
+      ],
+      "missing_notes": [
+        40,
+        43,
+        44,
+        50,
+        55
+      ],
+      "n_onsets_after": 11390,
+      "n_onsets_before": 14023,
+      "n_samples": 115,
+      "onsets_dropped": 2633,
+      "onsets_dropped_pct": 18.776296085003207,
+      "split": "train"
+    },
+    "ShittyKit": {
+      "covered_notes": [
+        36,
+        37,
+        38,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        49,
+        51,
+        53
+      ],
+      "missing_notes": [
+        35,
+        48,
+        50,
+        52,
+        55,
+        57,
+        59
+      ],
+      "n_onsets_after": 12501,
+      "n_onsets_before": 14023,
+      "n_samples": 115,
+      "onsets_dropped": 1522,
+      "onsets_dropped_pct": 10.853597660985525,
+      "split": "val"
+    }
+  },
+  "per_sample": [],
+  "total": {
+    "dropped": 7744,
+    "dropped_pct": 9.195402298850574,
+    "onsets_after": 76472,
+    "onsets_before": 84216
+  }
+}

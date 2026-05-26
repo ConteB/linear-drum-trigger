@@ -14,7 +14,7 @@ related: [LIN-DT-DOCSTD-001]
 > **File generato** da `tools/gen_docs_index.py` (Doc Standard LIN-DT-DOCSTD-001 §5).
 > Non editare a mano — rigenerare. Rilancia lo script dopo ogni modifica al frontmatter.
 
-Documenti indicizzati: **49** · senza frontmatter: **14**.
+Documenti indicizzati: **49** · senza frontmatter: **21**.
 
 ## Documenti
 
@@ -271,6 +271,13 @@ Documenti indicizzati: **49** · senza frontmatter: **14**.
 - `docs/gates/F0-T4c_MINI_L3/LOSS_COMPETITION_2026-05-25.md`
 - `docs/gates/F0-T4c_MINI_L3/listening_test_loss-H-2026-05-26/FINDINGS_2026-05-26.md`
 - `docs/gates/F0-T4c_MINI_L3/listening_test_shittykit_2026-05-25/LISTENING_TEST_FINDINGS.md`
+- `docs/gates/F0-T4c_PIPELINE_AUDIT/INDEX.md`
+- `docs/gates/F0-T4c_PIPELINE_AUDIT/REPORT_Aasimonster.md`
+- `docs/gates/F0-T4c_PIPELINE_AUDIT/REPORT_BigRustyDrums.md`
+- `docs/gates/F0-T4c_PIPELINE_AUDIT/REPORT_CrocellKit.md`
+- `docs/gates/F0-T4c_PIPELINE_AUDIT/REPORT_DRSKit.md`
+- `docs/gates/F0-T4c_PIPELINE_AUDIT/REPORT_MuldjordKit.md`
+- `docs/gates/F0-T4c_PIPELINE_AUDIT/REPORT_ShittyKit.md`
 - `docs/gates/F0-T4c_REGRESSION/f0t4c-regression-2026-05-24/report.md`
 - `docs/gates/F0-T4c_REGRESSION/f0t4c-regression-uniform-2026-05-24/report.md`
 - `docs/gates/L2_OCULAR_PROOF/L2_INSPECTION_2026-05-23.md`

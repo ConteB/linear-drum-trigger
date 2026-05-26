@@ -26,6 +26,20 @@ Drum-Trigger non è un semplice "gate a soglia", ma un sistema di **Intelligent 
 ### 2.1 Input Agnostico (Universal Channel Mapping)
 Il sistema accetta input variabili da 1 a 8 canali. Un layer di pre-processing mappa la configurazione (es. Solo Stereo, Glyn Johns, Multitraccia completo) in un tensore standardizzato. L'IA è addestrata a estrarre la "verità" (il MIDI) indipendentemente dalla densità informativa dell'input.
 
+> **Amendment MAJOR Decision Lock CEO 2026-05-26 ([F0-T4e §6.1](F0-T4e_INPUT_AGNOSTIC_TRAINING_SPEC.md)).** La dottrina §2.1 passa da
+> *aspirazionale* a *provata*. F0-T4e (Input-Agnostic Training) introduce un
+> **Channel-Agnostic Frontend permutation-invariant by design** (per-channel
+> shared encoder + mean⊕max pool) prima della TCN F0-T4a. La proprietà
+> *l'output è invariato per ogni permutazione dei canali di input* è
+> matematicamente garantita dall'architettura, non solo imparata
+> dall'augmentation. Conseguenze pratiche per il plugin v1.0 EA: nessun
+> preset di routing, l'utente assegna 1-8 mic ai suoi slot in qualsiasi
+> ordine senza degrado. Vincolo sull'agnosticità rispetto al *conteggio*
+> dei canali (zero-fill graceful): preservato dal pool stesso (mean e max
+> di un canale zero non perturbano l'aggregato). Implementazione:
+> `src/neural/channel_agnostic.py` + `src/data_engineering/audio_augment/channel_agnostic_aug.py`
+> + composizione in `src/neural/model.py::ComposedTCN`.
+
 <a id="midi-output"></a>
 ### 2.2 End-to-End MIDI Output
 L'output non è un timestamp, ma una **Matrice di Trascrizione Differenziabile (Piano Roll)** a 8 canali:

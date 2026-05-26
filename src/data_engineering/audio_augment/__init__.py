@@ -22,6 +22,16 @@ Doctrine (F0-T15-post §4.5 R1-R3 — copied here as MVP guards):
 """
 from __future__ import annotations
 
+from .channel_agnostic_aug import (
+    REALISTIC_MIC_CONFIGS,
+    ChannelAgnosticAugError,
+    apply_channel_agnostic_aug,
+    apply_channel_permutation,
+    apply_random_count_mask,
+    apply_realistic_count_mask,
+    derive_channel_agnostic_seed,
+    sample_realistic_mic_config,
+)
 from .pipeline import (
     AudioAugmentError,
     apply_audio_augmentation,
@@ -37,11 +47,19 @@ from .voices import (
 
 __all__ = [
     "AudioAugmentError",
+    "ChannelAgnosticAugError",
+    "REALISTIC_MIC_CONFIGS",
     "apply_audio_augmentation",
+    "apply_channel_agnostic_aug",
     "apply_channel_mask",
+    "apply_channel_permutation",
     "apply_gain_perturbation",
     "apply_mic_balance_jitter",
     "apply_noise_floor",
     "apply_peak_normalize",
+    "apply_random_count_mask",
+    "apply_realistic_count_mask",
     "derive_audio_seed",
+    "derive_channel_agnostic_seed",
+    "sample_realistic_mic_config",
 ]

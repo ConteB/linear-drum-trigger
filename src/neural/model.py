@@ -223,8 +223,62 @@ def count_parameters(model: nn.Module) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
+class ComposedTCN(nn.Module):
+    """Optional composed pipeline — channel-agnostic frontend + preprocessing + TCN.
+
+    The full forward pass for the F0-T4e+T4d+T4a stack:
+
+        audio [B, n_in, T]
+           ↓ ChannelAgnosticFrontend (F0-T4e, optional)
+        aggregated [B, 2·C_per_ch, T]
+           ↓ PreprocessingFrontend (F0-T4d, optional)
+        preprocessed [B, n_in + (1 if P2 else 0), T]
+           ↓ TCNModel (F0-T4a)
+        [B, T_frame, 25]
+
+    Either or both of the frontends can be ``None``; the TCN's
+    ``in_channels`` must match the number of channels emerging from
+    whichever stage feeds it (caller's responsibility to construct the
+    matching :class:`TCNConfig`).
+
+    Composing as a real :class:`nn.Module` (instead of a one-off ad-hoc
+    class) gives us:
+
+    * uniform ``.to(device)`` / ``.train()`` / ``.eval()`` semantics
+    * a single ``.state_dict()`` for checkpointing
+    * exposes ``.config`` of the inner TCN so existing eval tooling keeps
+      working (most checks ``model.config.channels``).
+    """
+
+    def __init__(
+        self,
+        tcn: "TCNModel",
+        *,
+        channel_agnostic: nn.Module | None = None,
+        preprocessing: nn.Module | None = None,
+    ) -> None:
+        super().__init__()
+        self.channel_agnostic = channel_agnostic
+        self.preprocessing = preprocessing
+        self.tcn = tcn
+
+    @property
+    def config(self) -> TCNConfig:
+        """Forward the inner TCN config — eval tooling looks here."""
+        return self.tcn.config
+
+    def forward(self, audio: torch.Tensor) -> torch.Tensor:
+        x = audio
+        if self.channel_agnostic is not None:
+            x = self.channel_agnostic(x)
+        if self.preprocessing is not None:
+            x = self.preprocessing(x)
+        return self.tcn(x)
+
+
 __all__ = [
     "CausalConv1d",
+    "ComposedTCN",
     "DilatedTCNBlock",
     "ENCODER_KERNEL",
     "ENCODER_STRIDES",

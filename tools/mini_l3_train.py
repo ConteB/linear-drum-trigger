@@ -51,10 +51,21 @@ from neural.metrics import (  # noqa: E402
     onset_report,
     tune_threshold,
 )
-from neural.model import TCNConfig, TCNModel, count_parameters  # noqa: E402
+from neural.channel_agnostic import (  # noqa: E402
+    ChannelAgnosticConfig,
+    ChannelAgnosticFrontend,
+)
+from neural.model import (  # noqa: E402
+    ComposedTCN,
+    TCNConfig,
+    TCNModel,
+    count_parameters,
+)
 from neural.preprocessing import PreprocessingFrontend  # noqa: E402
 from data_engineering.audio_augment import (  # noqa: E402
-    apply_audio_augmentation, AudioAugmentError,
+    AudioAugmentError,
+    apply_audio_augmentation,
+    apply_channel_agnostic_aug,
 )
 from neural.reporter import (  # noqa: E402
     GateVerdictRow,
@@ -177,6 +188,23 @@ def main() -> int:
                         help="Skip the optimizer step when loss or grad_norm "
                              "are NaN/Inf (zero-grad + log, no explosion). "
                              "Safety net for unstable regimes.")
+    # F0-T4e (Decision Lock CEO 2026-05-26) — input-agnostic frontend.
+    parser.add_argument("--input-agnostic", action="store_true",
+                        help="F0-T4e — wrap the TCN with a permutation-invariant "
+                             "per-channel shared encoder + mean/max pool "
+                             "(architecture B). Activates channel_agnostic_aug "
+                             "by default (architecture A: shuffle + count mask).")
+    parser.add_argument("--input-agnostic-no-aug", action="store_true",
+                        help="Disable the channel_agnostic_aug component "
+                             "(useful to isolate architecture B from "
+                             "augmentation A during ablations).")
+    parser.add_argument("--input-agnostic-master-seed", type=int,
+                        default=20260526,
+                        help="Master seed for the channel-agnostic aug.")
+    parser.add_argument("--input-agnostic-channels", type=int, default=4,
+                        help="Per-channel encoder width C_per_ch (default 4 → "
+                             "aggregated tensor has 8 channels, matching the "
+                             "legacy 8-mic contract).")
     args = parser.parse_args()
 
     # --- Load train + val + density ---
@@ -349,23 +377,65 @@ def main() -> int:
         num_workers=0, drop_last=False,
     )
 
-    # F0-T4d preprocessing harness.
+    # F0-T4e (Decision Lock CEO 2026-05-26) — input-agnostic frontend.
+    # When enabled, sits BEFORE the F0-T4d preprocessing harness:
+    #     audio[B,8,T] → ChAg → [B, 2·C_per_ch, T] → P1+P2 → TCN.
+    # The default C_per_ch=4 makes the aggregated tensor 8-wide, so the
+    # downstream PreprocessingFrontend(n_mic=8) and TCN(in_channels=8/9)
+    # contracts remain unchanged.
+    if args.input_agnostic:
+        ca_config = ChannelAgnosticConfig(
+            per_channel_channels=args.input_agnostic_channels,
+        )
+        channel_agnostic = ChannelAgnosticFrontend(ca_config).to(device)
+        n_params_ca = count_parameters(channel_agnostic)
+        print(f"[mini-L3] F0-T4e input-agnostic frontend ON: "
+              f"C_per_ch={args.input_agnostic_channels}  "
+              f"aggregated_channels={ca_config.aggregated_channels}  "
+              f"params={n_params_ca}", flush=True)
+        # Channel agnostic aug switch (component A of B+A combo).
+        use_channel_agnostic_aug = not args.input_agnostic_no_aug
+        if use_channel_agnostic_aug:
+            print(f"[mini-L3]   + channel_agnostic_aug (permutation + count mask) "
+                  f"master_seed={args.input_agnostic_master_seed}", flush=True)
+        else:
+            print("[mini-L3]   channel_agnostic_aug DISABLED (--input-agnostic-no-aug)",
+                  flush=True)
+        # Number of channels feeding the preprocessing/TCN downstream.
+        n_post_ca_channels = ca_config.aggregated_channels
+    else:
+        channel_agnostic = None
+        use_channel_agnostic_aug = False
+        n_post_ca_channels = 8  # raw mic channels
+
+    # F0-T4d preprocessing harness. The PreprocessingFrontend's n_mic must
+    # match the number of channels coming out of the (optional) channel-
+    # agnostic frontend.
     if args.preprocessing == "none":
         preprocess = None
-        in_channels = 8
+        in_channels = n_post_ca_channels
     elif args.preprocessing == "p1":
-        preprocess = PreprocessingFrontend(n_mic=8, onset_envelope=False).to(device)
-        in_channels = 8
+        preprocess = PreprocessingFrontend(
+            n_mic=n_post_ca_channels, onset_envelope=False,
+        ).to(device)
+        in_channels = n_post_ca_channels
     elif args.preprocessing == "p1p2":
-        preprocess = PreprocessingFrontend(n_mic=8, onset_envelope=True).to(device)
-        in_channels = 9
+        preprocess = PreprocessingFrontend(
+            n_mic=n_post_ca_channels, onset_envelope=True,
+        ).to(device)
+        in_channels = n_post_ca_channels + 1
     else:
         raise ValueError(args.preprocessing)
     print(f"[mini-L3] preprocessing = {args.preprocessing} → in_channels = {in_channels}",
           flush=True)
 
-    model = TCNModel(TCNConfig(channels=args.tcn_channels, in_channels=in_channels)).to(device)
-    n_params = count_parameters(model)
+    tcn = TCNModel(TCNConfig(channels=args.tcn_channels, in_channels=in_channels)).to(device)
+    # Compose: ChAg → Preprocessing → TCN. ComposedTCN owns all three and
+    # exposes the inner TCN .config so existing eval tooling keeps working.
+    model = ComposedTCN(
+        tcn, channel_agnostic=channel_agnostic, preprocessing=preprocess,
+    ).to(device)
+    n_params = count_parameters(tcn)
     if preprocess is not None:
         n_params_pre = count_parameters(preprocess)
         print(f"[mini-L3] preprocessing params = {n_params_pre}", flush=True)
@@ -443,35 +513,56 @@ def main() -> int:
             # F0-T16-post (Decision Lock CEO 2026-05-25) — audio augmentation
             # on-the-fly PRIMA del preprocessing P1+P2 (per simulare audio
             # reale che entra nel plugin).
-            if args.audio_aug:
+            if args.audio_aug or use_channel_agnostic_aug:
                 # Per-sample augmentation: build a key per batch position +
                 # epoch index to ensure determinism + diversity.
                 audio_np = audio.detach().cpu().float().numpy()
                 augmented = np.empty_like(audio_np)
                 for i in range(audio_np.shape[0]):
-                    try:
-                        augmented[i] = apply_audio_augmentation(
-                            audio_np[i],
-                            sample_key=f"batch_{epoch}_pos_{i}",
-                            variant_idx=1,                      # always variant 1 (always augment)
-                            master_seed=args.audio_aug_master_seed,
-                            enable_channel_mask=True,
-                            channel_mask_prob=0.20,
+                    sample_key = f"batch_{epoch}_pos_{i}"
+                    aug_i = audio_np[i]
+                    if args.audio_aug:
+                        try:
+                            aug_i = apply_audio_augmentation(
+                                aug_i,
+                                sample_key=sample_key,
+                                variant_idx=1,                      # always variant 1 (always augment)
+                                master_seed=args.audio_aug_master_seed,
+                                enable_channel_mask=True,
+                                channel_mask_prob=0.20,
+                            )
+                        except AudioAugmentError:
+                            # R2/R3 violation — fallback to non-augmented.
+                            aug_i = audio_np[i]
+                    # F0-T4e (Decision Lock CEO 2026-05-26) — channel-agnostic
+                    # aug applied AFTER audio_aug (channel permutation reorders
+                    # already-noised channels; count mask zeroes a subset to
+                    # simulate the user wiring fewer slots).
+                    if use_channel_agnostic_aug:
+                        aug_i = apply_channel_agnostic_aug(
+                            aug_i,
+                            sample_key=sample_key,
+                            variant_idx=1,
+                            master_seed=args.input_agnostic_master_seed,
                         )
-                    except AudioAugmentError:
-                        # R2/R3 violation — fallback to non-augmented sample.
-                        augmented[i] = audio_np[i]
+                    augmented[i] = aug_i
                 audio = torch.from_numpy(augmented).to(device)
             optim.zero_grad(set_to_none=True)
             # F0-T4d B1+B2 bugfix 2026-05-25 (post-NaN diagnosis): preprocessing
             # runs OUTSIDE autocast in fp32. STFT in fp16/MPS, divisions in
             # ChannelNorm with small variance, and OnsetEnvelope normalization
             # all explode in mixed-precision. Keep them fp32; only the TCN
-            # itself goes through autocast.
+            # itself goes through autocast. Same logic applies to the F0-T4e
+            # channel-agnostic frontend — it includes Conv1d which is harmless
+            # in fp16, but keeping the whole pre-TCN pipeline in fp32 makes
+            # the contract one-line clear and matches the eval-time path.
+            audio_in = audio.float()
+            if channel_agnostic is not None:
+                audio_in = channel_agnostic(audio_in)
             if preprocess is not None:
-                audio = preprocess(audio.float())
+                audio_in = preprocess(audio_in)
             with autocast_ctx:
-                pred = model(audio)
+                pred = tcn(audio_in)
                 losses = active_loss(pred, target)
             loss_val = losses["total"]
             # F0-T16-post bugfix 2026-05-25: skip step when loss is non-finite.
@@ -549,41 +640,38 @@ def main() -> int:
     # used the same preprocess instance with live running stats).
     if args.save_to:
         args.save_to.parent.mkdir(parents=True, exist_ok=True)
+        # `model` is a ComposedTCN — its state_dict already contains the
+        # channel_agnostic + preprocessing + tcn weights under nested keys
+        # (``channel_agnostic.*``, ``preprocessing.*``, ``tcn.*``). We also
+        # save the inner TCN's state separately for backcompat with tools
+        # that still expect the legacy flat layout.
         ckpt: dict[str, Any] = {
-            "model_state": model.state_dict(),
-            "config": {"channels": model.config.channels},
+            "model_state": tcn.state_dict(),                # legacy (flat TCN)
+            "composed_state": model.state_dict(),            # F0-T4e full pipeline
+            "config": {"channels": tcn.config.channels},
             "seed": args.seed,
             "crop_samples": args.crop_samples,
             "lookahead_frames": args.lookahead_frames,
             "epochs": args.epochs,
             "preprocessing_kind": args.preprocessing,
+            "input_agnostic": args.input_agnostic,
+            "input_agnostic_channels": (
+                args.input_agnostic_channels if args.input_agnostic else None
+            ),
         }
         if preprocess is not None:
             ckpt["preprocess_state"] = preprocess.state_dict()
+        if channel_agnostic is not None:
+            ckpt["channel_agnostic_state"] = channel_agnostic.state_dict()
         torch.save(ckpt, args.save_to)
         print(f"[mini-L3] saved checkpoint → {args.save_to}")
 
     # --- Cross-kit evaluation on val pool (ShittyKit only) ---
     print(f"[mini-L3] evaluating on val pool ({len(val_samples)} ShittyKit samples)…")
-    cpu_model = model.to("cpu").eval()
-    cpu_preprocess = preprocess.to("cpu").eval() if preprocess is not None else None
-
-    # If preprocessing is active, wrap the model so evaluate_sample_for_report
-    # sees the pre-processed input. We compose a simple nn.Sequential-like
-    # callable that does preprocess → model in one forward.
-    class _ComposedModel(torch.nn.Module):
-        def __init__(self, pre: torch.nn.Module | None, mdl: torch.nn.Module) -> None:
-            super().__init__()
-            self.pre = pre
-            self.mdl = mdl
-            # evaluate_sample_for_report checks .config.channels; forward it.
-            self.config = mdl.config
-        def forward(self, x: torch.Tensor) -> torch.Tensor:
-            if self.pre is not None:
-                x = self.pre(x)
-            return self.mdl(x)
-    eval_model = _ComposedModel(cpu_preprocess, cpu_model)
-    eval_model.eval()
+    # The whole ComposedTCN (ChAg + preprocessing + TCN) goes on CPU for eval.
+    # Its .config forwards the inner TCN config so evaluate_sample_for_report
+    # keeps working unchanged.
+    eval_model = model.to("cpu").eval()
 
     val_evals: list[dict[str, Any]] = []
     for s in val_samples:

@@ -1,24 +1,25 @@
 ---
 title: "F0-T4e — Input-Agnostic Training (STRP-001)"
 id: LIN-DT-F0T4E
-status: DRAFT_v0.1
-locked: false
+status: LOCKED_v1.0.0
+locked: true
+locked_at: 2026-05-26
 authors: [Strategic Advisor (Gianpiero Scappelloni)]
 date: 2026-05-27
 supersedes: []
 related:
-  - F0-T4a §3.3 (in_channels parametrizzato)
-  - F0-T4a §4 (input-agnostic slots — parziale)
-  - F0-T4d (preprocessing P1+P2)
-  - F0-T15-post B5 (channel masking 20% — wired ma minimal)
-  - F0-T16-post (audio_aug pipeline)
+  - F0-T4a §3.3 (in_channels parametrizzato — superseded by §6.1 amendment)
+  - F0-T4a §4 (input-agnostic slots — promoted from parziale → completa)
+  - F0-T4d (preprocessing P1+P2 — applicato post-aggregation)
+  - F0-T15-post B5 (channel masking 20% — esteso da channel_agnostic_aug)
+  - F0-T16-post (audio_aug pipeline — composer estende channel_agnostic_aug)
 ---
 
-# F0-T4e · Input-Agnostic Training — STRP-001 (Draft v0.1)
+# F0-T4e · Input-Agnostic Training — STRP-001 (LOCKED v1.0.0)
 
-> **Status:** DRAFT v0.1 — STRP-001 in compilation. Le 6 fasi del protocollo
-> sono compilate sotto. Fase 5 (Executive Briefing) richiede revisione CEO a
-> mente fresca prima della ratifica. Fase 6 (Docs Update) a valle.
+> **Status:** LOCKED v1.0.0 — Decision Lock CEO 2026-05-26 ratificato.
+> 6 fasi STRP-001 chiuse. §6.1 documenta le 4 ratifiche; Fase 6 Docs Update
+> propagata negli amendment sotto.
 
 ## 0 · Inquadramento
 
@@ -399,6 +400,39 @@ Decisioni che richiedono il voto CEO:
 
 ---
 
+## 6.1 · Decision Lock CEO 2026-05-26 — Ratifica
+
+Sessione 2026-05-26. Executive Briefing F0-T4e presentato. CEO vota:
+
+| # | Domanda | Voto | Risoluzione |
+|:--|:--|:--|:--|
+| **D1** | Architettura B+A combinata? | ✅ Ratifica B+A | Per-channel shared encoder (Conv1d k=7 causal) + mean⊕max permutation-invariant pooling + augmentation hard (shuffle/mask/count + realistic_mic_config_sampler) |
+| **D2** | Tutti i kit attuali nel pool? | ✅ Sì — tutti dentro | BigRustyDrums incluso come stereo-OH legittimo; ShittyKit incluso; SFZ stereo inclusi. Nessuna esclusione. |
+| **D3** | Amendment MAJOR o MINOR? | ✅ MAJOR | F0-T4a §3.3 cambia struttura input (nuovo frontend); F0-T4a §4 da parziale → completa. Cambio architetturale → semver MAJOR. |
+| **D4** | Timeline ~2-3 gg locali, $0 Azure? | ✅ Vai | Implementazione completa channel_agnostic.py + channel_agnostic_aug.py + wire model.py + flag mini_l3_train.py + regression test. |
+
+**Conseguenze operative:**
+
+- **F0-T4e** marcato `LOCKED v1.0.0` nel Tracking Board MASTER_SCHEDULING §7.
+- **F0-T4a §3.3** riceve amendment MAJOR: il frontend input-agnostic precede la
+  Input-Agnostic Projection originale (che diventa "post-aggregation projection").
+- **F0-T4a §4** "Input-Agnostic Slots" passa da *parziale* (zero-fill per slot inattivi)
+  → *completa* (permutation-invariance matematica + agnosticità al conteggio variabile).
+- **F0-T4d §3** preprocessing P1+P2 applicato **post-aggregation** sul singolo stream
+  aggregato `[B, C/2, T]` invece che sui canali raw `[B, 8, T]`. Mantiene il contratto
+  `in_channels = C/2 (+1 con P2)`.
+- **F0-T15-post B5** channel masking esteso da `channel_agnostic_aug.py`
+  (random_count_mask 0-7 invece del singolo masking 20%).
+- **F0-T16-post** composer audio aug viene esteso con la nuova voce `channel_agnostic_aug`.
+
+**Out of scope F0-T4e (rinviato):**
+
+- **Bug #3 — GM 75 + GM 54 ignorati nel midi_mapping_table.yaml.** Fix ortogonale,
+  pianificato post-F0-T4e implementation; richiede Decision Lock policy del CEO
+  (a quale bus assegnare GM 75 — splash cymbal — e GM 54 — tambourine).
+
+---
+
 ## Fase 6 · Docs Update (a valle dell'approvazione)
 
 A valle del Decision Lock CEO, propagare:
@@ -440,5 +474,6 @@ A valle del Decision Lock CEO, propagare:
 
 ---
 
-*Draft v0.1 compiled 2026-05-27. Awaiting CEO review for Decision Lock at
-next session. Fase 6 (Docs Update) on hold until ratification.*
+*LOCKED v1.0.0 — Decision Lock CEO 2026-05-26. STRP-001 6 fasi chiuse.
+Fase 6 Docs Update propagata negli amendment MAJOR sopra. Implementazione
+in `src/neural/channel_agnostic.py` + `src/data_engineering/audio_augment/channel_agnostic_aug.py`.*

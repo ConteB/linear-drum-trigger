@@ -420,6 +420,50 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
   GMD ≥ 5 s = 551/1150 (47.9 %); (2) class imbalance misurato sui piatti
   — crash_a 0.7 %, ride 13 %, crash_b 11 % di sample GMD.
 
+**F0-T4e · Input-Agnostic Training (STRP-001) · `[D]`/`[F]` `P1`**
+- *📚 Letture:* [`F0-T4e — spec`](../docs/methodology/F0-T4e_INPUT_AGNOSTIC_TRAINING_SPEC.md) · [`F0-T4a §3.3 — Input-Agnostic Projection`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md) · [`F0-T4a §4 — input slots`](../docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md) · [`F0-T4d §3 — preprocessing`](../docs/methodology/F0-T4d_PREPROCESSING_HARNESS_AND_AUDIT_SPEC.md) · [`F0-T15-post §B5 — channel masking`](../docs/methodology/F0-T15-post_AUDIO_AUGMENTATION_SPEC.md).
+- *Origine:* direttiva CEO 2026-05-26 (audit pipeline ocular post-Plan-A).
+  L'audit S2 ha flaggato BigRustyDrums come "FAIL" (6/8 canali zero). Diagnosi
+  iniziale "pool inquinato" sbagliata: il **vero bug** è la pipeline che
+  hard-codifica un layout per-slot (slot 0 = kick, …). Il plugin v1.0 EA è
+  input-agnostic by design (utente fornisce 1-8 canali in qualsiasi ordine);
+  la rete sta imparando *kit-fingerprint dal layout* invece di onset
+  detection — spiega causalmente il cross-kit gap di tutta la mini-L3 stack.
+- *Azioni:* applicare STRP-001 (6 fasi + Executive Briefing). Architettura
+  **B+A combinata**: (B) per-channel shared encoder Conv1d(1→C_per_ch, k=7
+  causal) + permutation-invariant pool mean⊕max; (A) augmentation hard
+  random_permutation + random_count_mask + realistic_mic_config_sampler.
+  Tutti i kit attuali restano nel pool (BigRustyDrums come stereo-OH
+  legittimo, ShittyKit incluso).
+- *DoD:* Executive Briefing approvato dal CEO; spec `LOCKED v1.0.0`;
+  F0-T4a §3.3/§4 amendment MAJOR; oracoli L1+L2 verdi; regression test
+  mini-L3 con `--input-agnostic` su 8 kit pool → atteso lift +10-30 % val F.
+- *Costo Azure:* **$0** — interamente locale.
+- ⛔ — *nessuno*. **Fortemente raccomandato prima di F2-T3 (training A100).**
+- ☑ **FATTO (2026-05-26) — LOCKED v1.0.0 Decision Lock CEO.** 4 ratifiche
+  D1-D4 approvate (B+A combinata, tutti i kit, MAJOR, 2-3 gg locali).
+  Implementazione completa: `src/neural/channel_agnostic.py` (~230 LOC —
+  PerChannelEncoder con weight-sharing via batch-fold + PermInvariantPool
+  mean⊕max + ChannelAgnosticFrontend composito + ChannelAgnosticConfig
+  dataclass); `src/data_engineering/audio_augment/channel_agnostic_aug.py`
+  (~250 LOC — apply_channel_permutation + apply_random_count_mask +
+  apply_realistic_count_mask con distribuzione empirica {1:25%, 2:25%, 4:20%,
+  7:15%, 8:15%} + composer + seed sha256-namespaced separato da
+  `derive_audio_seed`); `ComposedTCN` in `src/neural/model.py` (orchestratore
+  ChAg → Preprocessing → TCN con `.config` forwarded all'inner TCN per
+  backcompat eval); `tools/mini_l3_train.py` wired con flag
+  `--input-agnostic` / `--input-agnostic-no-aug` / `--input-agnostic-master-seed`
+  / `--input-agnostic-channels`. **Oracoli §6.3 verdi:** 17 unit channel_agnostic
+  (shape contract, weight-sharing, causalità, fail-loud, perm-invariance
+  strict, zero-handling, variable-count, config) + 26 unit channel_agnostic_aug
+  (seed determinism + namespace separation, permutation, count mask con
+  ≥1 active, realistic distribution, composer identity/variant/deterministic,
+  fail-loud) + 4 property Hypothesis (perm-invariance over random batches +
+  shape contract over random configs + byte-determinism + at-least-one-active).
+  Suite F0: **+47 oracoli verdi, 604 passed totali** (1 fallimento
+  pre-esistente fp-precision ε=3e-17 in test_bootstrap_ci, commit `6e5db70`,
+  non causato da F0-T4e). Costo Azure: **$0**.
+
 **F0-T5 · DVC + struttura Medallion + sharding WebDataset · `[F]` `P2`**
 - *📚 Letture:* [`DOSSIER §9.2 — Medallion`](../docs/methodology/DOSSIER_TECNICO.md#medallion) · [`F0-T2a §3 — contratto dati`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#data-contract) · [`F0-T2a §3.8 — tail std`](../docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md#tail-standardization).
 - *Azioni:* `dvc init` nel repo; definire la struttura **Medallion** Bronze/Silver/Gold
@@ -1009,6 +1053,7 @@ stop compute + `dvc fetch` selettivo degli asset sull'SSD CEO · **$10** → chi
 | F0-T4b | TCN mini-prototipo + round-trip RTNeural | F0 | ☑ | F0-T3, F0-T4a | **L3** *(superato 2026-05-23 — opzione A, Decision Lock CEO)* |
 | F0-T4c | Data Pipeline Fixes (STRP-001) | F0 | ☑(partial) | — *(2026-05-24 — **PARTIAL-LOCK v1.0.0** Decision Lock CEO: B1/B2/B3/B6a/B6b/B6c ratificati; **B4 deferred** (rinviato a post-regression test); B5 ritirata. Spec `F0-T4c_DATA_PIPELINE_FIXES_SPEC.md` §6.1)* | **Gate F2-T3 sbloccato architetturalmente; F2-T1 resta ⊘ in attesa di B4** |
 | F0-T4d | Preprocessing Harness + Training Audit (STRP-001) | F0 | ☑ | — *(2026-05-25 — **LOCKED v1.0.0** Decision Lock CEO: B1..B6 tutte ratificate. Spec `F0-T4d_PREPROCESSING_HARNESS_AND_AUDIT_SPEC.md`. Implementazione completa: src/neural/preprocessing.py (P1 PreEmphasis + ChannelNorm + P2 OnsetEnvelope + Frontend), TCNConfig.in_channels parametrizzato (8 default / 9 con P2, F0-T4a §3.3 amendment), docs/audit/training_ledger.yaml + tools/training_ledger.py (add/list/diff/query), mini_l3_train.py wired con --preprocessing + --use-cosine-lr + --early-stop-patience, backfill 4 run storiche + nuova entry per re-run P1+P2)* | **Fortemente raccomandato prima di F2-T3 A100** |
+| F0-T4e | Input-Agnostic Training (STRP-001) | F0 | ☑ | — *(2026-05-26 — **LOCKED v1.0.0** Decision Lock CEO: D1 architettura B+A, D2 tutti i kit nel pool, D3 amendment MAJOR, D4 timeline 2-3 gg locali. Spec `F0-T4e_INPUT_AGNOSTIC_TRAINING_SPEC.md` §6.1. Implementazione: `src/neural/channel_agnostic.py` (PerChannelEncoder shared-weight + PermInvariantPool mean⊕max), `src/data_engineering/audio_augment/channel_agnostic_aug.py` (channel_permutation + random/realistic_count_mask + composer + seed sha256-namespaced), `ComposedTCN` in `model.py` (ChAg → Preprocessing → TCN), `tools/mini_l3_train.py` con `--input-agnostic`. **47 nuovi oracoli verdi** (17 unit channel_agnostic + 26 unit channel_agnostic_aug + 4 property Hypothesis perm-invariance). F0-T4a §3.3/§4 amendment MAJOR — slot input-agnostic da parziale → completa.)* | **Fortemente raccomandato prima di F2-T3 A100** |
 | F0-T5 | DVC + struttura Medallion + sharding | F0 | ☑ | — *(spec sharding LOCKED 2026-05-23 — F0-T5_GOLD_SHARDING_SPEC.md)* | — |
 | F0-T6 | audit_dsp_rigor.py (predisp.) | F0 | ☑ | — *(2026-05-23 — script + 16 regole YAML LOCKED + fixture good/bad + 22 oracoli, gate operativo in F4)* | — |
 | F0-T7 | Classi JUCE (opz.) | F0 | ☐ | — | — |
@@ -1305,6 +1350,8 @@ del DOSSIER §3.1 moltiplica la recipe matrix di F2-T1, non quella di F2-T2).
 · **2026-05-25 22:00 — Plan A completato: midimap fix + re-render + B-planA finale (Decision Lock CEO).** Diagnostica iterativa post-listening-test: il piano roll del checkpoint B ha rivelato 3 pattern strutturali. Il pattern dominante (Pattern 2, tom/floor cross-kit) si è dimostrato un **bug strutturale del dataset**, non del modello: i `midimap.xml` di DrumGizmo per 5 kit del roster avevano (a) note GM unmapped (es. DRSKit GM 48/50/45, ShittyKit GM 48/50) → audio silenzioso ma target dice "TOM"; (b) mappature semantically wrong (Aasimonster GM 50→`crash1_stop`, GM 41→`hihat_closed2`) → onset audio su strumenti completamente diversi dal bus atteso. Su 117 MIDI mini-L3, 73 (62 %) contenevano note non renderizzate per i kit DG, per ~7744 onset target "fantasma" (9.2 % del totale). **Plan A applicato** (Decision Lock CEO 2026-05-25): 11 patch ai midimap.xml dei 5 kit DG (3 DRSKit + 2 Muldjord + 2 Crocell + 2 Aasimonster fix + 2 ShittyKit), backup `*.orig` preservato, 460 sample J00 train + 115 val re-renderizzati (11 min compute OrbStack + 1 min val). Re-train B sul pool coerente → **val F tuned = 0.123 (massimo storico, +30 % vs B base 0.095)**. Bus `tom_hi_mid` recuperato (F=0.118, era "—" in B-kitaware perché il val target era svuotato). Train loss 0.74 (vs B base 0.78): rete impara meglio con dataset coerente. Tooling: `tools/patch_midimaps.py` (idempotente), `tools/build_kitaware_targets.py` (audit + dry-run), `tools/edge_crop_diagnostic.py` (RF warmup quantification). Ledger: 17 entries totali. Costo Azure: $0. **F2-T1 e F2-T3 sbloccabili con DUE precondizioni**: (1) loss config `fp_to_fn_ratio=30` (default ratificato); (2) midimap-patch applicato a ogni kit del render Azure 1.5 TB (altrimenti riproduciamo il bug a scala 1000×).
 
 · **2026-05-25 18:30 — Loss Competition (7 candidati) + Decision Lock CEO: B (fp_to_fn_ratio = 30).** Post-listening-test (la scoperta che il problema non era cross-kit OOD ma calibrazione predict-everywhere), girati 7 design di loss concorrenzialmente sullo stesso pool mixed-5kit. Vincitore: **B** (per-bus pos_weight density-based + γ=2 + **fp_to_fn_ratio=30** vs default 3). Effetto: hihat FP/FN 86 → 16 (-81 %), floor 82 → 23 (-72 %), ShittyKit fixed F 0.084 → 0.087 (+4 %), DRSKit fixed F 0.107 → 0.114 (+7 %). Nessun bus zero-detect. Scoperte collaterali: (1) **γ=4 vanishing gradient** (preset C: kick collapse a FP/FN 51), (2) **Tversky pure cold-start FAIL** (D: F=0.045), (3) **Tversky con warmup AFL distrugge i pesi al switch** (F: F=0.003 — bug logico early-stop confonde le scale), (4) **A+B combinato (E) ha crash zero-detect** (cap pos_weight 50 troppo basso per crash density 0.7-1.5 %), (5) **smart-cap differenziato G** è asymmetric (best F tuned 0.100 ma fixed crolla a 0.082). Codice: `src/neural/loss.py` con nuovo default `fp_to_fn_ratio=30.0` + Tversky loss + `kind` dispatch; `tools/mini_l3_train.py` con `--loss-preset {ctrl,A..G}` + `--loss-warmup-epochs`; `tools/listening_test_shittykit.py` esteso con dual-threshold (tuned per-sample + fixed produzione) + `--checkpoint`/`--run-id`. Doctrinal supersede: F0-T4a §6 "FP 3× FN" → 30× FN (DOSSIER §6.2 da aggiornare nelle prossime spec). Ledger: 7 nuove entry (mini-l3-loss-{A..G}), totale 16. Costo Azure: $0, compute locale ~3 h. **F2-T1 sbloccabile lato loss config**.
+
+· **2026-05-26 — F0-T4e LOCKED v1.0.0 (Decision Lock CEO) — Input-Agnostic Training ratificato + implementato.** Sessione post-pipeline-audit (commit `6e5db70` STRP-001 DRAFT v0.1). Executive Briefing presentato; CEO vota su D1-D4: ✅ **D1** architettura B+A (per-channel shared encoder Conv1d k=7 causal + permutation-invariant pool mean⊕max + augmentation hard shuffle/mask/count); ✅ **D2** tutti i kit attuali restano nel pool (BigRustyDrums come stereo-OH legittimo, ShittyKit incluso); ✅ **D3** amendment MAJOR (F0-T4a §3.3 cambia struttura input, §4 slot input-agnostic da parziale → completa); ✅ **D4** timeline 2-3 gg locali, $0 Azure. **Implementazione completa nella stessa sessione:** `src/neural/channel_agnostic.py` (PerChannelEncoder con weight-sharing via batch-fold per garantire vettorizzazione + PermInvariantPool mean⊕max + ChannelAgnosticFrontend composito), `src/data_engineering/audio_augment/channel_agnostic_aug.py` (channel_permutation + random_count_mask + realistic_count_mask con distribuzione empirica {1: 25 %, 2: 25 %, 4: 20 %, 7: 15 %, 8: 15 %} + composer seed sha256-namespaced separato da `derive_audio_seed`), `ComposedTCN` orchestratore in `model.py` (ChAg → Preprocessing → TCN con `.config` forwarded all'inner TCN per backcompat eval), `tools/mini_l3_train.py` con flag `--input-agnostic` / `--input-agnostic-no-aug` / `--input-agnostic-master-seed` / `--input-agnostic-channels`. **Diagnosi causale F0-T4e** (riconciliata con tutti i fail mini-L3 della settimana): la rete imparava *kit-fingerprint dal layout* (BigRustyDrums = "ch 0-4 zero, ch 5-6 attivi") invece di onset detection — input-agnosticity by design risolve il bug architetturale alla radice. **Oracoli §6.3 verdi: 47 nuovi** (17 unit channel_agnostic + 26 unit channel_agnostic_aug + 4 property Hypothesis perm-invariance). Suite F0: **604 passed, 7 skipped, 1 failed** (pre-esistente `test_bootstrap_ci_mean_is_sample_mean` ε=3e-17 commit `6e5db70`, NON causato da F0-T4e — verificato via `git stash`). **Bug #3 ortogonale** (GM 75/54 ignorati nel `midi_mapping_table.yaml`) rinviato a post-F0-T4e implementazione (richiede Decision Lock policy a quale bus assegnarli). Costo Azure: **$0**. **F2-T3 ora gated solo da F2-T1 + quota A100** (architettura F0-T4a + fix pipeline F0-T4c + preprocessing F0-T4d + loss B + Plan A midimap + F0-T4e tutti ratificati e implementati).
 
 Prossimo checkpoint: **CP-1 / 2026-05-30**.
 

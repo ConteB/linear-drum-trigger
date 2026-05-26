@@ -33,7 +33,7 @@ Documenti indicizzati: **50** · senza frontmatter: **21**.
 | `LIN-DT-DOSSIER-001` | Dossier Tecnico — Drum-Trigger End-to-End Transcription | spec | ACTIVE | cross-cutting | `docs/methodology/DOSSIER_TECNICO.md` |
 | `LIN-DT-DPL-001` | Registro Provenienza Dati & Compliance | registro | ACTIVE | cross-cutting | `docs/compliance/DATA_PROVENANCE_LOG.md` |
 | `LIN-DT-ENGSTD-001` | Engineering Standards — OP-NEUROTRIGGER | standard | ACTIVE | cross-cutting | `04_INTELLIGENCE/ENGINEERING_STANDARDS.md` |
-| `LIN-DT-F0T4E` | "F0-T4e — Input-Agnostic Training (STRP-001)" |  | DRAFT_v0.1 | — | `docs/methodology/F0-T4e_INPUT_AGNOSTIC_TRAINING_SPEC.md` |
+| `LIN-DT-F0T4E` | "F0-T4e — Input-Agnostic Training (STRP-001)" |  | LOCKED_v1.0.0 | — | `docs/methodology/F0-T4e_INPUT_AGNOSTIC_TRAINING_SPEC.md` |
 | `LIN-DT-GOV-001` | Protocollo LINEAR-SHIELD — Governance Sub-Agenti | governance | ACTIVE | cross-cutting | `04_INTELLIGENCE/SUB_AGENT_GOVERNANCE.md` |
 | `LIN-DT-HANDOVER-001` | Session Handover — rev. post F0-T9b / F0-T2b (parser + provisioning) | registro | ACTIVE | F0 | `04_INTELLIGENCE/SESSION_HANDOVER_REVISION.md` |
 | `LIN-DT-HOLDOUT-F0T1c` | F0-T1c — Survey Holdout + Ridisegno Validation Protocol | registro | LOCKED | F0 | `docs/compliance/F0-T1c_HOLDOUT_SURVEY.md` |

@@ -121,6 +121,26 @@ opening. Il data-loader fa già il reshape `cols 0:24 → [n_frame,8,3]` e `col 
 > classica MIREX (spectral flux differenziale) entra direttamente nella
 > Input-Agnostic Projection insieme agli 8 mic canonici.
 
+> **Amendment MAJOR Decision Lock CEO 2026-05-26 ([F0-T4e §6.1](F0-T4e_INPUT_AGNOSTIC_TRAINING_SPEC.md)).**
+> F0-T4e (Input-Agnostic Training) introduce un **Channel-Agnostic Frontend
+> *prima* della Input-Agnostic Projection**: per-channel shared encoder
+> (`Conv1d(1→C_per_ch=4, kernel=7, causal)` con weight-sharing tramite
+> batch-fold) + Permutation-Invariant Pool (mean ⊕ max concat). L'output
+> aggregato `[B, 2·C_per_ch=8, T]` mantiene la larghezza 8 attesa dal
+> downstream (la sezione §3.3 v1.1 — 9 canali con onset envelope — resta
+> invariata, F0-T4d `PreprocessingFrontend(n_mic=8)` riceve i 8 canali
+> aggregati dal frontend F0-T4e e li compone con l'onset envelope).
+> **Conseguenze sull'architettura:** la Input-Agnostic Projection (Conv1d
+> k=1, in=9 → out=C) resta identica nel grafo; il nuovo frontend F0-T4e
+> aggiunge ~228 parametri (`Conv1d(1→4, k=7)` shared = 1·4·7 + 4 = 32
+> pesi + 4 bias = 36 pesi totali — il "shared" è cardinale).
+> **Conseguenze sui contratti dati:** `TCNConfig.in_channels` resta 9 con
+> P1+P2 attivo (8 con solo P1); il nuovo argomento di costruzione è
+> `ChannelAgnosticConfig.per_channel_channels=4`, default che mantiene la
+> larghezza 8 al downstream. **Implementazione:**
+> `src/neural/channel_agnostic.py::ChannelAgnosticFrontend` + composizione
+> in `src/neural/model.py::ComposedTCN`.
+
 | Aspetto | Pre-amendment | Post-amendment (v1.1) |
 | :-- | :-- | :-- |
 | `TCNConfig.in_channels` | `8` | **`9`** |
@@ -188,6 +208,21 @@ di plugin (UI) è materia di **F4**; qui si fissa solo il contratto del tensore.
 > e fallisce quando l'ordine dei mic cambia (es. ShittyKit ha mic layout
 > diverso). La cura ratificata da F0-T15-post B3 è **insegnare l'agnosticità
 > sull'ordine direttamente al training**:
+
+> **Amendment MAJOR Decision Lock CEO 2026-05-26 ([F0-T4e §6.1](F0-T4e_INPUT_AGNOSTIC_TRAINING_SPEC.md)).**
+> L'amendment 4.1 (v1.1) chiedeva la *cura per augmentation*. F0-T4e
+> aggiunge la **cura architettonica complementare**: il `ChannelAgnosticFrontend`
+> rende l'agnosticità una **proprietà matematicamente provata**
+> (permutation-invariance via mean⊕max pool sui per-channel encoded
+> features), non solo empirica. La sezione §4 "8 slot canonici" passa da
+> **parziale** (zero-fill per slot inattivi, semantica appresa a posteriori
+> dall'augmentation) a **completa** (l'architettura **non può** distinguere
+> l'ordine dei canali — non è un'opzione di training, è una proprietà
+> dell'output del frontend). Conseguenza pratica: durante l'inferenza nel
+> plugin v1.0 EA, l'utente può collegare 1-8 canali in qualsiasi ordine
+> senza alcun preset di routing; il modello produce lo stesso output.
+> **Status §4 v1.2:** input-agnosticity = architettonica (F0-T4e) +
+> augmentation (F0-T15-post B3 + F0-T4e channel_agnostic_aug).
 
 | Aspetto | Pre-amendment (v1.0) | Post-amendment (v1.1) |
 | :-- | :-- | :-- |

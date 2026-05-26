@@ -140,7 +140,7 @@ def main() -> int:
     # density-based + γ=2, fp_ratio=3). A/B/C/D sono i 4 candidati ratificati
     # dal CEO 2026-05-25.
     parser.add_argument("--loss-preset", default="ctrl",
-                        choices=("ctrl", "A", "B", "C", "D", "E", "F", "G"),
+                        choices=("ctrl", "A", "B", "C", "D", "E", "F", "G", "H"),
                         help="ctrl = status quo (AFL + per-bus + γ=2 + fp=3); "
                              "A = cap pos_weight 50 (fix minimal); "
                              "B = per-bus + fp_ratio=30 (compensa asimmetria); "
@@ -150,7 +150,13 @@ def main() -> int:
                              "F = Tversky con warmup AFL (CTRL per N epoch, "
                              "poi switch a Tversky); "
                              "G = smart-cap (50 bus comuni, 150 bus rari) + "
-                             "fp_ratio=30, γ=2.")
+                             "fp_ratio=30, γ=2; "
+                             "H = cap 100 uniforme + γ=4 + fp_ratio=30 "
+                             "(post-Plan-A 2026-05-26: applica le 2 mitigation "
+                             "rimanenti del LISTENING_TEST_FINDINGS 2026-05-25 "
+                             "che B/E/G non avevano combinato — γ=4 + cap "
+                             "moderato per evitare il vanishing-kick di C e "
+                             "il crash-zero-detect di E).")
     parser.add_argument("--loss-warmup-epochs", type=int, default=30,
                         help="For preset F: number of epochs to train with "
                              "AFL (CTRL config) before switching to Tversky.")
@@ -274,6 +280,28 @@ def main() -> int:
             for i, w in enumerate(pos_weight_tuple)
         )
         loss_cfg = LossConfig(pos_weight=capped, fp_to_fn_ratio=30.0)
+    elif args.loss_preset == "H":
+        # H — applica le 2 mitigation residue del LISTENING_TEST_FINDINGS
+        # 2026-05-25 che B/E/G non avevano combinato:
+        #   (1) `pos_weight` cap 100 uniforme — sotto density-derived per
+        #       tutti i bus tranne snare (64→64) e kick (132→100). Riduce
+        #       ~10× sui rari (crash 1000→100) → meno spinta a predict-
+        #       everywhere senza il vanishing-kick di C (cap 50 + γ=4).
+        #   (2) `focal_gamma` = 4 — la raccomandazione #2 del listening
+        #       test che alza la punizione sui FP soft (la pathology
+        #       residua del checkpoint B-planA sui bus densi: hihat
+        #       FP/FN 49.8, snare 27.5, floor 26.2).
+        # `fp_to_fn_ratio` = 30 ratificato (Loss Competition B).
+        # Razionale: C aveva (cap 50 + γ=4) → vanishing kick. E aveva
+        # (cap 50 + γ=2) → crash zero-detect. H = (cap 100 + γ=4) cerca
+        # il punto medio: cap doppio rispetto a C/E mitiga il vanishing
+        # gradient + γ=4 mitiga il predict-everywhere che G non ha
+        # affrontato (γ=2). UNICO preset che muove ENTRAMBE le leve
+        # raccomandate dal listening test.
+        capped = tuple(min(float(w), 100.0) for w in pos_weight_tuple)
+        loss_cfg = LossConfig(
+            pos_weight=capped, focal_gamma=4.0, fp_to_fn_ratio=30.0,
+        )
     else:
         raise ValueError(args.loss_preset)
     # Propagate edge skip override to the loss config (LossConfig is frozen,
@@ -510,16 +538,29 @@ def main() -> int:
               f"grad={n_nonfinite_grad}")
 
     # Save checkpoint.
+    # 2026-05-26 audit bugfix: serialize PreprocessingFrontend state alongside
+    # the model so downstream tools (listening_test_shittykit.py, evaluation
+    # gates) can reload the **trained** ChannelNorm running stats. Without
+    # this, a fresh PreprocessingFrontend() has running_var=1.0 (init), so
+    # ChannelNorm in eval mode becomes an identity passthrough → the model
+    # sees audio raw (std~0.017) instead of the z-score (std=1.0) it was
+    # trained on → all logits collapse → predict-everywhere. Bug was masking
+    # 2-3× of the true val F (trainer-inline eval was correct because it
+    # used the same preprocess instance with live running stats).
     if args.save_to:
         args.save_to.parent.mkdir(parents=True, exist_ok=True)
-        torch.save({
+        ckpt: dict[str, Any] = {
             "model_state": model.state_dict(),
             "config": {"channels": model.config.channels},
             "seed": args.seed,
             "crop_samples": args.crop_samples,
             "lookahead_frames": args.lookahead_frames,
             "epochs": args.epochs,
-        }, args.save_to)
+            "preprocessing_kind": args.preprocessing,
+        }
+        if preprocess is not None:
+            ckpt["preprocess_state"] = preprocess.state_dict()
+        torch.save(ckpt, args.save_to)
         print(f"[mini-L3] saved checkpoint → {args.save_to}")
 
     # --- Cross-kit evaluation on val pool (ShittyKit only) ---

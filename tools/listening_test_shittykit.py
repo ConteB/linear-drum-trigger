@@ -66,12 +66,63 @@ class _Composed(torch.nn.Module):
         return self.mdl(self.pre(x))
 
 
-def load_model_from_checkpoint(ckpt_path: Path) -> _Composed:
-    """Load a TCN checkpoint with P1+P2 preprocessing frontend."""
+def load_model_from_checkpoint(
+    ckpt_path: Path,
+    *,
+    warmup_pool: Path | None = None,
+    warmup_n_samples: int = 30,
+) -> _Composed:
+    """Load a TCN checkpoint with P1+P2 preprocessing frontend.
+
+    **2026-05-26 audit bugfix**: ChannelNorm has EMA-tracked running stats
+    (mean/var) that are CRITICAL for correct inference but were not being
+    serialized by older training runs. Two recovery paths:
+
+    1. If the checkpoint includes ``preprocess_state`` (saved by the
+       2026-05-26+ trainer), load it directly — the running stats are exact.
+    2. Otherwise (legacy checkpoints: B-planA, H, c128, combo-final, ...)
+       run a *warm-up pass* over ``warmup_n_samples`` from ``warmup_pool``
+       in TRAIN mode to repopulate the EMA, then switch to eval mode.
+       This reconstructs the running stats post-hoc (deterministic seed,
+       sample-order stable for reproducibility).
+    """
     ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     tcn = TCNModel(TCNConfig(channels=ckpt["config"]["channels"], in_channels=9))
     tcn.load_state_dict(ckpt["model_state"])
     pre = PreprocessingFrontend(n_mic=8, onset_envelope=True)
+
+    if "preprocess_state" in ckpt:
+        pre.load_state_dict(ckpt["preprocess_state"])
+        print(f"[listening] loaded preprocess_state from checkpoint "
+              f"(running_var range "
+              f"[{pre.channel_norm.running_var.min().item():.4f}, "
+              f"{pre.channel_norm.running_var.max().item():.4f}])")
+    elif warmup_pool is not None:
+        print(f"[listening] checkpoint has no preprocess_state — "
+              f"running warm-up pass on {warmup_n_samples} train samples "
+              f"to reconstruct ChannelNorm EMA…")
+        from neural.data import discover_gold_keys, load_gold_sample  # noqa: PLC0415
+        triples = sorted(discover_gold_keys(warmup_pool), key=lambda x: x[1])
+        # Pick spread-out indices to span all kits/MIDI of the train pool.
+        step = max(1, len(triples) // warmup_n_samples)
+        picks = triples[::step][:warmup_n_samples]
+        pre.train()  # enable EMA update
+        with torch.no_grad():
+            for d, k in picks:
+                s = load_gold_sample(d, k)
+                # Use the first crop_samples worth of audio (4.46s default).
+                audio = torch.from_numpy(s.audio[:, :196608]).float().unsqueeze(0)
+                pre(audio)  # updates running_mean/running_var
+        pre.eval()
+        rv = pre.channel_norm.running_var
+        print(f"[listening] warm-up done — running_var range "
+              f"[{rv.min().item():.4f}, {rv.max().item():.4f}]  "
+              f"(was [1.0, 1.0] before)")
+    else:
+        print("[listening] ⚠️ WARNING: legacy checkpoint without "
+              "preprocess_state and no warmup_pool — ChannelNorm will be "
+              "identity passthrough (BUG: incorrect input scaling).")
+
     eval_model = _Composed(pre, tcn).eval()
     return eval_model
 
@@ -294,6 +345,18 @@ def main() -> int:
                          help="Sub-directory name for the output.")
     parser.add_argument("--fixed-threshold", type=float, default=0.1,
                          help="Threshold for the production-style evaluation.")
+    parser.add_argument("--warmup-pool", type=Path,
+                        default=_REPO_ROOT / "data" / "gold" / "mini_l3_train",
+                        help="Train pool used to warm up ChannelNorm running "
+                             "stats for legacy checkpoints (without "
+                             "preprocess_state). Set empty string to disable.")
+    parser.add_argument("--warmup-n-samples", type=int, default=60,
+                        help="Number of train samples used in the warm-up pass "
+                             "(2026-05-26 audit bugfix).")
+    parser.add_argument("--skip-edge-frames", type=int, default=0,
+                        help="Skip the first N output frames in the fixed-"
+                             "threshold evaluation (Bug #3 from 2026-05-26 "
+                             "audit; recommended 1024 = TCN RF size).")
     args = parser.parse_args()
 
     ckpt_path = args.checkpoint
@@ -307,7 +370,11 @@ def main() -> int:
     OUT_DIR = out_dir
 
     print(f"[listening] loading checkpoint {ckpt_path.name}…", flush=True)
-    model = load_model_from_checkpoint(ckpt_path)
+    warmup_pool: Path | None = args.warmup_pool if str(args.warmup_pool) else None
+    model = load_model_from_checkpoint(
+        ckpt_path, warmup_pool=warmup_pool,
+        warmup_n_samples=args.warmup_n_samples,
+    )
 
     print(f"[listening] loading ShittyKit val…", flush=True)
     val_samples = load_pool(_REPO_ROOT / "data" / "gold" / "mini_l3_val")
@@ -339,7 +406,8 @@ def main() -> int:
         evaluate_with_fixed_threshold(model, s.audio, s.target,
                                        n_sample=crop_samples,
                                        lookahead_frames=lookahead,
-                                       threshold=args.fixed_threshold)
+                                       threshold=args.fixed_threshold,
+                                       skip_edge_frames=args.skip_edge_frames)
         for s in val_samples
     ]
     print(f"[listening] evaluating DRSKit train ({len(drs_samples)} samples) — "
@@ -356,7 +424,8 @@ def main() -> int:
         evaluate_with_fixed_threshold(model, s.audio, s.target,
                                        n_sample=crop_samples,
                                        lookahead_frames=lookahead,
-                                       threshold=args.fixed_threshold)
+                                       threshold=args.fixed_threshold,
+                                       skip_edge_frames=args.skip_edge_frames)
         for s in drs_samples
     ]
 

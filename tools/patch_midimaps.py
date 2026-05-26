@@ -48,12 +48,22 @@ PATCHES: dict[str, dict[str, list[tuple[int, str]]]] = {
         "fix": [],
     },
     "MuldjordKit": {
+        # 2026-05-26 audit: + GM 40 (Electric Snare), + GM 44 (HHpedal).
+        # GM 40 is the most common alt snare note in GMD; was producing
+        # silent audio with target=snare → 64+ phantom onsets/30 grooves.
+        # GM 44 (Hi-Hat Pedal) → closed hi-hat (best available proxy).
         "path": "vendor/drumgizmo/MuldjordKit3/Midimap.xml",
-        "add": [(50, "Tom1"), (43, "Tom4")],
+        "add": [(50, "Tom1"), (43, "Tom4"), (40, "Snare"), (44, "HihatClosed")],
         "fix": [],
     },
     "CrocellKit": {
-        "path": "vendor/drumgizmo/CrocellKit/Midimap_default.xml",
+        # 2026-05-26 audit bugfix: the original Plan A patched
+        # `Midimap_default.xml`, but the render uses `CrocellKit_full.xml`
+        # which resolves to `Midimap_full.xml` via _resolve_drumgizmo_midimap.
+        # All 687 CrocellKit train samples were rendered with the UNPATCHED
+        # midimap → phantom onsets on tom_hi_mid (GM 50) and floor_tom
+        # (GM 45). Patch the correct file.
+        "path": "vendor/drumgizmo/CrocellKit/Midimap_full.xml",
         "add": [(50, "Tom1"), (45, "Tom2")],
         "fix": [],
     },

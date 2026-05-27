@@ -40,8 +40,12 @@ import torch
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
+from neural.channel_agnostic import (  # noqa: E402
+    ChannelAgnosticConfig,
+    ChannelAgnosticFrontend,
+)
 from neural.data import DEFAULT_LOOKAHEAD_FRAMES, load_pool  # noqa: E402
-from neural.model import TCNConfig, TCNModel  # noqa: E402
+from neural.model import ComposedTCN, TCNConfig, TCNModel  # noqa: E402
 from neural.preprocessing import PreprocessingFrontend  # noqa: E402
 from neural.reporter import evaluate_sample_for_report  # noqa: E402
 
@@ -53,26 +57,13 @@ BUS_NAMES = [
 GATE_ROOT = _REPO_ROOT / "docs" / "gates" / "F0-T4c_MINI_L3"
 
 
-class _Composed(torch.nn.Module):
-    """Wrap preprocessing + TCN as one model for evaluate_sample_for_report."""
-
-    def __init__(self, pre: torch.nn.Module, mdl: torch.nn.Module) -> None:
-        super().__init__()
-        self.pre = pre
-        self.mdl = mdl
-        self.config = mdl.config
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:  # noqa: D401
-        return self.mdl(self.pre(x))
-
-
 def load_model_from_checkpoint(
     ckpt_path: Path,
     *,
     warmup_pool: Path | None = None,
     warmup_n_samples: int = 30,
-) -> _Composed:
-    """Load a TCN checkpoint with P1+P2 preprocessing frontend.
+) -> ComposedTCN:
+    """Load a TCN checkpoint with optional P1+P2 + F0-T4e channel-agnostic frontend.
 
     **2026-05-26 audit bugfix**: ChannelNorm has EMA-tracked running stats
     (mean/var) that are CRITICAL for correct inference but were not being
@@ -85,11 +76,35 @@ def load_model_from_checkpoint(
        in TRAIN mode to repopulate the EMA, then switch to eval mode.
        This reconstructs the running stats post-hoc (deterministic seed,
        sample-order stable for reproducibility).
+
+    **F0-T4e (Decision Lock CEO 2026-05-26)**: checkpoints saved after this
+    spec may include ``channel_agnostic_state``. If present, the
+    :class:`ChannelAgnosticFrontend` is composed *before* the preprocessing
+    frontend, mirroring the training-time pipeline. The ``input_agnostic``
+    flag in the checkpoint is the authoritative signal; the warmup pass
+    runs through the full composed stack so the ChannelNorm EMA reflects
+    the actual aggregated tensor the model was trained on.
     """
     ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     tcn = TCNModel(TCNConfig(channels=ckpt["config"]["channels"], in_channels=9))
     tcn.load_state_dict(ckpt["model_state"])
     pre = PreprocessingFrontend(n_mic=8, onset_envelope=True)
+
+    # F0-T4e channel-agnostic frontend (optional, opt-in via training flag).
+    channel_agnostic: ChannelAgnosticFrontend | None = None
+    if ckpt.get("input_agnostic"):
+        per_ch = int(ckpt.get("input_agnostic_channels") or 4)
+        channel_agnostic = ChannelAgnosticFrontend(
+            ChannelAgnosticConfig(per_channel_channels=per_ch),
+        )
+        if "channel_agnostic_state" in ckpt:
+            channel_agnostic.load_state_dict(ckpt["channel_agnostic_state"])
+            print(f"[listening] F0-T4e channel-agnostic frontend ON  "
+                  f"C_per_ch={per_ch}  loaded from checkpoint")
+        else:
+            print("[listening] ⚠️ WARNING: input_agnostic=True but no "
+                  "channel_agnostic_state in checkpoint — using random init "
+                  "(this is a checkpoint format bug, not a runtime issue).")
 
     if "preprocess_state" in ckpt:
         pre.load_state_dict(ckpt["preprocess_state"])
@@ -107,11 +122,15 @@ def load_model_from_checkpoint(
         step = max(1, len(triples) // warmup_n_samples)
         picks = triples[::step][:warmup_n_samples]
         pre.train()  # enable EMA update
+        if channel_agnostic is not None:
+            channel_agnostic.eval()  # the frontend has no running stats
         with torch.no_grad():
             for d, k in picks:
                 s = load_gold_sample(d, k)
                 # Use the first crop_samples worth of audio (4.46s default).
                 audio = torch.from_numpy(s.audio[:, :196608]).float().unsqueeze(0)
+                if channel_agnostic is not None:
+                    audio = channel_agnostic(audio)
                 pre(audio)  # updates running_mean/running_var
         pre.eval()
         rv = pre.channel_norm.running_var
@@ -123,7 +142,9 @@ def load_model_from_checkpoint(
               "preprocess_state and no warmup_pool — ChannelNorm will be "
               "identity passthrough (BUG: incorrect input scaling).")
 
-    eval_model = _Composed(pre, tcn).eval()
+    eval_model = ComposedTCN(
+        tcn, channel_agnostic=channel_agnostic, preprocessing=pre,
+    ).eval()
     return eval_model
 
 

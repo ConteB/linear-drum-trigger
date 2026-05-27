@@ -188,6 +188,13 @@ def main() -> int:
                         help="Skip the optimizer step when loss or grad_norm "
                              "are NaN/Inf (zero-grad + log, no explosion). "
                              "Safety net for unstable regimes.")
+    parser.add_argument("--no-amp", action="store_true",
+                        help="Disable autocast (mixed-precision). Default ON for "
+                             "MPS/CUDA. Disable to dodge the MPS deadlock that "
+                             "triggers on `torch.isfinite(loss_val).item()` "
+                             "GPU→CPU sync inside an autocast region "
+                             "(observed 2026-05-27 mid-training, fp32 path "
+                             "stable). Adds ~30%% wall time on MPS.")
     # F0-T4e (Decision Lock CEO 2026-05-26) — input-agnostic frontend.
     parser.add_argument("--input-agnostic", action="store_true",
                         help="F0-T4e — wrap the TCN with a permutation-invariant "
@@ -468,12 +475,15 @@ def main() -> int:
     else:
         scheduler = None
 
-    use_amp = device.type in {"cuda", "mps"}
+    use_amp = device.type in {"cuda", "mps"} and not args.no_amp
     autocast_ctx: Any
     if use_amp:
         autocast_ctx = torch.autocast(device_type=device.type, dtype=torch.float16)
+        print(f"[mini-L3] autocast fp16 ON ({device.type})", flush=True)
     else:
         autocast_ctx = contextlib.nullcontext()
+        print(f"[mini-L3] autocast OFF — fp32 throughout "
+              f"(device={device.type}, --no-amp={args.no_amp})", flush=True)
 
     # --- Training loop ---
     t0 = time.perf_counter()

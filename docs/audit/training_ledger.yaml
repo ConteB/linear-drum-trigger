@@ -1363,9 +1363,9 @@ runs:
   date: 2026-05-26 00:53:00+00:00
   git_commit: 8b10622+lossH
   status: FAIL
-  purpose: "Loss-H — applica le 2 mitigation residue del LISTENING_TEST_FINDINGS\
+  purpose: "Loss-H \u2014 applica le 2 mitigation residue del LISTENING_TEST_FINDINGS\
     \ 2026-05-25 (`pos_weight` cap 100 uniforme + `focal_gamma`=4) che Loss B/E/G\
-    \ non avevano combinato. Decision Lock CEO 2026-05-26 — verifica train F\
+    \ non avevano combinato. Decision Lock CEO 2026-05-26 \u2014 verifica train F\
     \ dignitoso sul mini-L3 prima di autorizzare il burn Azure F2-T1/F2-T3."
   dataset:
     pool_root: data/gold/mini_l3_train
@@ -1381,8 +1381,8 @@ runs:
     - ShittyKit
     midi_source: GMD v1.0 (all-splits, 5-15s, 117 grooves)
     notes: "Pool identico a B-planA (baseline-only, midimap-patched). Apple-to-apple\
-      \ comparison: stessi sample, stessa arch, stessa training schedule — unica\
-      \ variabile mossa = loss config (B → H)."
+      \ comparison: stessi sample, stessa arch, stessa training schedule \u2014 unica\
+      \ variabile mossa = loss config (B \u2192 H)."
   model:
     arch: F0-T4a TCN
     channels: 64
@@ -1419,7 +1419,7 @@ runs:
     baseline_only: true
   metrics:
     final_train_loss: 0.2113
-    val_F_mean: 0.100
+    val_F_mean: 0.1
     val_F_drskit_train_fixed_0.1: 0.107
     val_F_shittykit_fixed_0.1: 0.074
     val_F_drskit_train_tuned: 0.057
@@ -1427,10 +1427,10 @@ runs:
     val_F_range:
     - 0.015
     - 0.489
-    train_F_best_sweep: 0.115   # H @ thr 0.20
-    train_F_best_B_planA_sweep: 0.134   # B-planA @ thr 0.15 (comparison)
+    train_F_best_sweep: 0.115
+    train_F_best_B_planA_sweep: 0.134
     per_bus_train_fixed_0.1:
-      kick: 0.080
+      kick: 0.08
       snare: 0.111
       hihat: 0.066
       tom_hi_mid: 0.137
@@ -1440,7 +1440,7 @@ runs:
       crash_b_misc: null
     per_bus_val_fixed_0.1:
       kick: 0.054
-      snare: 0.090
+      snare: 0.09
       hihat: 0.048
       tom_hi_mid: 0.075
       floor: 0.049
@@ -1454,24 +1454,24 @@ runs:
       tom_hi_mid: 10.53
       floor: 86.93
       ride: 100.07
-      crash_a: 122.00
+      crash_a: 122.0
       crash_b_misc: 5.61
   verdict:
     gate: val_F_mean >= 0.55
     outcome: FAIL
     secondary_gate: train_F_overall >= 0.30 (CEO 2026-05-26 pre-Azure gate)
     secondary_outcome: FAIL (best 0.134 B-planA, 0.115 H)
-    notes: "Train loss scesa drasticamente (0.74 → 0.21, -72 %) ma NON si traduce\
-      \ in F-measure migliore. γ=4 ha schiacciato la magnitude di TUTTI i logit\
-      \ (inclusi quelli on-onset) → il peak-picking @ thr 0.1 non si attiva\
-      \ abbastanza. Sweep threshold (7 soglie da 0.01 a 0.20) conferma: H non batte\
-      \ B-planA su nessuna soglia. **Famiglia loss redesign esaurita** — testati\
-      \ 6/6 combinazioni del quadrante (cap, γ): A,B,C,E,G,H. B-planA resta\
-      \ il best-of-family. Gap residuo vs gate 0.30 NON si chiude muovendo le leve\
-      \ di loss. Direttiva CEO 'STOP se devi andare ad Azure' rispettata: NIENTE\
-      \ Azure questa sessione. Leve rimaste per la prossima sessione: (1) capacity\
-      \ C=128 + B-planA loss, (2) audio_aug + B-planA + Plan-A pool, (3) voci F0-T15-post\
-      \ B5 deferred (codec/limiter/reverb), (4) re-test Tversky D su pool Plan A."
+    notes: "Train loss scesa drasticamente (0.74 \u2192 0.21, -72 %) ma NON si traduce\
+      \ in F-measure migliore. \u03B3=4 ha schiacciato la magnitude di TUTTI i logit\
+      \ (inclusi quelli on-onset) \u2192 il peak-picking @ thr 0.1 non si attiva abbastanza.\
+      \ Sweep threshold (7 soglie da 0.01 a 0.20) conferma: H non batte B-planA su\
+      \ nessuna soglia. **Famiglia loss redesign esaurita** \u2014 testati 6/6 combinazioni\
+      \ del quadrante (cap, \u03B3): A,B,C,E,G,H. B-planA resta il best-of-family.\
+      \ Gap residuo vs gate 0.30 NON si chiude muovendo le leve di loss. Direttiva\
+      \ CEO 'STOP se devi andare ad Azure' rispettata: NIENTE Azure questa sessione.\
+      \ Leve rimaste per la prossima sessione: (1) capacity C=128 + B-planA loss,\
+      \ (2) audio_aug + B-planA + Plan-A pool, (3) voci F0-T15-post B5 deferred (codec/limiter/reverb),\
+      \ (4) re-test Tversky D su pool Plan A."
   report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-loss-H-2026-05-26/report.html
   findings: docs/gates/F0-T4c_MINI_L3/listening_test_loss-H-2026-05-26/FINDINGS_2026-05-26.md
   cost:
@@ -1481,13 +1481,13 @@ runs:
   date: 2026-05-26 02:15:00+00:00
   git_commit: 8b10622+capacity128
   status: FAIL
-  purpose: "C=128 capacity bump + B-planA loss config (Decision Lock CEO\
-    \ 2026-05-26 — leva singola-variabile post Loss-H failure)."
+  purpose: "C=128 capacity bump + B-planA loss config (Decision Lock CEO 2026-05-26\
+    \ \u2014 leva singola-variabile post Loss-H failure)."
   dataset:
     pool_root: data/gold/mini_l3_train
     n_train_samples: 577
     n_val_samples: 115
-    notes: "Pool identico a B-planA / Loss-H (baseline-only, midimap pre-audit-fix)."
+    notes: Pool identico a B-planA / Loss-H (baseline-only, midimap pre-audit-fix).
   model:
     arch: F0-T4a TCN
     channels: 128
@@ -1497,7 +1497,8 @@ runs:
     kind: p1p2
   loss:
     kind: afl
-    pos_weight: density-derived (132.1, 64.3, 200.4, 269.4, 234.8, 243.4, 1000.0, 1000.0)
+    pos_weight: density-derived (132.1, 64.3, 200.4, 269.4, 234.8, 243.4, 1000.0,
+      1000.0)
     focal_gamma: 2.0
     fp_to_fn_ratio: 30.0
     edge_skip_frames: 0
@@ -1511,7 +1512,7 @@ runs:
     n_nonfinite_loss_skips: 46
     baseline_only: true
   metrics:
-    final_train_loss: 0.5410
+    final_train_loss: 0.541
     val_F_mean_trainer_tuned: 0.153
     val_F_drskit_train_fixed_0.1: 0.122
     val_F_shittykit_fixed_0.1: 0.088
@@ -1520,17 +1521,18 @@ runs:
     val_F_range:
     - 0.013
     - 0.417
-    train_F_best_sweep: 0.137   # C=128 @ thr 0.20
-    val_F_best_sweep: 0.128   # C=128 @ thr 0.20
+    train_F_best_sweep: 0.137
+    val_F_best_sweep: 0.128
   verdict:
     gate: val_F_mean >= 0.55
     outcome: FAIL
     secondary_gate: train_F_overall >= 0.30 (CEO 2026-05-26)
     secondary_outcome: FAIL (best 0.137)
-    notes: "+24 % val F_mean trainer-tuned vs B-planA (0.123→0.153). Sul listening\
+    notes: "+24 % val F_mean trainer-tuned vs B-planA (0.123\u21920.153). Sul listening\
       \ test threshold-fixed solo marginale (+2 % train F, +11 % val F best sweep).\
-      \ FP/FN drasticamente migliorati sui bus densi (hihat 49.8→8.95, ride 30.1→0.96).\
-      \ C=128 ha capacità di rappresentare meglio i bus rari ma resta sotto gate Azure 0.30."
+      \ FP/FN drasticamente migliorati sui bus densi (hihat 49.8\u21928.95, ride 30.1\u2192\
+      0.96). C=128 ha capacit\xE0 di rappresentare meglio i bus rari ma resta sotto\
+      \ gate Azure 0.30."
   report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-c128-B-planA-2026-05-26/report.html
   cost:
     azure_usd: 0.0
@@ -1539,28 +1541,25 @@ runs:
   date: 2026-05-26 22:00:00+00:00
   git_commit: 8b10622+audit-fixes
   status: FAIL
-  purpose: "Pipeline audit + 3 fix sequenziali (Decision Lock CEO 2026-05-26).\
-    \ Audit metodico di 10 step della pipeline mini-L3 ha trovato 5 bug + 2\
-    \ limitazioni metodologiche: (1) Bug #1 = ChannelNorm running stats non\
-    \ serializzati nel checkpoint → listening_test_shittykit usava\
-    \ PreprocessingFrontend fresh con running_var=1.0 (identity); (2) Bug #2\
-    \ = Plan A originale ha patchato CrocellKit/Midimap_default.xml mentre\
-    \ il render usa Midimap_full.xml (via _resolve_drumgizmo_midimap)\
-    \ → 687 sample CrocellKit con GM 45+50 unmapped (TomLo+TomHi); inoltre\
-    \ MuldjordKit3 aveva GM 40 (Electric Snare, 64+ onset/30 grooves) e\
-    \ GM 44 (HHpedal) unmapped; (3) Bug #3 = edge_skip_frames=0 di default\
-    \ — feature esistente nel codice con commit storico 'F lift atteso +20-40%'\
-    \ mai attivata. Fix: serializzare preprocess_state nel checkpoint +\
-    \ warm-up fallback per checkpoint legacy + patch Midimap_full.xml\
-    \ CrocellKit + GM 40/44 MuldjordKit3 + edge_skip_frames=1024 in\
-    \ train e eval."
+  purpose: "Pipeline audit + 3 fix sequenziali (Decision Lock CEO 2026-05-26). Audit\
+    \ metodico di 10 step della pipeline mini-L3 ha trovato 5 bug + 2 limitazioni\
+    \ metodologiche: (1) Bug #1 = ChannelNorm running stats non serializzati nel checkpoint\
+    \ \u2192 listening_test_shittykit usava PreprocessingFrontend fresh con running_var=1.0\
+    \ (identity); (2) Bug #2 = Plan A originale ha patchato CrocellKit/Midimap_default.xml\
+    \ mentre il render usa Midimap_full.xml (via _resolve_drumgizmo_midimap) \u2192\
+    \ 687 sample CrocellKit con GM 45+50 unmapped (TomLo+TomHi); inoltre MuldjordKit3\
+    \ aveva GM 40 (Electric Snare, 64+ onset/30 grooves) e GM 44 (HHpedal) unmapped;\
+    \ (3) Bug #3 = edge_skip_frames=0 di default \u2014 feature esistente nel codice\
+    \ con commit storico 'F lift atteso +20-40%' mai attivata. Fix: serializzare preprocess_state\
+    \ nel checkpoint + warm-up fallback per checkpoint legacy + patch Midimap_full.xml\
+    \ CrocellKit + GM 40/44 MuldjordKit3 + edge_skip_frames=1024 in train e eval."
   dataset:
     pool_root: data/gold/mini_l3_train
     n_train_samples: 577
     n_val_samples: 115
-    notes: "Pool post Plan-A-vero-completo: CrocellKit + MuldjordKit re-renderizzati\
-      \ post-midimap-patch (458 sample nuovi, 11 min OrbStack, 20 silent-zero\
-      \ fail su Component-Dropping di grooves brevi - pattern noto)."
+    notes: 'Pool post Plan-A-vero-completo: CrocellKit + MuldjordKit re-renderizzati
+      post-midimap-patch (458 sample nuovi, 11 min OrbStack, 20 silent-zero fail su
+      Component-Dropping di grooves brevi - pattern noto).'
   model:
     arch: F0-T4a TCN
     channels: 64
@@ -1573,7 +1572,7 @@ runs:
     pos_weight: density-derived
     focal_gamma: 2.0
     fp_to_fn_ratio: 30.0
-    edge_skip_frames: 1024   # FIX #3
+    edge_skip_frames: 1024
   training:
     epochs: 150
     batch_size: 8
@@ -1588,46 +1587,136 @@ runs:
     val_F_mean_trainer_tuned: 0.099
     val_F_drskit_train_fixed_0.1: 0.132
     val_F_shittykit_fixed_0.1: 0.119
-    val_F_drskit_train_tuned: 0.160
+    val_F_drskit_train_tuned: 0.16
     val_F_shittykit_tuned: 0.099
     val_F_range:
     - 0.008
     - 0.255
     per_bus_shittykit_val_fixed_0.1:
-      kick: 0.080
-      snare: 0.120
+      kick: 0.08
+      snare: 0.12
       hihat: 0.103
       tom_hi_mid: 0.084
       floor: 0.089
       ride: 0.147
-      crash_a: null      # only 2 onset crash_a in val pool — non significativo
-      crash_b_misc: 0.250   # NEW — bus emerge da F=0 a F=0.250
+      crash_a: null
+      crash_b_misc: 0.25
     val_fp_fn_ratio_fixed_0.1:
       kick: 8.06
-      snare: 7.26    # was 27.5 in B-planA
-      hihat: 11.12   # was 49.8
+      snare: 7.26
+      hihat: 11.12
       tom_hi_mid: 11.26
-      floor: 11.03   # was 26.2
-      ride: 1.68     # was 30.1
+      floor: 11.03
+      ride: 1.68
       crash_b_misc: 31.68
   verdict:
     gate: val_F_mean >= 0.55
     outcome: FAIL
     secondary_gate: train_F_overall >= 0.30 (CEO 2026-05-26)
     secondary_outcome: FAIL (train F best 0.16, val F best 0.119)
-    notes: "PRIMO LIFT COERENTE DELLA SESSIONE: +84% val F tuned (0.054→0.099),\
-      \ +34% val F fixed (0.089→0.119), +12% train F fixed (0.118→0.132).\
-      \ FP/FN predict-everywhere LARGAMENTE mitigato (snare -74%, hihat -78%,\
-      \ ride -94%, floor -58%). Crash_b_misc emerge: 0→0.250 F (era 'morto').\
-      \ Train/val ratio sceso a 1.11x (era 1.32x) — la generalizzazione\
-      \ cross-kit ora ESISTE. Architettura confermata viable. Gap residuo\
-      \ vs gate 0.30: ancora -56%. Direzione per la prossima sessione (CEO\
-      \ directive): debug profondo ocular-proof per kit per stage della\
-      \ pipeline (audit visivo di ogni passaggio), poi feature engineering\
-      \ stack (spectral flux + sub-band log-energy + bus-specific bandpass)\
+    notes: "PRIMO LIFT COERENTE DELLA SESSIONE: +84% val F tuned (0.054\u21920.099),\
+      \ +34% val F fixed (0.089\u21920.119), +12% train F fixed (0.118\u21920.132).\
+      \ FP/FN predict-everywhere LARGAMENTE mitigato (snare -74%, hihat -78%, ride\
+      \ -94%, floor -58%). Crash_b_misc emerge: 0\u21920.250 F (era 'morto'). Train/val\
+      \ ratio sceso a 1.11x (era 1.32x) \u2014 la generalizzazione cross-kit ora ESISTE.\
+      \ Architettura confermata viable. Gap residuo vs gate 0.30: ancora -56%. Direzione\
+      \ per la prossima sessione (CEO directive): debug profondo ocular-proof per\
+      \ kit per stage della pipeline (audit visivo di ogni passaggio), poi feature\
+      \ engineering stack (spectral flux + sub-band log-energy + bus-specific bandpass)\
       \ sopra questa base pulita."
   report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-c64-B-allfixes-2026-05-26/report.html
   listening_test: docs/gates/F0-T4c_MINI_L3/listening_test_c64-B-allfixes-2026-05-26/
   cost:
     azure_usd: 0.0
-    local_compute_min: 36   # 25 training + 11 re-render OrbStack
+    local_compute_min: 36
+- run_id: mini-l3-F0T4e-2026-05-27
+  date: 2026-05-27 07:11:00+00:00
+  git_commit: 83b9596+no-amp
+  status: FAIL
+  purpose: "F0-T4e Input-Agnostic Training \u2014 regression test post-Decision-Lock\
+    \ CEO 2026-05-26 (D1 architettura B+A, D2 tutti i kit nel pool, D3 amendment MAJOR,\
+    \ D4 2-3 gg locali). Misura del lift dell'architettura permutation-invariant by\
+    \ design (per-channel shared encoder Conv1d k=7 causal + mean\u2295max pool) +\
+    \ augmentation hard (random_permutation + realistic_count_mask) vs baseline allfixes\
+    \ 0.099 (run mini-l3-c64-B-allfixes-2026-05-26). A/B isolato sull'asse F0-T4e:\
+    \ stesso pool (577 baseline-only), stesso C=64, stesso P1+P2, stessa loss B (fp_ratio=30),\
+    \ stesso cosine LR + early stop + grad clip 0.5 + skip-nonfinite, stesso audio_aug\
+    \ \u2014 UNICA variante = --input-agnostic. Atteso lift +10-30 % \u2192 val F\
+    \ \u2208 [0.11, 0.13]."
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    baseline_only: true
+    notes: Stesso pool del baseline mini-l3-c64-B-allfixes-2026-05-26 (post-Plan-A
+      vero completo, CrocellKit + MuldjordKit re-renderizzati post-midimap-patch).
+      Identico per A/B fairness.
+  model:
+    arch: F0-T4a TCN + F0-T4e ChannelAgnosticFrontend
+    channels: 64
+    in_channels: 9
+    params: 331257
+    channel_agnostic:
+      per_channel_channels: 4
+      aggregated_channels: 8
+      kernel_size: 7
+      weight_sharing: true
+  preprocessing:
+    kind: p1p2
+  loss:
+    kind: afl
+    pos_weight: density-derived
+    focal_gamma: 2.0
+    fp_to_fn_ratio: 30.0
+    edge_skip_frames: 0
+  augmentation:
+    audio_aug: true
+    channel_agnostic_aug: true
+    channel_agnostic_master_seed: 20260526
+    permutation: enabled
+    realistic_count_mask:
+      distribution: '{1: 25%, 2: 25%, 4: 20%, 7: 15%, 8: 15%}'
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    device: mps
+    cosine_lr_warmup_epochs: 15
+    early_stop_patience: 20
+    grad_clip_max_norm: 0.5
+    skip_nonfinite_step: true
+    loss_preset: B
+    autocast: false  # --no-amp dopo MPS deadlock del run #1
+    wall_time_s: 22601.7
+    epochs_run: 150
+    final_train_loss: 1.2991
+    grad_explosions_clipped: 3  # epoch 20, 40, 140 (grad_max 14M, 1.9M, 19.7M; clip 0.5 + skip-nonfinite assorbiti)
+    n_nonfinite_loss_skips: 0
+    n_nonfinite_grad_skips: 0
+  metrics:
+    val_F_mean_trainer_tuned: 0.189
+    val_F_max: 0.640
+    val_F_min: 0.008
+    val_F_range: [0.008, 0.640]
+    status_vs_gate: FAIL  # 0.189 < gate 0.55
+    status_vs_baseline_allfixes: "+91 % lift (0.099 \u2192 0.189, +0.090 abs)"
+    f_max_first_cross_kit_above_gate: true  # PRIMA VOLTA: 0.640 > 0.55
+  verdict:
+    pass_gate: false
+    status_vs_baseline: "STRONG PASS (+91 % lift vs +10-30 % atteso) \u2014 F0-T4e \
+      architettura ratificata empiricamente, anche se gate cross-kit 0.55 ancora\
+      non chiuso. F_max=0.640 supera per la PRIMA VOLTA il gate L3 su un sample\
+      val ShittyKit cross-kit \u2014 mai accaduto in tutto il mini-L3 della settimana."
+    notes: "Wall time 22601 s = 6.3 h su MPS fp32 (~15\u00d7 del baseline AMP ~25 min,\
+      prezzo del workaround --no-amp post deadlock MPS del run #1). Train loss\
+      ancora in calo a epoch 150 (1.30, vs 0.56 del baseline) \u2014 sintomo che\
+      l'aug channel_agnostic rende il task harder e c'\u00e8 margine con pi\u00f9 epoch.\
+      Gap F_min 0.008 \u2192 F_max 0.640: il problema residuo non \u00e8 capacit\u00e0/\
+      OOD ma VARIANZA per-sample. Prossima leva: listening_test + threshold\
+      tuning + eventuale extension a 300 epoch."
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-F0T4e-2026-05-27/report.html
+  listening_test: docs/gates/F0-T4c_MINI_L3/listening_test_mini-l3-F0T4e-2026-05-27/  # TBF
+  checkpoint: artifacts/mini_l3_tcn_F0T4e.pt
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 376  # 22601 s / 60 (notturno)

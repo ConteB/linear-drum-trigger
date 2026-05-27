@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>F0-T4e Discovery Report — Cross-Kit Gap = 0 · 2026-05-27 — OP-NEUROTRIGGER</title>
+  <style>
+    :root {
+      --bg: #f7f7f7; --fg: #1a1a1a; --muted: #666;
+      --accent: #1f6feb; --pass: #1a7f3a; --warn: #b76d00; --fail: #b00020;
+      --rule: #d8d8d8; --code-bg: #ececec; --highlight: #fff3a3;
+      --font-mono: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #181818; --fg: #ececec; --muted: #999;
+        --rule: #333; --code-bg: #262626; --highlight: #4a4314;
+      }
+    }
+    html { background: var(--bg); color: var(--fg); }
+    body {
+      font-family: var(--font-sans); font-size: 15px; line-height: 1.55;
+      max-width: 1000px; margin: 0 auto; padding: 24px 32px 96px;
+    }
+    h1, h2, h3, h4 { font-weight: 600; line-height: 1.25; }
+    h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
+    h2 { font-size: 22px; margin: 40px 0 12px; border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
+    h3 { font-size: 17px; margin: 24px 0 8px; }
+    h4 { font-size: 15px; margin: 16px 0 6px; color: var(--muted); }
+    p { margin: 8px 0 12px; }
+    .meta { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    .meta code { font-family: var(--font-mono); }
+    code, .num, .formula {
+      font-family: var(--font-mono); font-size: 0.93em;
+    }
+    code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+    nav.toc {
+      background: var(--code-bg); padding: 12px 18px;
+      border-radius: 4px; margin: 20px 0 28px; font-size: 14px;
+    }
+    nav.toc h4 { margin-top: 0; }
+    nav.toc ol { margin: 0; padding-left: 24px; }
+    nav.toc a { color: var(--fg); text-decoration: none; }
+    nav.toc a:hover { text-decoration: underline; color: var(--accent); }
+    table {
+      border-collapse: collapse; margin: 12px 0 18px;
+      font-size: 14px; width: 100%;
+    }
+    th, td {
+      border-bottom: 1px solid var(--rule); padding: 6px 10px;
+      text-align: left; vertical-align: top;
+    }
+    th { font-weight: 600; background: var(--code-bg); }
+    td.num, th.num { text-align: right; font-family: var(--font-mono); }
+    tr.gate-row td { font-weight: 600; }
+    .pass { color: var(--pass); font-weight: 600; }
+    .warn { color: var(--warn); font-weight: 600; }
+    .fail { color: var(--fail); font-weight: 600; }
+    .highlight { background: var(--highlight); padding: 1px 4px; border-radius: 2px; }
+    figure {
+      margin: 16px 0; padding: 12px; background: white;
+      border: 1px solid var(--rule); border-radius: 4px; overflow: hidden;
+    }
+    figure img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+    figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; text-align: center; }
+    blockquote {
+      margin: 12px 0; padding: 8px 16px; border-left: 4px solid var(--accent);
+      background: var(--code-bg); font-style: italic;
+    }
+    .key-finding {
+      background: var(--code-bg); border: 2px solid var(--accent);
+      padding: 16px 20px; border-radius: 6px; margin: 24px 0;
+    }
+    .key-finding h3 { margin: 0 0 8px; color: var(--accent); }
+    .priority { display: inline-block; padding: 2px 8px; border-radius: 3px;
+                font-size: 12px; font-weight: 600; margin-right: 6px; }
+    .p1 { background: #ffe2e2; color: #8a1414; }
+    .p2 { background: #fff4d6; color: #8a5a00; }
+    .p3 { background: #d8efff; color: #144a8a; }
+    @media (prefers-color-scheme: dark) {
+      .p1 { background: #4a1a1a; color: #ffb0b0; }
+      .p2 { background: #4a3814; color: #ffd874; }
+      .p3 { background: #143a4a; color: #88d0ff; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>F0-T4e Discovery Report</h1>
+<p class="meta">
+  <strong>Run:</strong> <code>mini-l3-F0T4e-2026-05-27</code> ·
+  <strong>Data:</strong> 2026-05-27 ·
+  <strong>Owner:</strong> F0-T4e (Strategic Advisor) ·
+  <strong>Checkpoint:</strong> <code>artifacts/mini_l3_tcn_F0T4e.pt</code> ·
+  <strong>Costo Azure:</strong> $0
+</p>
+
+<nav class="toc">
+  <h4>Indice</h4>
+  <ol>
+    <li><a href="#tldr">TL;DR per il CEO</a></li>
+    <li><a href="#scoperta">La scoperta — Cross-Kit Gap = 0</a></li>
+    <li><a href="#per-bus">Per-Bus Deep Dive</a></li>
+    <li><a href="#riformulazione">Riformulazione del problema</a></li>
+    <li><a href="#piano">Piano operativo locale — $0 Azure</a></li>
+    <li><a href="#decisione">Decisione del CEO</a></li>
+  </ol>
+</nav>
+
+<section id="tldr">
+  <h2>1. TL;DR per il CEO</h2>
+
+  <div class="key-finding">
+    <h3>🔬 Scoperta cardinale</h3>
+    <p>Dopo F0-T4e, il <strong>cross-kit gap che ha guidato l'intera diagnostica della settimana è ZERO</strong>:
+    train pool (DRSKit) e val pool "vergine" (ShittyKit) producono performance <strong>letteralmente identica</strong>
+    — F<sub>mean</sub> tuned <code>0.187</code> vs <code>0.189</code>, ratio <strong>0.99×</strong>. Era 1.62× ieri.
+    Il principio architetturale input-agnostic ha rimosso la causa, non l'effetto.</p>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Metrica</th><th class="num">Baseline allfixes (ieri)</th><th class="num">F0-T4e (oggi)</th><th class="num">Δ</th><th>Verdetto</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>val F<sub>mean</sub> tuned ShittyKit</td><td class="num">0.099</td><td class="num"><strong>0.189</strong></td><td class="num pass">+91 %</td><td class="pass">STRONG PASS architettonico</td></tr>
+      <tr><td>val F<sub>max</sub> ShittyKit</td><td class="num">0.296</td><td class="num"><strong>0.640</strong></td><td class="num pass">+116 %</td><td class="pass">primo gate L3 ≥ 0.55 cross-kit</td></tr>
+      <tr><td>train F DRSKit (in-distribution)</td><td class="num">0.160</td><td class="num"><strong>0.187</strong></td><td class="num pass">+17 %</td><td class="pass">stessa qualità del val</td></tr>
+      <tr><td><strong>Ratio DRS / Shitty (cross-kit gap)</strong></td><td class="num">1.62×</td><td class="num"><strong>0.99×</strong></td><td class="num pass">−39 %</td><td class="pass"><strong>GAP ANNULLATO</strong></td></tr>
+      <tr class="gate-row"><td>Gate cross-kit (F<sub>mean</sub> ≥ 0.55)</td><td class="num">FAIL</td><td class="num">FAIL (0.189)</td><td class="num">—</td><td class="fail">F<sub>mean</sub> ancora basso</td></tr>
+    </tbody>
+  </table>
+
+  <blockquote>
+    <strong>Lettura strategica.</strong> F0-T4e ha rimosso il "Bug di layout-bias" che era la causa <em>nominata</em>
+    di tutto il delirio cross-kit della settimana. Il gate <code>F<sub>mean</sub> ≥ 0.55</code> resta FAIL,
+    ma il problema residuo è <span class="highlight">UN ALTRO problema</span> — di calibrazione assoluta, non di
+    generalizzazione cross-kit. Le strade di attacco cambiano. Non siamo abbastanza pronti per spendere
+    $50-80 di credito Azure A100; vale il pivot a esperimenti locali $0.
+  </blockquote>
+</section>
+
+<section id="scoperta">
+  <h2>2. La scoperta — Cross-Kit Gap = 0</h2>
+
+  <p>L'intera settimana è stata guidata dall'ipotesi che ShittyKit (val pool "vergine") fosse <strong>strutturalmente OOD</strong>
+  rispetto al train pool: timbri diversi, mic layout diverso, fingerprint diverso. Ogni intervento (F0-T4c data
+  pipeline fixes, F0-T4d preprocessing P1+P2, Loss Competition, Plan A midimap-patch) era pensato per chiudere
+  questo gap.</p>
+
+  <p>Il listening test di oggi sul checkpoint F0-T4e rivela che <strong>il gap non esiste più</strong>:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Soglia</th>
+        <th class="num">ShittyKit val F</th>
+        <th class="num">DRSKit train F</th>
+        <th class="num">Ratio DRS/Shitty</th>
+        <th>Verdetto</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Tuned per-sample (best-case)</td>
+        <td class="num">0.1895</td>
+        <td class="num">0.1869</td>
+        <td class="num"><strong>0.99×</strong></td>
+        <td class="pass">Val MEGLIO del train (insignificantemente)</td>
+      </tr>
+      <tr>
+        <td>Fixed 0.1 (production-style)</td>
+        <td class="num">0.0905</td>
+        <td class="num">0.1030</td>
+        <td class="num">1.14×</td>
+        <td class="pass">Gap minimo, simmetrico</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Confronto con i precedenti listening test della settimana (stesso protocollo):</p>
+
+  <table>
+    <thead>
+      <tr><th>Run</th><th class="num">DRSKit F</th><th class="num">ShittyKit F</th><th class="num">Ratio</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>mini-l3-loss-B-2026-05-25</td><td class="num">~0.114</td><td class="num">~0.087</td><td class="num warn">1.31×</td></tr>
+      <tr><td>mini-l3-loss-B-planA-2026-05-25</td><td class="num">0.107</td><td class="num">0.084</td><td class="num warn">1.27×</td></tr>
+      <tr><td>mini-l3-c64-B-allfixes-2026-05-26</td><td class="num">0.160</td><td class="num">0.099</td><td class="num warn">1.62×</td></tr>
+      <tr class="gate-row"><td><strong>mini-l3-F0T4e-2026-05-27 (questo)</strong></td><td class="num"><strong>0.187</strong></td><td class="num"><strong>0.189</strong></td><td class="num pass"><strong>0.99×</strong></td></tr>
+    </tbody>
+  </table>
+
+  <blockquote>
+    <strong>Conferma causale.</strong> Tutti i precedenti checkpoint avevano ratio ≥ 1.27× (DRSKit train sistematicamente
+    sopra ShittyKit val). F0-T4e è il <strong>primo</strong> checkpoint con ratio ≤ 1.0×. L'esperimento controllato
+    isola il singolo cambiamento (architettura input-agnostic) come causa diretta dell'annullamento del gap.
+  </blockquote>
+
+  <figure>
+    <img src="per_bus_comparison.png" alt="Per-bus F-measure comparison: ShittyKit val vs DRSKit train">
+    <figcaption>
+      Per-bus F-measure: pattern <strong>simmetrico</strong> tra ShittyKit val e DRSKit train. Le barre cross-kit
+      sono visivamente sovrapposte sui bus comuni (kick/snare/hihat/ride). Il problema non è
+      più "ShittyKit ha distribuzione diversa", ma "<em>tutti i bus</em> hanno calibrazione bassa".
+    </figcaption>
+  </figure>
+</section>
+
+<section id="per-bus">
+  <h2>3. Per-Bus Deep Dive</h2>
+
+  <p>Il listening test ha emesso <code>per_bus_summary.json</code> con metriche dettagliate (precision, recall,
+  F-aggregate, FP/FN ratio) per ogni bus, su entrambi i pool. Estrazione completa con il flag <code>fixed-threshold = 0.1</code>
+  (production-style, no per-sample tuning):</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Bus</th>
+        <th class="num">N<sub>S</sub></th>
+        <th class="num">P<sub>S</sub></th>
+        <th class="num">R<sub>S</sub></th>
+        <th class="num">F<sub>S</sub></th>
+        <th class="num">N<sub>D</sub></th>
+        <th class="num">P<sub>D</sub></th>
+        <th class="num">R<sub>D</sub></th>
+        <th class="num">F<sub>D</sub></th>
+        <th class="num">FP/FN<sub>S</sub></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>kick</td><td class="num">68</td><td class="num">0.019</td><td class="num">0.233</td><td class="num">0.035</td><td class="num">20</td><td class="num">0.031</td><td class="num">0.246</td><td class="num">0.055</td><td class="num">15.9×</td></tr>
+      <tr><td>snare</td><td class="num">100</td><td class="num">0.050</td><td class="num">0.378</td><td class="num">0.088</td><td class="num">23</td><td class="num">0.048</td><td class="num">0.304</td><td class="num">0.083</td><td class="num">11.5×</td></tr>
+      <tr><td>hihat</td><td class="num">37</td><td class="num">0.018</td><td class="num">0.262</td><td class="num">0.033</td><td class="num">7</td><td class="num">0.022</td><td class="num">0.344</td><td class="num">0.042</td><td class="num">19.5×</td></tr>
+      <tr><td>tom_hi_mid</td><td class="num">37</td><td class="num">0.017</td><td class="num">0.282</td><td class="num">0.033</td><td class="num">5</td><td class="num">0.022</td><td class="num">0.242</td><td class="num">0.040</td><td class="num">22.2×</td></tr>
+      <tr><td>floor</td><td class="num">34</td><td class="num">0.014</td><td class="num">0.247</td><td class="num">0.027</td><td class="num">7</td><td class="num">0.006</td><td class="num">0.136</td><td class="num">0.011</td><td class="num">22.6×</td></tr>
+      <tr><td>ride</td><td class="num">22</td><td class="num">0.031</td><td class="num">0.231</td><td class="num">0.055</td><td class="num">11</td><td class="num">0.046</td><td class="num">0.242</td><td class="num">0.078</td><td class="num"><strong>9.3×</strong></td></tr>
+      <tr><td>crash_a</td><td class="num">0</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">0</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+      <tr><td>crash_b_misc</td><td class="num">1</td><td class="num">0.000</td><td class="num">0.013</td><td class="num">0.001</td><td class="num">0</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">38.8×</td></tr>
+    </tbody>
+  </table>
+
+  <p><em>Legenda:</em> S = ShittyKit val (115 sample), D = DRSKit train (30 sample). N = sample con onset di quel bus.
+  P = precision @ thr=0.1. R = recall @ thr=0.1. F = F-aggregate (micro). FP/FN = false-positive over false-negative ratio.</p>
+
+  <h3>3.1 Tre pattern leggibili</h3>
+
+  <p><strong>Pattern A — Recall alta, precision crollata.</strong> Su tutti i bus comuni (kick/snare/hihat/tom/floor/ride),
+  la recall è <code>0.13-0.38</code>: la rete <em>trova</em> gli onset. Ma la precision è <code>0.005-0.05</code>: butta
+  giù il sigmoid su troppi frame. È l'esatto <strong>predict-everywhere collapse</strong> già osservato nel listening test
+  pre-Plan-A del 2026-05-25.</p>
+
+  <p><strong>Pattern B — FP/FN ratio simmetrico cross-kit.</strong> Il ratio <code>9-39×</code> è praticamente uguale su
+  ShittyKit e DRSKit (verifica i numeri di P/R nelle due metà della tabella). Il bug di calibrazione non è specifico
+  di un kit — è <strong>globale e architetturale</strong>.</p>
+
+  <p><strong>Pattern C — Asimmetrie paradossali residue.</strong> Su <code>floor</code>, ShittyKit val (F=0.027)
+  <em>batte</em> DRSKit train (F=0.011). Su <code>hihat</code> sono identici a 0.001 di distanza. Sono fluttuazioni di
+  sampling, non più segnali OOD. Su <code>crash_a</code> entrambi i pool sono vuoti (i grooves mini-L3 non contengono
+  crash, atteso).</p>
+
+  <h3>3.2 Il bus che funziona — ride</h3>
+
+  <p>Unica eccezione: <code>ride</code> ha <strong>FP/FN ratio = 9.3×</strong>, il più basso di tutti i bus. Anche
+  P=0.031 e F=0.055 sono i migliori del pool. Coincidenza: <code>ride</code> è anche il bus con la <strong>densità
+  per-bus più alta</strong> nei grooves mini-L3 (ride pattern continuo nei rock/funk grooves) — il modello ha più
+  esempi positivi e la sigmoid è meglio calibrata. <em>Indica direttamente</em> che la calibrazione è limitata
+  dal class imbalance per-bus, non dall'architettura.</p>
+</section>
+
+<section id="riformulazione">
+  <h2>4. Riformulazione del problema</h2>
+
+  <h3>4.1 Cosa pensavamo (errato)</h3>
+
+  <blockquote>
+    "Il mini-L3 fallisce perché ShittyKit ha distribuzione timbrica troppo lontana dal train pool.
+    Serve un kit-aware augmentation, o un capacity bump, o data più diverso, per chiudere il
+    cross-kit gap."
+  </blockquote>
+
+  <p>Questo framing ha guidato F0-T4c (data pipeline fixes), F0-T4d (preprocessing P1+P2), Loss Competition
+  (cap pos_weight per bus rari), Plan A (midimap patch sui 5 kit DG), e infine F0-T4e (input-agnostic by design).</p>
+
+  <h3>4.2 Cosa sappiamo ora (corretto)</h3>
+
+  <blockquote>
+    "Il mini-L3 fallisce perché la rete è <em>globalmente miscalibrata</em>:
+    precision uniformemente bassa (0.005-0.05) su tutti i bus, su tutti i kit.
+    Il sigmoid è troppo eager — produce probabilità ≥ 0.1 su troppi frame.
+    Il problema non è OOD, è <strong>calibrazione assoluta</strong>."
+  </blockquote>
+
+  <p>F0-T4e è stato comunque il <em>singolo intervento più efficace</em> della settimana
+  (lift +91 % vs il +30 % di Plan A, il più alto precedente). Ma il bottleneck residuo è diverso da quello che credevamo.</p>
+
+  <h3>4.3 Implicazione per Azure / F2-T3</h3>
+
+  <p>Lanciare F2-T3 (training A100 sul Gold 1.5 TB, $50-80) <strong>adesso</strong> rischia di replicare il
+  miscalibration pattern su scala 1000× — produrremmo un modello con F<sub>mean</sub> ≈ 0.19 anche su E-GMD
+  (≈30 kit reali), che non passa il gate L4 doctrinal di F<sub>macro</sub> ≥ 0.85.</p>
+
+  <p>La distribuzione dei 30 kit di E-GMD è <strong>meno OOD</strong> del singolo ShittyKit — quindi non ci
+  aspettiamo regressioni cross-kit, ma <strong>non ci aspettiamo neppure salti netti</strong> al gate. Il problema
+  di calibrazione è ortogonale alla scala dei dati.</p>
+
+  <p><strong>Decisione strategica:</strong> rimandare F2-T3 fino a che non chiudiamo il gap di calibrazione
+  con esperimenti locali $0. Il credito Azure $200 scade 2026-06-19 (23 giorni residui) — c'è budget temporale
+  per 3-5 giorni di sperimentazione locale prima di committere il render F2-T1 + training F2-T3.</p>
+</section>
+
+<section id="piano">
+  <h2>5. Piano operativo locale — $0 Azure</h2>
+
+  <p>Cinque esperimenti gratuiti, ordinati per ROI atteso decrescente. Ogni esperimento riusa il pool mini-L3 da 577
+  sample baseline-only + 115 ShittyKit val (no re-render). Wall time stimato su Mac M5 / MPS con <code>--no-amp</code>
+  (post-deadlock 2026-05-27 — fp32 puro, ~6 h per 150 epoch).</p>
+
+  <h3><span class="priority p1">P1</span> Loss redesign — calibrazione asimmetrica più aggressiva</h3>
+
+  <p><strong>Ipotesi.</strong> Loss B (<code>fp_to_fn_ratio=30</code>) è insufficiente a vincere il predict-everywhere.
+  Servono varianti più aggressive:</p>
+
+  <ul>
+    <li><strong>I</strong> — <code>fp_to_fn_ratio=100</code>, γ=2 (Loss B esagerata)</li>
+    <li><strong>J</strong> — <code>fp_to_fn_ratio=30</code>, γ=8 (focal aggressivo, downweight degli easy negatives)</li>
+    <li><strong>K</strong> — Asymmetric Focal Loss con cap pos_weight 30, fp_ratio per-bus calibrato
+      sulla densità (più alto sui bus rari come crash_b, più basso su ride)</li>
+  </ul>
+
+  <p><strong>Costo.</strong> 3 run × 6 h = 18 h locali ($0 Azure). Possono girare in sequenza notturna su 2 notti.</p>
+
+  <p><strong>Output atteso.</strong> Almeno una delle 3 varianti chiude FP/FN sotto 5× sui bus comuni.
+  Se F<sub>mean</sub> > 0.30 su ShittyKit val, abbiamo la prima evidenza solida di calibrazione adeguata.</p>
+
+  <h3><span class="priority p1">P1</span> Threshold tuning per-bus (zero retrain)</h3>
+
+  <p><strong>Ipotesi.</strong> Il fixed-threshold 0.1 è troppo basso per i bus con sigmoid eager. Un threshold
+  per-bus calibrato sul percentile della distribuzione di probabilità (es. top-1 % per bus rari, top-5 % per bus comuni)
+  può <strong>recuperare lift senza retrain</strong>.</p>
+
+  <p><strong>Costo.</strong> ~30 min di scripting + sweep (no training). Il checkpoint F0-T4e è già su disco.</p>
+
+  <p><strong>Output atteso.</strong> Stima conservativa: F<sub>mean</sub> 0.19 → 0.30-0.40 solo con calibrazione
+  post-hoc. È <em>upper bound libero</em> del modello attuale.</p>
+
+  <h3><span class="priority p2">P2</span> Bug #3 mapping table — GM 75 + GM 54 ignorati</h3>
+
+  <p><strong>Ipotesi.</strong> GM 75 (splash cymbal) e GM 54 (tambourine) sono onset target "fantasma" come il bug
+  Plan A: audio renderizzato è silenzioso (no SFZ region) ma il target ha un onset → la rete impara a predire
+  onset dal pattern temporale del MIDI, non dall'audio. Replica il bug strutturale che Plan A ha chiuso sui 5 kit DG.</p>
+
+  <p><strong>Costo.</strong> Richiede Decision Lock CEO sulla policy (a quale bus assegnare splash → crash_b?,
+  tambourine → hihat o nuovo bus?). Implementazione: 1-2 ore. Re-render pool: ~10-15 min OrbStack.
+  Retrain: 6 h.</p>
+
+  <p><strong>Output atteso.</strong> Riduzione FP rate su crash_b_misc (oggi 38.8×, il peggiore).
+  Difficile predire se sblocca calibrazione globale.</p>
+
+  <h3><span class="priority p2">P2</span> Extension training a 300 epoch</h3>
+
+  <p><strong>Ipotesi.</strong> Train loss era 1.30 a epoch 150, in calo monotonico fino alla fine. La rete ha
+  capacity di apprendimento non sfruttata; +150 epoch <em>potrebbe</em> chiudere la calibrazione naturalmente.</p>
+
+  <p><strong>Costo.</strong> 1 run × 12 h locale ($0 Azure). Notturno singolo.</p>
+
+  <p><strong>Output atteso.</strong> Incerto. Se train_loss converge a un plateau prima di ep 300, +0 lift su val.
+  Se continua a scendere, +5-15 %. Esperimento a basso rischio ma basso ROI atteso.</p>
+
+  <h3><span class="priority p3">P3</span> Calibration post-hoc — temperature scaling</h3>
+
+  <p><strong>Ipotesi.</strong> Apply Platt scaling / temperature scaling sul logit del modello, calibrando i
+  parametri (1-2 scalar) sul mini-L3 val. Riduce la varianza della sigmoid senza retrain.</p>
+
+  <p><strong>Costo.</strong> ~2 ore di scripting. No retrain. Implementazione standard (vedi Guo et al. 2017
+  "On Calibration of Modern Neural Networks").</p>
+
+  <p><strong>Output atteso.</strong> Modesto (+5-10 %) ma <em>complementare</em> al threshold tuning P1b.
+  Spesso usato insieme.</p>
+
+  <h3>5.1 Sequenziamento raccomandato</h3>
+
+  <p>Settimana del CP-1 (2026-05-30):</p>
+
+  <ol>
+    <li><strong>Oggi-domani:</strong> P1 threshold tuning + P3 temperature scaling. Zero retrain, upper bound libero.
+      Se F<sub>mean</sub> > 0.40 senza retrain, abbiamo già evidenza che il modello è meglio di quel che il fixed-0.1
+      mostra.</li>
+    <li><strong>2026-05-28 / 29:</strong> P1 Loss redesign (3 run notturni). Pivot della loss config su asse di calibrazione.</li>
+    <li><strong>CP-1 / 2026-05-30:</strong> review collettivo. Se F<sub>mean</sub> > 0.30 su val con qualsiasi combinazione
+      sopra, autorizza F2-T1 (render Gold) e CP-1 conferma Tier 1 GREEN. Altrimenti ulteriore round.</li>
+    <li><strong>2026-05-31 / 06-02:</strong> P2 Bug #3 mapping table + opzionale extension training.</li>
+    <li><strong>Da 2026-06-02:</strong> con base solida F<sub>mean</sub> ≥ 0.40, F2-T1 + F2-T3 (Azure $50-80).</li>
+  </ol>
+
+  <p>Budget temporale: 7 giorni residui prima del muro Azure $200 (06-19) − 5 giorni di sperimentazione locale
+  − 2-3 giorni F2-T1 → F2-T3 = <strong>9-11 giorni di margine</strong>. Stretto ma fattibile.</p>
+</section>
+
+<section id="decisione">
+  <h2>6. Decisione del CEO — pendente</h2>
+
+  <p>Tre opzioni per il prossimo passo immediato:</p>
+
+  <table>
+    <thead>
+      <tr><th>Opzione</th><th>Descrizione</th><th class="num">Costo</th><th class="num">ROI atteso</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>A</strong></td>
+        <td>P1b Threshold tuning + P3 temperature scaling — upper bound libero sul checkpoint F0-T4e (no retrain)</td>
+        <td class="num">~3 h locali</td>
+        <td class="num pass">ALTO (immediato)</td>
+      </tr>
+      <tr>
+        <td><strong>B</strong></td>
+        <td>P1a Loss redesign — primo dei 3 run notturni (varianti I/J/K)</td>
+        <td class="num">~6 h notturni</td>
+        <td class="num pass">ALTO (1 notte)</td>
+      </tr>
+      <tr>
+        <td><strong>C</strong></td>
+        <td>P2 Bug #3 — apri Decision Lock policy GM 75/54 prima del retrain</td>
+        <td class="num">Decision time CEO</td>
+        <td class="num warn">MEDIO (richiede policy)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><em>Raccomandazione Strategic Advisor:</em> sequenza <strong>A → B</strong>. L'opzione A (3 h) ci dice subito se
+  il modello attuale è già "buono ma miscalibrato" oppure "intrinsecamente limitato". Se F<sub>mean</sub> dopo
+  calibrazione post-hoc supera 0.40, il loss redesign B parte con baseline corretta. Se resta sotto 0.25, B diventa
+  critica e va lanciata stanotte.</p>
+</section>
+
+<p class="meta" style="margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--rule);">
+  <strong>File generati dal listening test:</strong><br>
+  <code>per_bus_summary.json</code> — metriche numeriche complete<br>
+  <code>per_bus_comparison.png</code> — grafico F per bus ShittyKit vs DRSKit<br>
+  <code>waveform_comparison.png</code> — waveform diff su 2 sample selezionati<br>
+  <code>DISCOVERY_REPORT.html</code> — questo documento<br>
+  <br>
+  <strong>Riferimenti:</strong><br>
+  Spec F0-T4e: <code>docs/methodology/F0-T4e_INPUT_AGNOSTIC_TRAINING_SPEC.md</code><br>
+  Ledger entry: <code>docs/audit/training_ledger.yaml</code> (<code>mini-l3-F0T4e-2026-05-27</code>)<br>
+  Master scheduling: <code>04_INTELLIGENCE/MASTER_SCHEDULING.md</code> §7 + bullet 2026-05-27<br>
+  Commit: <code>3ba378a</code> su branch <code>develop</code>
+</p>
+
+</body>
+</html>

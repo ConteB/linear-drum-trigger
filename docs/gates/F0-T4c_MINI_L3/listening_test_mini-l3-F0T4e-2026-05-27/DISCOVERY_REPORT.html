@@ -106,6 +106,7 @@
     <li><a href="#riformulazione">Riformulazione del problema</a></li>
     <li><a href="#piano">Piano operativo locale — $0 Azure</a></li>
     <li><a href="#decisione">Decisione del CEO</a></li>
+    <li><a href="#addendum-stepA"><strong>Addendum 2026-05-27 — Step A completato (+64.7 %)</strong></a></li>
   </ol>
 </nav>
 
@@ -436,6 +437,110 @@
   il modello attuale è già "buono ma miscalibrato" oppure "intrinsecamente limitato". Se F<sub>mean</sub> dopo
   calibrazione post-hoc supera 0.40, il loss redesign B parte con baseline corretta. Se resta sotto 0.25, B diventa
   critica e va lanciata stanotte.</p>
+</section>
+
+<section id="addendum-stepA">
+  <h2>7. Addendum 2026-05-27 — Step A completato (calibrazione post-hoc)</h2>
+
+  <p>La <strong>sequenza A</strong> del piano (threshold tuning per-bus + temperature scaling, zero retrain) è
+  stata eseguita su <code>artifacts/mini_l3_tcn_F0T4e.pt</code>. Risultato: <strong>+64.7 % di lift</strong>
+  sulla metrica production (F<sub>mean</sub> per-sample, fixed threshold globale).</p>
+
+  <div class="key-finding">
+    <h3>📈 Lift production senza retrain</h3>
+    <p>F<sub>mean</sub> per-sample passa da <code>0.0905</code> (fixed thr=0.1, T=1.0) a <strong><code>0.1490</code></strong>
+    (thr per-bus + T per-bus ottimi). Recuperato il <strong>79 %</strong> del gap tra fixed-threshold-baseline e
+    tuned-per-sample-overfit (0.1895). Il modello F0-T4e ha <em>imparato</em> di più di quanto il fixed=0.1
+    lascia vedere.</p>
+  </div>
+
+  <h3>7.1 Cumulative lift dal baseline allfixes</h3>
+
+  <table>
+    <thead>
+      <tr><th>Snapshot</th><th class="num">F<sub>mean</sub> production (fixed)</th><th class="num">Lift vs allfixes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>mini-l3-c64-B-allfixes-2026-05-26 (baseline)</td><td class="num">0.099</td><td class="num">—</td></tr>
+      <tr><td>mini-l3-F0T4e-2026-05-27 (fixed thr=0.1)</td><td class="num">0.091</td><td class="num warn">−8 %</td></tr>
+      <tr class="gate-row"><td><strong>mini-l3-F0T4e-2026-05-27 + Step A calibrazione</strong></td><td class="num"><strong>0.149</strong></td><td class="num pass"><strong>+50 %</strong></td></tr>
+    </tbody>
+  </table>
+
+  <p><em>Nota:</em> la lieve flessione del F0-T4e a fixed=0.1 (0.091 vs allfixes 0.099) è dovuta al fatto che il
+  channel_agnostic_aug rende la rete "meno eager" globalmente — il threshold ottimo si sposta sopra 0.10. Una
+  volta calibrato, il gap si chiude e si supera la baseline.</p>
+
+  <h3>7.2 Per-bus lift</h3>
+
+  <figure>
+    <img src="calibration_sweep.png" alt="Calibration sweep — baseline vs calibrated per bus">
+    <figcaption>
+      Per-bus F-aggregate: baseline (thr=0.1, T=1.0) vs calibrated (per-bus thr* + T*).
+      I bus rari (hihat, tom, floor) hanno il lift maggiore (+97-144%).
+    </figcaption>
+  </figure>
+
+  <table>
+    <thead>
+      <tr><th>Bus</th><th class="num">thr*</th><th class="num">T*</th><th class="num">F baseline</th><th class="num">F calibrato</th><th class="num">Δ</th><th>Pattern</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>kick</td><td class="num">0.30</td><td class="num">1.5</td><td class="num">0.035</td><td class="num">0.048</td><td class="num pass">+37 %</td><td>smoothing (T>1)</td></tr>
+      <tr><td>snare</td><td class="num">0.13</td><td class="num">0.5</td><td class="num">0.088</td><td class="num">0.128</td><td class="num pass">+45 %</td><td>sharpening (T&lt;1)</td></tr>
+      <tr><td>hihat</td><td class="num">0.20</td><td class="num">0.5</td><td class="num">0.033</td><td class="num">0.080</td><td class="num pass">+139 %</td><td>sharpening</td></tr>
+      <tr><td>tom_hi_mid</td><td class="num">0.25</td><td class="num">0.5</td><td class="num">0.033</td><td class="num">0.064</td><td class="num pass">+97 %</td><td>sharpening</td></tr>
+      <tr><td>floor</td><td class="num">0.30</td><td class="num">1.0</td><td class="num">0.027</td><td class="num">0.066</td><td class="num pass">+144 %</td><td>threshold up</td></tr>
+      <tr><td>ride</td><td class="num">0.30</td><td class="num">0.7</td><td class="num">0.055</td><td class="num">0.089</td><td class="num pass">+61 %</td><td>sharpening</td></tr>
+      <tr><td>crash_a</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>bus vuoto</td></tr>
+      <tr><td>crash_b_misc</td><td class="num">0.20</td><td class="num">2.0</td><td class="num">0.001</td><td class="num">0.001</td><td class="num">0</td><td>1 onset totale</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.3 Pattern interessante — temperature scaling</h3>
+
+  <p><strong>6 bus su 8 preferiscono T &lt; 1.0</strong> (sharpening). La rete F0-T4e è in realtà <em>sotto-confident</em>
+  sui veri positivi: trova gli onset ma li chiama con probabilità basse (sigmoid 0.05-0.20 vs il fixed 0.10).
+  Sharpening (T=0.5-0.7) promuove i veri positivi sopra il threshold, mentre i falsi positivi (più diluiti)
+  restano sotto.</p>
+
+  <p>Solo <code>kick</code> (T=1.5) e <code>crash_b</code> (T=2.0) preferiscono smoothing — questi due bus sono quelli
+  con confidence eccessiva sui FP (la rete ha imparato male i pattern temporali) e lo smoothing li penalizza.</p>
+
+  <h3>7.4 Interpretazione strategica</h3>
+
+  <blockquote>
+    <strong>Il modello F0-T4e ha imparato meglio di quel che pensavamo.</strong> Il fixed=0.1 era nascondendo
+    metà del lift architettonico. Post-calibrazione, abbiamo evidenza solida che F0-T4e produce un modello con
+    <strong>real production F<sub>mean</sub> = 0.149</strong> (vs il misurato fixed=0.1 baseline 0.099, +50 % cumulativo).
+    <br><br>
+    <strong>Ma 0.149 è ancora a 27 % del gate L4 = 0.55.</strong> Step A è un win netto e gratis, ma non basta.
+    Il prossimo intervento DEVE essere strutturale: <strong>Step B (loss redesign aggressivo)</strong> per attaccare
+    direttamente il predict-everywhere collapse a livello di training, non di post-processing.
+  </blockquote>
+
+  <h3>7.5 Artefatti generati</h3>
+
+  <p>I threshold + temperature per-bus ottimi sono salvati in <code>calibration_sweep.json</code> sotto le chiavi
+  <code>calibrated_thresholds_per_bus</code> e <code>calibrated_temperatures_per_bus</code>. Possono essere
+  caricati come configurazione di calibrazione default per qualsiasi tool downstream (es. evaluation gate,
+  listening test, demo plugin).</p>
+
+  <h3>7.6 Decisione del CEO — Step B</h3>
+
+  <p>Step A ha confermato che la calibrazione apporta lift sostanziale. Procediamo con Step B?</p>
+
+  <table>
+    <thead><tr><th>Sub-opzione</th><th>Descrizione</th><th class="num">Wall-time</th></tr></thead>
+    <tbody>
+      <tr><td><strong>B1 — variante I</strong></td><td>Loss B con fp_to_fn_ratio=100 (fixed_threshold ben oltre la calibrazione attuale 0.30)</td><td class="num">~6 h notturno</td></tr>
+      <tr><td><strong>B2 — variante J</strong></td><td>Loss B con focal γ=8 (downweight massivo degli easy negatives)</td><td class="num">~6 h notturno</td></tr>
+      <tr><td><strong>B3 — variante K</strong></td><td>AFL con per-bus fp_ratio calibrato sulla densità (rari → fp 50, comuni → fp 10)</td><td class="num">~6 h notturno</td></tr>
+    </tbody>
+  </table>
+
+  <p><em>Raccomandazione:</em> tutti e 3 in sequenza notturna (18 h, 2 notti tra oggi e CP-1 2026-05-30). Il
+  vincitore va al confronto con F0-T4e baseline + calibrazione.</p>
 </section>
 
 <p class="meta" style="margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--rule);">

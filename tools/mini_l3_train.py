@@ -151,7 +151,8 @@ def main() -> int:
     # density-based + γ=2, fp_ratio=3). A/B/C/D sono i 4 candidati ratificati
     # dal CEO 2026-05-25.
     parser.add_argument("--loss-preset", default="ctrl",
-                        choices=("ctrl", "A", "B", "C", "D", "E", "F", "G", "H"),
+                        choices=("ctrl", "A", "B", "C", "D", "E", "F", "G", "H",
+                                 "ridnik"),
                         help="ctrl = status quo (AFL + per-bus + γ=2 + fp=3); "
                              "A = cap pos_weight 50 (fix minimal); "
                              "B = per-bus + fp_ratio=30 (compensa asimmetria); "
@@ -167,7 +168,12 @@ def main() -> int:
                              "rimanenti del LISTENING_TEST_FINDINGS 2026-05-25 "
                              "che B/E/G non avevano combinato — γ=4 + cap "
                              "moderato per evitare il vanishing-kick di C e "
-                             "il crash-zero-detect di E).")
+                             "il crash-zero-detect di E); "
+                             "ridnik = F0-T4f Step B — Ridnik AsymmetricLoss "
+                             "(γ_pos=1, γ_neg=4, prob_clip_neg=0.05) + "
+                             "label_smoothing=0.05 + per-bus pos_weight + "
+                             "fp_to_fn_ratio=30. Attacca la sotto-confidence "
+                             "sui TP rivelata dallo Step A calibration_sweep.")
     parser.add_argument("--loss-warmup-epochs", type=int, default=30,
                         help="For preset F: number of epochs to train with "
                              "AFL (CTRL config) before switching to Tversky.")
@@ -315,6 +321,22 @@ def main() -> int:
             for i, w in enumerate(pos_weight_tuple)
         )
         loss_cfg = LossConfig(pos_weight=capped, fp_to_fn_ratio=30.0)
+    elif args.loss_preset == "ridnik":
+        # F0-T4f Step B (Decision Lock CEO 2026-05-27) — Ridnik AsymmetricLoss
+        # + label smoothing. Attacks the under-confidence on TPs revealed by
+        # Step A (calibration_sweep_F0T4e.json: 6/8 buses preferred T < 1.0).
+        # Defaults are the Ridnik 2020 canonical (γ_pos=1, γ_neg=4, clip=0.05).
+        # Preserves per-bus pos_weight (F0-T4c B6b) and fp_to_fn_ratio=30
+        # (Loss Competition B 2026-05-25).
+        loss_cfg = LossConfig(
+            kind="ridnik",
+            pos_weight=pos_weight_tuple,
+            fp_to_fn_ratio=30.0,
+            gamma_pos=1.0,
+            gamma_neg=4.0,
+            prob_clip_negative=0.05,
+            label_smoothing=0.05,
+        )
     elif args.loss_preset == "H":
         # H — applica le 2 mitigation residue del LISTENING_TEST_FINDINGS
         # 2026-05-25 che B/E/G non avevano combinato:
@@ -349,6 +371,13 @@ def main() -> int:
     if loss_cfg.kind == "afl":
         print(f"[mini-L3]   pos_weight = {loss_cfg.pos_weight}  "
               f"γ = {loss_cfg.focal_gamma}  fp_ratio = {loss_cfg.fp_to_fn_ratio}",
+              flush=True)
+    elif loss_cfg.kind == "ridnik":
+        print(f"[mini-L3]   pos_weight = {loss_cfg.pos_weight}  "
+              f"γ_pos = {loss_cfg.gamma_pos}  γ_neg = {loss_cfg.gamma_neg}  "
+              f"prob_clip_neg = {loss_cfg.prob_clip_negative}  "
+              f"fp_ratio = {loss_cfg.fp_to_fn_ratio}  "
+              f"label_smoothing = {loss_cfg.label_smoothing}",
               flush=True)
     else:
         print(f"[mini-L3]   tversky α = {loss_cfg.tversky_alpha}  "
@@ -787,6 +816,10 @@ def main() -> int:
         "loss_fp_to_fn_ratio": loss_cfg.fp_to_fn_ratio,
         "loss_tversky_alpha": loss_cfg.tversky_alpha,
         "loss_tversky_beta": loss_cfg.tversky_beta,
+        "loss_gamma_pos": loss_cfg.gamma_pos,
+        "loss_gamma_neg": loss_cfg.gamma_neg,
+        "loss_prob_clip_negative": loss_cfg.prob_clip_negative,
+        "loss_label_smoothing": loss_cfg.label_smoothing,
     }
 
     import datetime as _dt

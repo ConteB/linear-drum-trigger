@@ -8,6 +8,19 @@
 | hihat_opening | L1 dense                          | every frame                            |
 
 Spec: ``docs/methodology/F0-T4a_TCN_TOPOLOGY_SPEC.md`` §6 (+ §6.1 F0-T4c amendment).
+
+**F0-T4f extension (2026-05-27)** — three orthogonal additions, gated by
+``LossConfig.kind`` and ``LossConfig.label_smoothing``:
+
+- ``kind="ridnik"`` — Ridnik AsymmetricLoss (Alibaba MS-COCO 2020) with
+  separated focusing γ+/γ- and probability shifting on the negative branch.
+  Designed to attack the under-confidence on TPs revealed by Step A's
+  calibration sweep (6/8 buses preferred T < 1.0).
+- ``label_smoothing`` — soft target ``t * (1 - ε) + ε/2``; works with every
+  ``kind``. Default 0.0 (backcompat). F0-T4f recommended value: 0.05.
+- ``kind="tversky"`` — unchanged from 2026-05-25 Loss Competition.
+
+Spec: ``docs/methodology/F0-T4f_STEP_B_LOSS_REDESIGN_SPEC.md`` §6.1.
 """
 from __future__ import annotations
 
@@ -79,10 +92,26 @@ class LossConfig:
     # ``kind = "tversky"`` = soft Tversky loss `1 - TP/(TP + αFP + βFN)` su
     # probabilità continue, paradigma alternativo che penalizza FP letteralmente
     # invece che via BCE pesata.
+    # ``kind = "ridnik"`` (F0-T4f, Decision Lock CEO 2026-05-27) = Ridnik
+    # AsymmetricLoss (Alibaba MS-COCO 2020) — γ+ e γ- separati + probability
+    # shifting sul ramo negative. Defaults dei parametri Ridnik sotto.
     kind: str = "afl"
     tversky_alpha: float = 0.7  # FP penalty (Tversky)
     tversky_beta: float = 0.3   # FN penalty (Tversky)
     tversky_smooth: float = 1.0  # numerical stability + cold-start anchor
+    # F0-T4f Ridnik parameters — attivi solo quando ``kind="ridnik"``. I default
+    # sono quelli canonici di Ridnik 2020 sul benchmark MS-COCO multi-label;
+    # `gamma_pos < gamma_neg` è la firma asimmetrica che spinge la confidence
+    # sui veri positivi (Step A calibration_sweep ha rilevato sotto-confidence).
+    gamma_pos: float = 1.0
+    gamma_neg: float = 4.0
+    prob_clip_negative: float = 0.05  # probability shifting sul ramo negative
+    # Label smoothing — F0-T4f Decision Lock CEO 2026-05-27. Applicato a target
+    # binari (Gaussian-smeared già "soft", ma il picco è 1.0): t * (1-ε) + ε/2.
+    # Attivo per ogni `kind` (afl/ridnik); default 0.0 = backcompat hard targets.
+    # Per il preset "ridnik" il default operativo è 0.05; impostato a livello
+    # di preset, non di config (mantiene backcompat dei test esistenti AFL).
+    label_smoothing: float = 0.0
     # 2026-05-25 — sessione post-piano-roll-diagnostic. CEO directive: la
     # diagnostica edge_crop ha rivelato che 77 % dei FP totali sul val
     # ShittyKit cade nei primi 1024 frame (zona dove la convoluzione causale
@@ -95,9 +124,9 @@ class LossConfig:
     edge_skip_frames: int = 0
 
     def __post_init__(self) -> None:
-        if self.kind not in {"afl", "tversky"}:
+        if self.kind not in {"afl", "tversky", "ridnik"}:
             raise ValueError(
-                f"kind must be 'afl' or 'tversky', got {self.kind!r}"
+                f"kind must be 'afl', 'tversky' or 'ridnik', got {self.kind!r}"
             )
         if self.edge_skip_frames < 0:
             raise ValueError(
@@ -112,6 +141,24 @@ class LossConfig:
                 raise ValueError(
                     f"tversky_beta must be > 0, got {self.tversky_beta}"
                 )
+        if self.kind == "ridnik":
+            if not 0.0 <= self.gamma_pos:
+                raise ValueError(
+                    f"gamma_pos must be >= 0, got {self.gamma_pos}"
+                )
+            if not 0.0 <= self.gamma_neg:
+                raise ValueError(
+                    f"gamma_neg must be >= 0, got {self.gamma_neg}"
+                )
+            if not 0.0 <= self.prob_clip_negative < 1.0:
+                raise ValueError(
+                    f"prob_clip_negative must be in [0, 1), got "
+                    f"{self.prob_clip_negative}"
+                )
+        if not 0.0 <= self.label_smoothing < 1.0:
+            raise ValueError(
+                f"label_smoothing must be in [0, 1), got {self.label_smoothing}"
+            )
         # Fail-loud on per-bus ``pos_weight`` tuple of wrong length or
         # out-of-range values (F0-T4c B6b).
         if isinstance(self.pos_weight, tuple):
@@ -188,22 +235,45 @@ class TCNLoss(nn.Module):
             hihat_p = hihat_p[:, n_skip:]
             hihat_t = hihat_t[:, n_skip:]
 
+        # F0-T4f — apply label smoothing once, BEFORE dispatch (so every kind
+        # sees the soft target consistently). For Gaussian-smeared targets in
+        # [0, 1] the smoothing pulls the peak down from 1.0 to 1 - ε/2 and the
+        # floor up from 0.0 to ε/2: t' = t * (1 - ε) + ε/2. The L1 onset mask
+        # (used for velocity/microtiming) still uses the RAW target (pre-
+        # smoothing) so the mask geometry is unchanged.
+        if self.config.label_smoothing > 0.0:
+            eps_ls = self.config.label_smoothing
+            onset_t_loss = onset_t * (1.0 - eps_ls) + 0.5 * eps_ls
+        else:
+            onset_t_loss = onset_t
+
         if self.config.kind == "tversky":
             loss_onset = _tversky_loss(
-                onset_p, onset_t,
+                onset_p, onset_t_loss,
                 alpha=self.config.tversky_alpha,
                 beta=self.config.tversky_beta,
                 smooth=self.config.tversky_smooth,
             )
+        elif self.config.kind == "ridnik":
+            loss_onset = _ridnik_asymmetric_loss(
+                onset_p, onset_t_loss,
+                gamma_pos=self.config.gamma_pos,
+                gamma_neg=self.config.gamma_neg,
+                prob_clip_negative=self.config.prob_clip_negative,
+                fp_to_fn_ratio=self.config.fp_to_fn_ratio,
+                pos_weight=self._pos_weight,  # type: ignore[arg-type]
+            )
         else:
             loss_onset = _asymmetric_focal_bce(
-                onset_p, onset_t,
+                onset_p, onset_t_loss,
                 gamma=self.config.focal_gamma,
                 fp_to_fn_ratio=self.config.fp_to_fn_ratio,
                 pos_weight=self._pos_weight,
             )
 
         # Velocity / microtiming: L1, masked by the ground-truth onset.
+        # Use the RAW target for mask geometry (label smoothing only affects
+        # the BCE term, not the L1-supervision mask).
         mask = (onset_t > self.config.onset_mask_threshold).to(pred.dtype)
         loss_velocity = _masked_l1(velocity_p, velocity_t, mask)
         loss_microtiming = _masked_l1(microtiming_p, microtiming_t, mask)
@@ -292,6 +362,71 @@ def _tversky_loss(
     return (1.0 - tversky).mean()
 
 
+def _ridnik_asymmetric_loss(
+    p: torch.Tensor,
+    t: torch.Tensor,
+    *,
+    gamma_pos: float,
+    gamma_neg: float,
+    prob_clip_negative: float,
+    fp_to_fn_ratio: float,
+    pos_weight: torch.Tensor,
+) -> torch.Tensor:
+    """Ridnik AsymmetricLoss (Alibaba MS-COCO 2020, F0-T4f).
+
+    Reformulation of the AFL with two distinct focusing exponents (γ+, γ-)
+    and *probability shifting* on the negative branch. The signature target
+    of Step B is the **under-confidence on TPs** revealed by Step A's
+    calibration sweep: 6/8 buses preferred T < 1.0, the sigmoid 0.05–0.20
+    on true positives is structural, not anecdotal.
+
+    - **γ_pos < γ_neg** (default 1.0 vs 4.0) — the focusing on the positive
+      branch is gentler. AFL with γ=2 punishes "easy" TPs (those already
+      at sigmoid > 0.5) almost as much as it does easy negatives; Ridnik
+      lets the gradient on the positive branch carry weight even for the
+      already-correct TPs, pushing them further toward 1.0.
+    - **prob_clip_negative** (default 0.05) — shifts ``xs_neg = (1 - p) +
+      clip``, then clamps to 1.0. Negatives with ``p < clip`` end up with
+      ``log(xs_neg) ≈ 0`` ⇒ zero contribution. Filters the noise from the
+      sea of trivially-correct TNs (~99 % of frames are negatives in our
+      sparse multi-label setup).
+    - **pos_weight** + **fp_to_fn_ratio** preserved from the AFL path
+      (F0-T4c B6b + Loss Competition B). Density-derived per-bus weighting
+      keeps the rare cymbal buses (crash_a 0.7 %) from being drowned by
+      the common buses (snare 8 %).
+
+    Inputs:
+        p : [B, T, N_BUSES] in [0, 1] (model sigmoid output).
+        t : [B, T, N_BUSES] Gaussian-smeared target in [0, 1]; may be
+            label-smoothed upstream.
+        pos_weight : [N_BUSES] or [1] tensor, per-bus FN penalty (broadcast).
+
+    Returns scalar loss (mean over B*T*N_BUSES).
+    """
+    eps = 1e-7
+    xs_pos = p.clamp(eps, 1.0 - eps)
+    xs_neg = (1.0 - xs_pos + prob_clip_negative).clamp(max=1.0)
+    log_pos = torch.log(xs_pos)
+    log_neg = torch.log(xs_neg.clamp(min=eps))
+
+    # Per-branch base loss — negative log-likelihood form.
+    loss_pos = pos_weight * t * log_pos                          # [B, T, N_BUSES]
+    loss_neg = fp_to_fn_ratio * (1.0 - t) * log_neg              # [B, T, N_BUSES]
+
+    # Asymmetric focusing. Build ``one_sided_gamma`` per-element: on a
+    # frame with target ≈ 1 the exponent is gamma_pos; on a frame with
+    # target ≈ 0 it is gamma_neg. Continuous targets blend the two.
+    pt0 = xs_pos * t                       # how confidently we hit positives
+    pt1 = xs_neg * (1.0 - t)               # how confidently we hit negatives
+    pt = pt0 + pt1                         # focusing strength per-element
+    one_sided_gamma = gamma_pos * t + gamma_neg * (1.0 - t)
+    one_sided_w = (1.0 - pt).clamp(min=eps) ** one_sided_gamma
+
+    # Negate (NLL) and apply focusing weight, then mean.
+    loss = -(loss_pos + loss_neg) * one_sided_w
+    return loss.mean()
+
+
 def _masked_l1(p: torch.Tensor, t: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """L1(p, t) reduced over the elements where ``mask > 0``.
 
@@ -302,4 +437,10 @@ def _masked_l1(p: torch.Tensor, t: torch.Tensor, mask: torch.Tensor) -> torch.Te
     return diff.sum() / denom
 
 
-__all__ = ["LossConfig", "N_BUSES", "POS_WEIGHT_CAP", "TCNLoss"]
+__all__ = [
+    "LossConfig",
+    "N_BUSES",
+    "POS_WEIGHT_CAP",
+    "TCNLoss",
+    "_ridnik_asymmetric_loss",
+]

@@ -14,7 +14,7 @@ related: [LIN-DT-DOCSTD-001]
 > **File generato** da `tools/gen_docs_index.py` (Doc Standard LIN-DT-DOCSTD-001 §5).
 > Non editare a mano — rigenerare. Rilancia lo script dopo ogni modifica al frontmatter.
 
-Documenti indicizzati: **50** · senza frontmatter: **21**.
+Documenti indicizzati: **51** · senza frontmatter: **21**.
 
 ## Documenti
 
@@ -34,6 +34,7 @@ Documenti indicizzati: **50** · senza frontmatter: **21**.
 | `LIN-DT-DPL-001` | Registro Provenienza Dati & Compliance | registro | ACTIVE | cross-cutting | `docs/compliance/DATA_PROVENANCE_LOG.md` |
 | `LIN-DT-ENGSTD-001` | Engineering Standards — OP-NEUROTRIGGER | standard | ACTIVE | cross-cutting | `04_INTELLIGENCE/ENGINEERING_STANDARDS.md` |
 | `LIN-DT-F0T4E` | "F0-T4e — Input-Agnostic Training (STRP-001)" |  | LOCKED_v1.0.0 | — | `docs/methodology/F0-T4e_INPUT_AGNOSTIC_TRAINING_SPEC.md` |
+| `LIN-DT-F0T4F` | "F0-T4f — Step B · Loss Redesign (Ridnik AsymmetricLoss + Label Smoothing)" |  | LOCKED_v1.0.0 | — | `docs/methodology/F0-T4f_STEP_B_LOSS_REDESIGN_SPEC.md` |
 | `LIN-DT-GOV-001` | Protocollo LINEAR-SHIELD — Governance Sub-Agenti | governance | ACTIVE | cross-cutting | `04_INTELLIGENCE/SUB_AGENT_GOVERNANCE.md` |
 | `LIN-DT-HANDOVER-001` | Session Handover — rev. post F0-T9b / F0-T2b (parser + provisioning) | registro | ACTIVE | F0 | `04_INTELLIGENCE/SESSION_HANDOVER_REVISION.md` |
 | `LIN-DT-HOLDOUT-F0T1c` | F0-T1c — Survey Holdout + Ridisegno Validation Protocol | registro | LOCKED | F0 | `docs/compliance/F0-T1c_HOLDOUT_SURVEY.md` |
@@ -230,6 +231,7 @@ Documenti indicizzati: **50** · senza frontmatter: **21**.
 | `LIN-DT-DPL-001` | `LIN-DT-LICVER-F0T1`, `LIN-DT-ROSTER-F0T1b`, `LIN-DT-HOLDOUT-F0T1c` | `LIN-DT-HOLDOUT-F0T1c`, `LIN-DT-LICVER-F0T1`, `LIN-DT-ROSTER-F0T1b` |
 | `LIN-DT-ENGSTD-001` | `LIN-DT-DOSSIER-001`, `LIN-DT-CHKLST-001`, `LIN-DT-TESTDOC-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a` | `LIN-DT-DCBP-001`, `LIN-DT-RPTBP-001`, `LIN-DT-SPEC-F0T17`, `LIN-DT-SPEC-F0T8` |
 | `LIN-DT-F0T4E` | — | — |
+| `LIN-DT-F0T4F` | — | — |
 | `LIN-DT-GOV-001` | `LIN-DT-TESTDOC-001`, `LIN-DT-CHKLST-001` | `LIN-DT-PII-001`, `LIN-DT-TESTDOC-001` |
 | `LIN-DT-HANDOVER-001` | `LIN-DT-MSCHED-001`, `LIN-DT-REGAV-001` | — |
 | `LIN-DT-HOLDOUT-F0T1c` | `LIN-DT-DPL-001`, `LIN-DT-DOSSIER-001`, `LIN-DT-CHKLST-001` | `LIN-DT-DPL-001` |

@@ -311,6 +311,36 @@ B6a si attiva automaticamente nel `DataLoader`. Tool: `tools/scan_density.py`
 calcola la tupla dal training set (cap `1000`, safe by construction su bus
 con density = 0).
 
+### 6.2 LossConfig — amendment 2026-05-25 / 27 (Loss Competition · F0-T4f Step B)
+
+> **Amendment 1 — Loss Competition B (Decision Lock CEO 2026-05-25).**
+> `fp_to_fn_ratio` default cambiato da **3** a **30** dopo la Loss
+> Competition (`docs/gates/LOSS_COMPETITION_2026-05-25.md`). Spec
+> superseded: la riga `fp_to_fn_ratio 3.0` di §6.1 vale solo come
+> backcompat per la regression test F0-T4c.
+>
+> **Amendment 2 — F0-T4f Step B Ridnik (Decision Lock CEO 2026-05-27).** Nuovo
+> path `kind="ridnik"` (Ridnik AsymmetricLoss, Alibaba MS-COCO 2020) — γ+ e
+> γ- separati + *probability shifting* sul ramo negative. Aggiunto un knob
+> globale `label_smoothing` valido per ogni `kind` (default `0.0` = backcompat).
+> Spec dettagliata in [`F0-T4f`](F0-T4f_STEP_B_LOSS_REDESIGN_SPEC.md).
+
+| Parametro | Default | Note |
+| :-- | --: | :-- |
+| `kind` | `"afl"` *(invariato)* | Aggiunto `"ridnik"`. Backcompat: AFL = path originale. |
+| `fp_to_fn_ratio` | **`30.0`** *(superseded 3 → 30)* | Loss Competition B 2026-05-25. |
+| `gamma_pos` | `1.0` *(F0-T4f, `kind="ridnik"` only)* | Focusing morbido sui TP (asimmetria Ridnik). |
+| `gamma_neg` | `4.0` *(F0-T4f, `kind="ridnik"` only)* | Focusing duro sui FP facili. |
+| `prob_clip_negative` | `0.05` *(F0-T4f, `kind="ridnik"` only)* | Probability shifting sul ramo negative. |
+| `label_smoothing` | `0.0` *(F0-T4f, ogni `kind`)* | Soft target `t * (1-ε) + ε/2`. Preset `ridnik` usa `0.05`. |
+
+Il path `kind="ridnik"` attacca l'**under-confidence sui TP** rivelata
+dallo Step A (`docs/gates/F0-T4c_MINI_L3/listening_test_mini-l3-F0T4e-2026-05-27/calibration_sweep.json`):
+6 bus su 8 preferiscono temperature `T < 1.0` (sharpening) — la rete F0-T4e
+produce sigmoid 0.05–0.20 sui veri positivi, non saturati. Spingere
+`fp_to_fn_ratio` oltre 30 aggrava il problema; la cura è asimmetrizzare il
+focusing sul ramo positive (γ+ < γ-).
+
 <a id="l3-threshold"></a>
 ## 7. Soglia numerica Gate L3 — "metriche di onset significativamente non casuali"
 

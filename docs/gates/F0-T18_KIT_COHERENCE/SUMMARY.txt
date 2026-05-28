@@ -1,0 +1,65 @@
+F0-T18 KIT COHERENCE PROBE — SUMMARY
+====================================
+Date:   2026-05-28
+Tool:   tools/audit_kit_coherence.py
+Method: synthesize a probe MIDI (one hit per canonical roland_td11 articulation),
+        run the FULL pipeline (canonicalize -> render -> target) per kit, and
+        verify per articulation that the rendered audio carries energy where the
+        target marks an onset.
+        OK = audio + target present | PHANTOM = target onset, audio silent.
+        ENERGY_SILENCE threshold = 1e-4 peak in a 0.25 s window.
+
+Two probe-tool bugs found and fixed this session (the audit had never produced a
+valid verdict before — all 6 kits crashed identically):
+  #1  split="probe" passed as a raw string instead of a Split enum
+      -> dna_trace.py `recipe.split.value` raised 'str' has no attribute 'value'.
+      Fix: split=Split.TRAIN (split is irrelevant to a coherence probe).
+  #2  probe MIDI spaced onsets 0.75 s apart (note_on delta + note_off delta) while
+      the analysis layout assumed 0.5 s -> windows drifted, all hits past the first
+      read AUDIO_NO_TARGET. Fix: split dt_ticks across note duration + gap so
+      onsets land exactly PROBE_DT_S apart.
+
+RESULTS
+-------
+KIT            engine     OK  PHANTOM  n_mic
+DRSKit         drumgizmo  22       1     8
+MuldjordKit    drumgizmo  23       0     8
+CrocellKit     drumgizmo  21       2     8
+Aasimonster    drumgizmo  22       1     8
+ShittyKit      drumgizmo  23       0     8
+BigRustyDrums  sfizz      23       0     2
+                                ----
+                          OVERALL 4 phantom across 5 DG kits (Sfizz clean).
+
+PHANTOM articulations (target onset present, rendered audio silent):
+  DRSKit       GM 42  hihat_closed  bus3  peak=0.0000
+  CrocellKit   GM 26  hihat_open    bus3  peak=0.0000
+  CrocellKit   GM 42  hihat_closed  bus3  peak=0.0001
+  Aasimonster  GM 26  hihat_open    bus3  peak=0.0000
+
+DIAGNOSIS — NOT a missing-sample bug
+------------------------------------
+Canonicalization (verified empirically) collapses both GM 22 and GM 42 to render
+note 42 (hihat_closed), and both GM 26 and GM 46 to render note 46 (hihat_open).
+Yet on DRSKit, render-42 sounds at peak 0.327 in one slot and is dead silent in
+another 3.5 s later — the SAME render note, same render, different outcome. The
+sample plainly exists. The phantoms are therefore a time/sequence-dependent
+DrumGizmo hi-hat behaviour (choke group / voice-stealing across closed/open/pedal),
+NOT a kit lacking the articulation. All 4 phantoms are hi-hat; every other bus on
+every kit is OK. Sfizz (no choke modelling) is fully clean.
+
+Secondary observation: many hi-hat_open / hi-hat_pedal hits clear the 1e-4 gate but
+are near-silent (peak 0.002-0.005) on the DG kits — the threshold is lenient for
+the hi-hat family specifically.
+
+OPEN ITEM (needs CEO direction — render-affecting, Decision-Lock territory)
+---------------------------------------------------------------------------
+The probe fires redundant hi-hat articulations (22 and 42; 26 and 46) close
+together, which may itself trigger the choke and inflate the phantom count vs. a
+real groove. Before F2-T1 (1.5 TB render): decide whether to (a) confirm the choke
+hypothesis by spacing hi-hat probe hits >> hihat decay / firing them in isolation,
+(b) audit real GMD hi-hat note usage to size the true phantom exposure at scale,
+and/or (c) tighten ENERGY_SILENCE and re-run. No kit midimap change is implied by
+this finding (unlike the Plan-A 2026-05-25 class). The F0-T18 canonical layer is
+working: GM 22/26 now render (peak 0.07-0.40), the silent-drop the layer targeted
+is closed.

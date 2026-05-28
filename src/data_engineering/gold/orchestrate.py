@@ -27,6 +27,7 @@ import mido  # type: ignore[import-untyped]
 import numpy as np
 import soundfile as sf  # type: ignore[import-untyped]
 
+from data_engineering.gold import kit_dialect
 from data_engineering.gold.dna_trace import (
     Barcode,
     build_dna_json,
@@ -295,27 +296,48 @@ def _resolve_drumgizmo_midimap(kit_path: Path) -> Path:
 
 
 def _render(recipe: Recipe, midi_path: Path, kit_path: Path, wav_path: Path) -> None:
-    """Drive the recipe's render engine into ``wav_path`` (fail-loud)."""
-    if recipe.render.engine is Engine.SFIZZ:
-        SfizzRenderer().render(sfz_path=kit_path, midi_path=midi_path, wav_path=wav_path)
-        return
+    """Drive the recipe's render engine into ``wav_path`` (fail-loud).
 
-    midimap = _resolve_drumgizmo_midimap(kit_path)
-    try:
-        midi_len = mido.MidiFile(str(midi_path)).length
-    except (OSError, ValueError, EOFError, KeyError, IndexError) as exc:
-        raise OrchestrationError(f"cannot read MIDI length of {midi_path}: {exc}") from exc
-    DrumGizmoRenderer().render(
-        kit_path=kit_path,
-        midimap_path=midimap,
-        midi_path=midi_path,
-        wav_path=wav_path,
-        duration_s=midi_len + _DRUMGIZMO_RENDER_TAIL_S,
-        # F0-T4c CEO 2026-05-24: per-kit dispatch from docs/specs/kit_mic_mapping.yaml.
-        # Was DRSKIT_MULTITRACK8 hardcoded (worked only for DRSKit; broke on
-        # MuldjordKit / ShittyKit etc. in the mini-L3 cross-kit run).
-        channel_map=channel_map_for_kit(recipe.render.kit),
-    )
+    F0-T19 Canonical I/O Mapping (Arrow ②): when ``recipe.render.kit`` has a dialect
+    entry in ``docs/specs/kit_dialect_map.yaml``, translate the canonical MIDI into
+    that kit's dialect — DrumGizmo via a *generated* per-kit midimap (canonical note
+    → kit instrument), Sfizz via a *remapped* MIDI (canonical note → .sfz key) —
+    instead of assuming GM + the vendor's (Plan-A-patched) midimap. Kits absent from
+    the map fall back to the legacy path (backcompat for synthetic/test recipes).
+    """
+    kit = recipe.render.kit
+    in_dialect = kit_dialect.has_kit(kit)
+    with tempfile.TemporaryDirectory(prefix="dialect_") as tmp:
+        tmpd = Path(tmp)
+        if recipe.render.engine is Engine.SFIZZ:
+            sfz_midi = (
+                kit_dialect.remap_sfizz_midi(kit, midi_path, tmpd / "dialect.mid")
+                if in_dialect
+                else midi_path
+            )
+            SfizzRenderer().render(sfz_path=kit_path, midi_path=sfz_midi, wav_path=wav_path)
+            return
+
+        midimap = (
+            kit_dialect.generate_drumgizmo_midimap(kit, tmpd / "dialect_midimap.xml")
+            if in_dialect
+            else _resolve_drumgizmo_midimap(kit_path)
+        )
+        try:
+            midi_len = mido.MidiFile(str(midi_path)).length
+        except (OSError, ValueError, EOFError, KeyError, IndexError) as exc:
+            raise OrchestrationError(f"cannot read MIDI length of {midi_path}: {exc}") from exc
+        DrumGizmoRenderer().render(
+            kit_path=kit_path,
+            midimap_path=midimap,
+            midi_path=midi_path,
+            wav_path=wav_path,
+            duration_s=midi_len + _DRUMGIZMO_RENDER_TAIL_S,
+            # F0-T4c CEO 2026-05-24: per-kit dispatch from docs/specs/kit_mic_mapping.yaml.
+            # Was DRSKIT_MULTITRACK8 hardcoded (worked only for DRSKit; broke on
+            # MuldjordKit / ShittyKit etc. in the mini-L3 cross-kit run).
+            channel_map=channel_map_for_kit(recipe.render.kit),
+        )
 
 
 def build_gold_sample(

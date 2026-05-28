@@ -1,0 +1,147 @@
+# F0-T19 — Canonical I/O Mapping Layer · per-kit DIALECT MAP (Arrow ②, render side)
+# =============================================================================
+# SSoT for "our canonical GM render note  ->  the trigger THIS kit wants".
+# Authored from each kit's own files (kit XML instrument list + shipped midimap /
+# .sfz keymap). DrumGizmo: value = instrument name. Sfizz: value = MIDI key.
+# `substitute:` marks an articulation the kit physically lacks (F0-T19 D5) — the
+# render still produces *a* plausible sound, but it is NOT that articulation; the
+# generator emits it and a coherence/audit record flags it. Fail-loud on any
+# canonical note with no entry (no silent drops — F0-T18 principle).
+#
+# Canonical render notes (from midi_source_standards.yaml articulations):
+#   36 kick · 37 side_stick · 38 snare · 42 hihat_closed · 44 hihat_pedal
+#   46 hihat_open · 47 tom_low_mid · 48 tom_high · 43 tom_floor
+#   51 ride · 53 ride_bell · 49 crash_1 · 57 crash_2 · 52 china · 55 splash
+# NB: physical-identity collapse (tom*/crash*/china+splash -> output class) happens
+# in the TARGET (Arrow ③), NOT here — the render keeps full kit variety.
+schema_version: "1.0"
+status: LOCKED  # Decision Lock CEO 2026-05-28 (F0-T19); validated by coherence gate
+
+kits:
+
+  DRSKit:
+    engine: drumgizmo
+    kit_xml: vendor/drumgizmo/DRSKit/DRSKit_full.xml
+    map:
+      36: Kdrum_with_contact
+      37: {instr: Snare_rim,        substitute: "no dedicated cross-stick"}
+      38: Snare
+      42: Hihat_closed
+      44: Hihat_foot
+      46: Hihat_open
+      48: Tom1
+      47: Tom2
+      43: Tom3
+      51: Ride_tip
+      53: Ride_shank_bell
+      49: Crash_left_shank
+      57: Crash_right_shank
+      52: {instr: Crash_right_tip,  substitute: "no china"}
+      55: {instr: Crash_left_tip,   substitute: "no splash (crash-tip stand-in)"}
+
+  MuldjordKit:
+    engine: drumgizmo
+    kit_xml: vendor/drumgizmo/MuldjordKit3/MuldjordKit3.xml
+    map:
+      36: KdrumL
+      37: {instr: SnareRest,        substitute: "no cross-stick"}
+      38: Snare
+      42: HihatClosed
+      44: {instr: HihatClosed,      substitute: "no pedal/foot hat"}
+      46: HihatOpen
+      48: Tom1
+      47: Tom2
+      43: Tom4
+      51: RideR
+      53: RideRBell
+      49: CrashL
+      57: CrashR
+      52: China
+      55: {instr: CrashL,           substitute: "no splash"}
+
+  CrocellKit:
+    engine: drumgizmo
+    kit_xml: vendor/drumgizmo/CrocellKit/CrocellKit_full.xml
+    map:
+      36: KDrumL
+      37: {instr: SnareRim,         substitute: "rim, no true cross-stick"}
+      38: Snare
+      42: HihatClosed
+      44: HihatPedal
+      46: HihatOpen
+      48: Tom1
+      47: Tom2
+      43: FTom1
+      51: RideR
+      53: RideRBell
+      49: CrashL
+      57: CrashR
+      52: ChinaL
+      55: SplashL
+
+  Aasimonster:
+    engine: drumgizmo
+    kit_xml: vendor/drumgizmo/Aasimonster/Aasimonster.xml
+    map:
+      36: kick_l
+      37: {instr: snare_rim_shot,   substitute: "rim shot, no cross-stick"}
+      38: snare_on_center
+      42: hihat_closed1
+      44: {instr: hihat_closed1,    substitute: "no pedal/foot hat"}
+      46: hihat_open
+      48: tom_1
+      47: tom_2
+      43: tom_4
+      51: ride
+      53: ride_bell1
+      49: crash1
+      57: crash2
+      52: china_18_inch
+      55: {instr: crash1,           substitute: "no splash"}
+
+  ShittyKit:
+    engine: drumgizmo
+    kit_xml: vendor/drumgizmo/ShittyKit/ShittyKit.xml
+    map:
+      36: kick
+      37: snare-RmClk            # real rim-click / cross-stick
+      38: snare-Hrd-LH
+      42: HH-closed
+      44: HH-pdl
+      46: HH-open
+      48: Tom-LH
+      47: Tom-RH
+      43: Floor-LH
+      51: ride
+      53: ride-bell
+      49: Crash1
+      57: Crash2
+      52: {instr: Crash2,           substitute: "no china"}
+      55: {instr: Crash1,           substitute: "no splash"}
+
+  # Sfizz kit — the dialect is a KEY layout in the .sfz, not instrument names.
+  # Handled by the Sfizz remap path (reads the .sfz keymap); placeholder here so
+  # the SSoT lists the full roster. Filled by the Sfizz translator (task #3).
+  # Sfizz: value = the .sfz KEY this kit wants (from keymap.sfz). The render
+  # path REMAPS the canonical MIDI note -> this key (Arrow ② for Sfizz). Big Rusty
+  # is largely GM-compatible; only toms (kit uses 41/43/45/47) and crash2/china/
+  # splash diverge.
+  BigRustyDrums:
+    engine: sfizz
+    sfz: vendor/sfz/big-rusty-drums/Programs/01-full.sfz
+    map:
+      36: 36          # kick               ($kickkey)
+      37: 37          # side_stick         ($snsskey)
+      38: 38          # snare              ($sncenterkey)
+      42: 42          # hihat_closed       ($htclstkey)
+      44: 44          # hihat_pedal        ($htchkkey, foot chick)
+      46: 46          # hihat_open         ($htvartkey)
+      47: 47          # tom_low_mid        ($t14key, 14")
+      43: 43          # tom_floor          ($t18key, 18")
+      48: {key: 45, substitute: "no key-48 tom; $t15key 15\" stand-in"}
+      51: 51          # ride               ($rdrdkey)
+      53: 53          # ride_bell          ($rdblkey)
+      49: 49          # crash_1            ($crcrkey)
+      52: 57          # china              ($cncnkey — this kit puts china on 57)
+      57: {key: 65, substitute: "kit's key-57 is china; crash_2 -> 2nd crash $crscrkey"}
+      55: {key: 65, substitute: "no splash; 2nd-crash stand-in"}

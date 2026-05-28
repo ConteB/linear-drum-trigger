@@ -1,0 +1,195 @@
+[
+  {
+    "kit": "BigRustyDrums",
+    "engine": "sfizz",
+    "n_mic": 2,
+    "n_ok": 23,
+    "n_phantom": 0,
+    "rows": [
+      {
+        "src_note": 22,
+        "articulation": "hihat_closed",
+        "bus": 3,
+        "audio_peak": 0.0621,
+        "target": 1.0,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 26,
+        "articulation": "hihat_open",
+        "bus": 3,
+        "audio_peak": 0.0955,
+        "target": 0.967,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 36,
+        "articulation": "kick",
+        "bus": 1,
+        "audio_peak": 0.1334,
+        "target": 0.902,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 37,
+        "articulation": "side_stick",
+        "bus": 2,
+        "audio_peak": 0.0452,
+        "target": 0.981,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 38,
+        "articulation": "snare",
+        "bus": 2,
+        "audio_peak": 0.1133,
+        "target": 0.998,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 40,
+        "articulation": "snare",
+        "bus": 2,
+        "audio_peak": 0.1146,
+        "target": 0.951,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 41,
+        "articulation": "tom_floor",
+        "bus": 5,
+        "audio_peak": 0.1802,
+        "target": 0.926,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 42,
+        "articulation": "hihat_closed",
+        "bus": 3,
+        "audio_peak": 0.0714,
+        "target": 0.991,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 43,
+        "articulation": "tom_floor",
+        "bus": 5,
+        "audio_peak": 0.1605,
+        "target": 0.993,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 44,
+        "articulation": "hihat_pedal",
+        "bus": 3,
+        "audio_peak": 0.0528,
+        "target": 0.931,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 45,
+        "articulation": "tom_low_mid",
+        "bus": 4,
+        "audio_peak": 0.1168,
+        "target": 0.946,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 46,
+        "articulation": "hihat_open",
+        "bus": 3,
+        "audio_peak": 0.0713,
+        "target": 0.997,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 47,
+        "articulation": "tom_low_mid",
+        "bus": 4,
+        "audio_peak": 0.0967,
+        "target": 0.984,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 48,
+        "articulation": "tom_high",
+        "bus": 4,
+        "audio_peak": 0.0066,
+        "target": 0.908,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 49,
+        "articulation": "crash_1",
+        "bus": 7,
+        "audio_peak": 0.0564,
+        "target": 0.964,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 50,
+        "articulation": "tom_high",
+        "bus": 4,
+        "audio_peak": 0.0074,
+        "target": 1.0,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 51,
+        "articulation": "ride",
+        "bus": 6,
+        "audio_peak": 0.0912,
+        "target": 0.971,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 52,
+        "articulation": "china",
+        "bus": 8,
+        "audio_peak": 0.0212,
+        "target": 0.896,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 53,
+        "articulation": "ride_bell",
+        "bus": 6,
+        "audio_peak": 0.0731,
+        "target": 0.978,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 55,
+        "articulation": "splash",
+        "bus": 8,
+        "audio_peak": 0.0053,
+        "target": 0.999,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 57,
+        "articulation": "crash_2",
+        "bus": 8,
+        "audio_peak": 0.0431,
+        "target": 0.802,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 58,
+        "articulation": "tom_floor",
+        "bus": 5,
+        "audio_peak": 0.152,
+        "target": 0.92,
+        "verdict": "OK"
+      },
+      {
+        "src_note": 59,
+        "articulation": "ride",
+        "bus": 6,
+        "audio_peak": 0.0917,
+        "target": 0.989,
+        "verdict": "OK"
+      }
+    ]
+  }
+]

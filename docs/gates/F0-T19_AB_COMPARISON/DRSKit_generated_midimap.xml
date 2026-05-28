@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<midimap>
+  <map note="36" instr="Kdrum_with_contact"/>
+  <map note="37" instr="Snare_rim"/>
+  <map note="38" instr="Snare"/>
+  <map note="42" instr="Hihat_closed"/>
+  <map note="43" instr="Tom3"/>
+  <map note="44" instr="Hihat_foot"/>
+  <map note="46" instr="Hihat_open"/>
+  <map note="47" instr="Tom2"/>
+  <map note="48" instr="Tom1"/>
+  <map note="49" instr="Crash_left_shank"/>
+  <map note="51" instr="Ride_tip"/>
+  <map note="52" instr="Crash_right_tip"/>
+  <map note="53" instr="Ride_shank_bell"/>
+  <map note="55" instr="Crash_left_tip"/>
+  <map note="57" instr="Crash_right_shank"/>
+</midimap>

@@ -1720,3 +1720,84 @@ runs:
   cost:
     azure_usd: 0.0
     local_compute_min: 376  # 22601 s / 60 (notturno)
+- run_id: mini-l3-F0T4f-stepB-2026-05-27
+  date: 2026-05-28 01:11:00+00:00
+  git_commit: c0ff193
+  status: FAIL
+  purpose: "F0-T4f Step B — Ridnik AsymmetricLoss + label smoothing (Decision\
+    \ Lock CEO 2026-05-27). Doveva attaccare la sotto-confidence sui TP rivelata\
+    \ dallo Step A calibration sweep (6/8 bus preferiscono T<1)."
+  caveat: "⚠ CONFRONTO NON ISOLATO — errore di esecuzione (Strategic Advisor).\
+    \ La spec D2 prescriveva 'Ridnik isolato' ma il run ha usato i DEFAULT del trainer\
+    \ invece di replicare F0-T4e: C=32 (non 64), audio_aug OFF (non ON), cosine LR\
+    \ OFF (non ON), early-stop 30 (non 20). 4 assi cambiati in direzioni opposte →\
+    \ il numero NON è un A/B loss-vs-loss valido. La conclusione 'Ridnik fallisce'\
+    \ è INFONDATA: a metà capacità + meno regolarizzazione Ridnik pareggia\
+    \ comunque F0-T4e (0.155 vs 0.149 calibrato). Vero A/B → run\
+    \ mini-l3-F0T4f-c64-isolated-2026-05-28."
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    baseline_only: true
+  model:
+    arch: F0-T4a TCN + F0-T4e ChannelAgnosticFrontend
+    channels: 32  # ERRORE: doveva essere 64 per match F0-T4e
+    in_channels: 9
+    params: 83705
+  preprocessing:
+    kind: p1p2
+  loss:
+    kind: ridnik
+    pos_weight: density-derived
+    gamma_pos: 1.0
+    gamma_neg: 4.0
+    prob_clip_negative: 0.05
+    fp_to_fn_ratio: 30.0
+    label_smoothing: 0.05
+  augmentation:
+    audio_aug: false  # ERRORE: doveva essere true
+    channel_agnostic_aug: true
+    channel_agnostic_master_seed: 20260526
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    device: mps
+    use_cosine_lr: false  # ERRORE: doveva essere true
+    early_stop_patience: 30  # divergenza minore: doveva essere 20
+    grad_clip_max_norm: 0.5
+    skip_nonfinite_step: true
+    loss_preset: ridnik
+    autocast: false  # --no-amp
+    wall_time_s: 13829.3
+    epochs_run: 150
+    final_train_loss: 0.787  # minimo storico — Ridnik overfitta il train
+    grad_explosions_clipped: many  # grad_max fino a 32M, clip 0.5 + skip-nonfinite assorbiti
+    n_nonfinite_loss_skips: 0
+    n_nonfinite_grad_skips: 0
+  metrics:
+    val_F_mean_trainer_tuned: 0.099
+    val_F_max: 0.303
+    val_F_min: 0.007
+    val_F_production_no_calib: 0.0704     # calibration_sweep baseline thr=0.1
+    val_F_production_calibrated: 0.1550   # calibration_sweep per-bus optimum (Step A)
+    calibration_lift_pct: 120.3
+    buses_preferring_T_below_1: 6  # su 8 — sotto-confidence NON risolta da Ridnik
+  verdict:
+    gate: val_F_production >= 0.20 (D4)
+    outcome: FAIL
+    delta_vs_F0T4e_calibrated: "+0.006 (+4 %) — ma confronto invalido (C=32 vs\
+      \ C=64 + 3 assi). Ridnik NON ha risolto la sotto-confidence (6/8 bus ancora\
+      \ T<1, threshold ottimi saliti a 0.35-0.45 vs 0.13-0.30 di F0-T4e). Train loss\
+      \ 0.79 (minimo storico) ma val peggio → overfit. Inconcludente per l'errore\
+      \ di setup; superseded dal run isolato C=64."
+    notes: "Lezione operativa: replicare SEMPRE la baseline esplicitamente coi flag,\
+      \ mai affidarsi ai default del trainer per un A/B. Lo Step A (calibration_sweep)\
+      \ recupera +120 % come su F0-T4e — il path post-hoc resta valido."
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-F0T4f-stepB-2026-05-27/report.html
+  calibration_sweep: docs/gates/F0-T4c_MINI_L3/listening_test_calibration_sweep_mini-l3-F0T4f-stepB-2026-05-28/
+  checkpoint: artifacts/mini_l3_tcn_F0T4f.pt
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 230  # 13829 s / 60

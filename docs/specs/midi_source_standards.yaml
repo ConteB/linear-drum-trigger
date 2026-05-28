@@ -1,0 +1,116 @@
+# ============================================================================
+# MIDI SOURCE STANDARDS — Single Source of Truth per le traduzioni cross-standard
+# Progetto: drum-trigger-fresh / OP-NeuroTrigger
+# ----------------------------------------------------------------------------
+# STATO: LOCKED — Decision Lock CEO 2026-05-28 (Pipeline Audit, MIDI Standard
+#        Translation Layer, STRP-001).
+#
+# PERCHÉ ESISTE. Le sorgenti MIDI usano standard di numerazione DIVERSI per le
+# stesse articolazioni di batteria (General MIDI vs Roland TD-11 vs ...). Senza
+# una traduzione unica, ogni consumatore (target_builder, DrumGizmo midimap,
+# SFZ) interpreta le note in modo indipendente e DIVERGE → note droppate in
+# silenzio (es. l'hihat edge GM 22/26 della GMD = 10 % degli onset, Pipeline
+# Audit 2026-05-28).
+#
+# COSA FA. Definisce (1) un VOCABOLARIO CANONICO di articolazioni, con le sue
+# proiezioni a (a) nota GM di render — che i midimap/SFZ conoscono — e (b) bus
+# logico di trascrizione; (2) per ogni standard sorgente, la mappa
+# nota-sorgente → articolazione canonica; (3) un registro ESPLICITO di note
+# intenzionalmente ignorate (mai silenziose).
+#
+# PRINCIPIO CARDINE (Decision Lock CEO 2026-05-28). Ogni nota di una sorgente è
+# *o* mappata a un'articolazione *o* elencata in `ignored` con motivo. Tutto
+# ciò che non è in nessuno dei due → ERRORE FORTE in canonicalize_midi. Mai più
+# drop silenzioso.
+# ============================================================================
+schema_version: "1.0"
+status: LOCKED
+
+# --- VOCABOLARIO CANONICO ---------------------------------------------------
+# Ogni articolazione proietta su:
+#   render_gm: nota GM emessa nel MIDI canonico (DEVE esistere nei midimap dei
+#              kit attivi — verificato dal coherence validator).
+#   bus:       bus logico 1-based di trascrizione (allineato a
+#              midi_mapping_table.yaml forward_gm_to_bus).
+#   hihat_opening: (solo articolazioni hihat) valore continuo della testa di
+#              apertura [0..1] (F0-T2a §5; closed→0, pedal→0.5, open→1).
+articulations:
+  kick:          { render_gm: 36, bus: 1 }
+  snare:         { render_gm: 38, bus: 2 }
+  side_stick:    { render_gm: 37, bus: 2 }   # collassato in snare, v1.0
+  hihat_closed:  { render_gm: 42, bus: 3, hihat_opening: 0.0 }
+  hihat_pedal:   { render_gm: 44, bus: 3, hihat_opening: 0.5 }
+  hihat_open:    { render_gm: 46, bus: 3, hihat_opening: 1.0 }
+  tom_high:      { render_gm: 48, bus: 4 }
+  tom_low_mid:   { render_gm: 47, bus: 4 }
+  tom_floor:     { render_gm: 43, bus: 5 }
+  ride:          { render_gm: 51, bus: 6 }
+  ride_bell:     { render_gm: 53, bus: 6 }   # collassato in ride, v1.0
+  crash_1:       { render_gm: 49, bus: 7 }
+  crash_2:       { render_gm: 57, bus: 8 }
+  china:         { render_gm: 52, bus: 8 }   # collassato in crash_b, v1.0
+  splash:        { render_gm: 55, bus: 8 }   # collassato in crash_b, v1.0
+
+# --- STANDARD SORGENTE: nota MIDI → articolazione canonica -------------------
+standards:
+
+  # General MIDI percussion (canale 10). Lo standard "scolastico".
+  gm_standard:
+    35: kick            # Acoustic Bass Drum
+    36: kick            # Bass Drum 1
+    37: side_stick      # Side Stick
+    38: snare           # Acoustic Snare
+    40: snare           # Electric Snare
+    41: tom_floor       # Low Floor Tom
+    42: hihat_closed    # Closed Hi-Hat
+    43: tom_floor       # High Floor Tom
+    44: hihat_pedal     # Pedal Hi-Hat
+    45: tom_low_mid     # Low Tom
+    46: hihat_open      # Open Hi-Hat
+    47: tom_low_mid     # Low-Mid Tom
+    48: tom_high        # Hi-Mid Tom
+    49: crash_1         # Crash Cymbal 1
+    50: tom_high        # High Tom
+    51: ride            # Ride Cymbal 1
+    52: china           # Chinese Cymbal
+    53: ride_bell       # Ride Bell
+    55: splash          # Splash Cymbal
+    57: crash_2         # Crash Cymbal 2
+    59: ride            # Ride Cymbal 2
+
+  # Roland TD-11 — il mapping usato dalla Magenta Groove MIDI Dataset (GMD),
+  # la nostra unica sorgente MIDI reale. Differenza CRITICA vs GM: le
+  # articolazioni hihat "edge" (22/26) e il floor tom alto (58), assenti dal
+  # GM standard. Allineato alla DRUM_MAP a 9 classi di Magenta `groove`.
+  roland_td11:
+    36: kick
+    38: snare
+    37: side_stick
+    40: snare           # Electric snare / rim (collassato in snare)
+    22: hihat_closed    # Hi-Hat Closed (EDGE)  ← assente da GM
+    42: hihat_closed    # Hi-Hat Closed (bow)
+    44: hihat_pedal     # Hi-Hat Pedal
+    26: hihat_open      # Hi-Hat Open (EDGE)    ← assente da GM
+    46: hihat_open      # Hi-Hat Open (bow)
+    48: tom_high        # Tom 1
+    50: tom_high        # Tom 1 (rim)
+    45: tom_low_mid     # Tom 2
+    47: tom_low_mid     # Tom 2 (rim)
+    43: tom_floor       # Tom 3 (floor)
+    58: tom_floor       # Tom 3 (floor, edge)   ← assente da GM
+    41: tom_floor       # Low floor tom
+    51: ride            # Ride
+    59: ride            # Ride (edge)
+    53: ride_bell       # Ride Bell
+    49: crash_1         # Crash 1
+    55: splash          # Crash 1 (choke) / splash — Magenta lump → crash_b
+    57: crash_2         # Crash 2
+    52: china           # Crash 2 (choke) / china — Magenta lump → crash_b
+
+# --- REGISTRO SCARTI ESPLICITI ----------------------------------------------
+# Note che una sorgente PUÒ emettere ma che scegliamo di NON trascrivere, con
+# motivo. Una nota qui NON solleva errore; una nota né mappata né qui → ERRORE.
+# Oggi entrambe le sorgenti hanno copertura piena → registri vuoti.
+ignored:
+  gm_standard: {}     # copertura piena sulle note GMD osservate
+  roland_td11: {}     # copertura piena sulle note GMD osservate (1150 file)

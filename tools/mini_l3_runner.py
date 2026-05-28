@@ -378,6 +378,11 @@ def _recipe_from_mini_entry(
             dataset="MINI_L3",
             file=midi_relpath,
             bus_mapping="midi_mapping_table.yaml@1.0",
+            # F0-T18 (Decision Lock CEO 2026-05-28): the mini-L3 sources are
+            # GMD slices → Roland TD-11. Declaring the standard makes the
+            # orchestrator canonicalize edge hi-hat (22/26) + hi-floor (58)
+            # into renderable GM notes instead of dropping them silently.
+            standard="roland_td11",
         ),
         midi_jitter=MidiJitter(
             time_jitter_ms=(0.0, 0.0) if entry.variant_idx == 0 else (2.0, 15.0),

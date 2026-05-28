@@ -91,11 +91,21 @@ class RecipeError(ValueError):
 
 @dataclass(frozen=True)
 class MidiSource:
-    """``midi_source`` block (F0-T2a §1.1)."""
+    """``midi_source`` block (F0-T2a §1.1).
+
+    ``standard`` (F0-T18, optional): the MIDI numbering standard of the source
+    file (e.g. ``"roland_td11"`` for the Magenta GMD, ``"gm_standard"`` for
+    General MIDI). When set, the orchestrator canonicalizes the MIDI through
+    :mod:`data_engineering.gold.midi_canonical` before render + target, so the
+    hi-hat "edge" and other non-GM articulations are not silently dropped
+    (Pipeline Audit 2026-05-28). ``None`` = the source is already canonical GM
+    (legacy / synthetic recipes) and is passed through unchanged.
+    """
 
     dataset: str
     file: str
     bus_mapping: str
+    standard: str | None = None
 
 
 @dataclass(frozen=True)
@@ -238,15 +248,23 @@ def _as_enum[E: StrEnum](enum_cls: type[E], value: Any, ctx: str) -> E:
 def _parse_midi_source(value: Any) -> MidiSource:
     ctx = "recipe.midi_source"
     block = _as_mapping(value, ctx)
-    _reject_unknown(block, frozenset({"dataset", "file", "bus_mapping"}), ctx)
+    _reject_unknown(
+        block, frozenset({"dataset", "file", "bus_mapping", "standard"}), ctx
+    )
     dataset = _require(block, "dataset", ctx)
     if dataset not in _ALLOWED_MIDI_DATASETS:
         raise RecipeError(
             f"{ctx}.dataset: unknown dataset {dataset!r}; "
             f"expected one of {sorted(_ALLOWED_MIDI_DATASETS)}"
         )
+    standard_raw = block.get("standard")
+    standard = (
+        None if standard_raw is None
+        else _as_str(standard_raw, f"{ctx}.standard")
+    )
     return MidiSource(
         dataset=dataset,
+        standard=standard,
         file=_as_str(_require(block, "file", ctx), f"{ctx}.file"),
         bus_mapping=_as_str(_require(block, "bus_mapping", ctx), f"{ctx}.bus_mapping"),
     )

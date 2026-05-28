@@ -14,7 +14,7 @@ related: [LIN-DT-DOCSTD-001]
 > **File generato** da `tools/gen_docs_index.py` (Doc Standard LIN-DT-DOCSTD-001 §5).
 > Non editare a mano — rigenerare. Rilancia lo script dopo ogni modifica al frontmatter.
 
-Documenti indicizzati: **51** · senza frontmatter: **21**.
+Documenti indicizzati: **53** · senza frontmatter: **21**.
 
 ## Documenti
 
@@ -33,6 +33,7 @@ Documenti indicizzati: **51** · senza frontmatter: **21**.
 | `LIN-DT-DOSSIER-001` | Dossier Tecnico — Drum-Trigger End-to-End Transcription | spec | ACTIVE | cross-cutting | `docs/methodology/DOSSIER_TECNICO.md` |
 | `LIN-DT-DPL-001` | Registro Provenienza Dati & Compliance | registro | ACTIVE | cross-cutting | `docs/compliance/DATA_PROVENANCE_LOG.md` |
 | `LIN-DT-ENGSTD-001` | Engineering Standards — OP-NEUROTRIGGER | standard | ACTIVE | cross-cutting | `04_INTELLIGENCE/ENGINEERING_STANDARDS.md` |
+| `LIN-DT-F0T18` | "F0-T18 — MIDI Standard Translation Layer (STRP-001)" |  | LOCKED_v1.0.0 | — | `docs/methodology/F0-T18_MIDI_STANDARD_TRANSLATION_SPEC.md` |
 | `LIN-DT-F0T4E` | "F0-T4e — Input-Agnostic Training (STRP-001)" |  | LOCKED_v1.0.0 | — | `docs/methodology/F0-T4e_INPUT_AGNOSTIC_TRAINING_SPEC.md` |
 | `LIN-DT-F0T4F` | "F0-T4f — Step B · Loss Redesign (Ridnik AsymmetricLoss + Label Smoothing)" |  | LOCKED_v1.0.0 | — | `docs/methodology/F0-T4f_STEP_B_LOSS_REDESIGN_SPEC.md` |
 | `LIN-DT-GOV-001` | Protocollo LINEAR-SHIELD — Governance Sub-Agenti | governance | ACTIVE | cross-cutting | `04_INTELLIGENCE/SUB_AGENT_GOVERNANCE.md` |
@@ -44,6 +45,7 @@ Documenti indicizzati: **51** · senza frontmatter: **21**.
 | `LIN-DT-MSCHED-001` | Master Scheduling — OP-NEUROTRIGGER | scheduling | ACTIVE | cross-cutting | `04_INTELLIGENCE/MASTER_SCHEDULING.md` |
 | `LIN-DT-ONBOARD-001` | Manuale di Sopravvivenza & Data Recovery (Human-Only) | reference | ACTIVE | cross-cutting | `docs/compliance/ONBOARDING_HUMAN.md` |
 | `LIN-DT-PII-001` | Zero-PII Log Policy (Anonymous-Trace) | standard | LOCKED | cross-cutting | `04_INTELLIGENCE/ZERO_PII_LOG_POLICY.md` |
+| `LIN-DT-PIPEAUDIT-20260528` | "Pipeline Dataset Audit — integrità & coerenza inter-stadio (2026-05-28)" |  | REPORT | — | `docs/gates/PIPELINE_AUDIT_2026-05-28.md` |
 | `LIN-DT-PMINDEX-001` | Project Master Index (ARCHIVIATO — sostituito dall'INDEX generato) | reference | ARCHIVED | cross-cutting | `PROJECT_MASTER_INDEX.md` |
 | `LIN-DT-QMA-001` | Analisi Quantitativa di Mercato (Business Case) | reference | ACTIVE | cross-cutting | `04_INTELLIGENCE/QUANTITATIVE_MARKET_ANALYSIS.md` |
 | `LIN-DT-REC-001` | Registro Avanzamento root (ARCHIVIATO — puntatore) | reference | ARCHIVED | cross-cutting | `REGISTRO_AVANZAMENTO.md` |
@@ -230,6 +232,7 @@ Documenti indicizzati: **51** · senza frontmatter: **21**.
 | `LIN-DT-DOSSIER-001` | `LIN-DT-CHKLST-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a`, `LIN-DT-AUGAUDIT-001` | `LIN-DT-AUDIT-001`, `LIN-DT-AUGAUDIT-001`, `LIN-DT-CHKLST-001`, `LIN-DT-CHRONOS-001`, `LIN-DT-DCBP-001`, `LIN-DT-ENGSTD-001`, `LIN-DT-HOLDOUT-F0T1c`, `LIN-DT-SPEC-F0T15POST`, `LIN-DT-SPEC-F0T15PRE`, `LIN-DT-SPEC-F0T17`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4D`, `LIN-DT-SPEC-F0T4a`, `LIN-DT-SPEC-F0T5`, `LIN-DT-SPEC-F0T8` |
 | `LIN-DT-DPL-001` | `LIN-DT-LICVER-F0T1`, `LIN-DT-ROSTER-F0T1b`, `LIN-DT-HOLDOUT-F0T1c` | `LIN-DT-HOLDOUT-F0T1c`, `LIN-DT-LICVER-F0T1`, `LIN-DT-ROSTER-F0T1b` |
 | `LIN-DT-ENGSTD-001` | `LIN-DT-DOSSIER-001`, `LIN-DT-CHKLST-001`, `LIN-DT-TESTDOC-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a` | `LIN-DT-DCBP-001`, `LIN-DT-RPTBP-001`, `LIN-DT-SPEC-F0T17`, `LIN-DT-SPEC-F0T8` |
+| `LIN-DT-F0T18` | — | — |
 | `LIN-DT-F0T4E` | — | — |
 | `LIN-DT-F0T4F` | — | — |
 | `LIN-DT-GOV-001` | `LIN-DT-TESTDOC-001`, `LIN-DT-CHKLST-001` | `LIN-DT-PII-001`, `LIN-DT-TESTDOC-001` |
@@ -241,6 +244,7 @@ Documenti indicizzati: **51** · senza frontmatter: **21**.
 | `LIN-DT-MSCHED-001` | `LIN-DT-SCHED-001`, `LIN-DT-CHKLST-001`, `LIN-DT-DOCSTD-001` | `LIN-DT-BLUEPRINT-001`, `LIN-DT-CHKLST-001`, `LIN-DT-DOCSTD-001`, `LIN-DT-HANDOVER-001`, `LIN-DT-ONBOARD-001`, `LIN-DT-REGAV-001`, `LIN-DT-ROADMAP-001`, `LIN-DT-RPTBP-001`, `LIN-DT-RUNBOOK-AZURE-ENABLEMENT`, `LIN-DT-RUNBOOK-F1T1`, `LIN-DT-RUNBOOK-F2T1`, `LIN-DT-RUNBOOK-F2T1-SMOKE`, `LIN-DT-RUNBOOK-F2T1QUOTA`, `LIN-DT-SCHED-001`, `LIN-DT-SIA-001`, `LIN-DT-SPEC-F0T15PRE`, `LIN-DT-SPEC-F0T5`, `LIN-DT-SPRINT-001` |
 | `LIN-DT-ONBOARD-001` | `LIN-DT-MSCHED-001` | — |
 | `LIN-DT-PII-001` | `LIN-DT-GOV-001` | — |
+| `LIN-DT-PIPEAUDIT-20260528` | — | — |
 | `LIN-DT-PMINDEX-001` | `LIN-DT-DOCSTD-001` | — |
 | `LIN-DT-QMA-001` | `LIN-DT-COMPAN-001`, `LIN-DT-MKTSTRAT-001` | `LIN-DT-COMPAN-001`, `LIN-DT-MKTSTRAT-001`, `LIN-DT-TCAUDIT-001` |
 | `LIN-DT-REC-001` | `LIN-DT-REGAV-001` | — |

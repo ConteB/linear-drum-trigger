@@ -34,13 +34,16 @@ from data_engineering.gold.dna_trace import (
     validate_dna_json,
 )
 from data_engineering.gold.gold_writer import SAMPLE_RATE, write_gold_sample
+from data_engineering.gold.midi_canonical import (
+    CanonicalizationError,
+    canonicalize_midi,
+)
 from data_engineering.gold.recipe import Engine, Recipe
 from data_engineering.gold.render import (
-    DRSKIT_MULTITRACK8,
-    channel_map_for_kit,
     DrumGizmoRenderer,
     RenderError,
     SfizzRenderer,
+    channel_map_for_kit,
 )
 from data_engineering.gold.target_builder import (
     BusMapping,
@@ -370,14 +373,37 @@ def build_gold_sample(
     if not kit_path.is_file():
         raise OrchestrationError(f"recipe render kit not found: {kit_path}")
 
-    # Tail standardization (F0-T2a §3.8): derive last_onset_s from the MIDI and
-    # crop/pad the renderer's natural tail to a uniform value — engine-agnostic
-    # by construction.
-    last_onset_s = last_onset_seconds(midi_path, bus_mapping=bus_mapping)
-    n_sample_out = n_sample_target(last_onset_s, tail_s=TAIL_S)
-    duration_s = n_sample_out / SAMPLE_RATE
-
     with tempfile.TemporaryDirectory(prefix="orchestrate_") as tmp:
+        # MIDI Standard Translation Layer (F0-T18, Decision Lock CEO 2026-05-28).
+        # When the recipe declares its source standard, canonicalize the MIDI
+        # ONCE here — the single canonical MIDI then feeds render, last_onset,
+        # and target alike, so the three views can no longer diverge (the
+        # hi-hat edge GM 22/26 drop fixed at the root). Notes neither mapped nor
+        # explicitly ignored fail loud. ``standard = None`` (legacy / synthetic
+        # GM-native recipes) passes the MIDI through unchanged.
+        if recipe.midi_source.standard is not None:
+            canon_midi = Path(tmp) / "canonical.mid"
+            try:
+                canonicalize_midi(
+                    midi_path,
+                    standard=recipe.midi_source.standard,
+                    out_path=canon_midi,
+                )
+            except CanonicalizationError as exc:
+                raise OrchestrationError(
+                    f"MIDI canonicalization failed for recipe "
+                    f"{recipe.recipe_id} (standard "
+                    f"{recipe.midi_source.standard!r}): {exc}"
+                ) from exc
+            midi_path = canon_midi
+
+        # Tail standardization (F0-T2a §3.8): derive last_onset_s from the
+        # (canonical) MIDI and crop/pad the renderer's natural tail to a uniform
+        # value — engine-agnostic by construction.
+        last_onset_s = last_onset_seconds(midi_path, bus_mapping=bus_mapping)
+        n_sample_out = n_sample_target(last_onset_s, tail_s=TAIL_S)
+        duration_s = n_sample_out / SAMPLE_RATE
+
         wav_path = Path(tmp) / "render.wav"
         try:
             _render(recipe, midi_path, kit_path, wav_path)
@@ -387,14 +413,14 @@ def build_gold_sample(
             ) from exc
         rendered, _ = wav_to_audio_buffer(wav_path)
 
-    audio = standardize_audio_tail(rendered, n_sample_out)
+        audio = standardize_audio_tail(rendered, n_sample_out)
 
-    target = build_target(
-        midi_path,
-        duration_s=duration_s,
-        bus_mapping=bus_mapping,
-        r_target_hz=recipe.target_frame_rate_hz,
-    )
+        target = build_target(
+            midi_path,
+            duration_s=duration_s,
+            bus_mapping=bus_mapping,
+            r_target_hz=recipe.target_frame_rate_hz,
+        )
 
     barcode = derive_barcode(recipe)
     key = encode_barcode(barcode)

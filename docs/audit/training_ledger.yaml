@@ -1801,3 +1801,86 @@ runs:
   cost:
     azure_usd: 0.0
     local_compute_min: 230  # 13829 s / 60
+- run_id: mini-l3-F0T4f-c64-isolated-2026-05-28
+  date: 2026-05-28 14:40:00+00:00
+  git_commit: 3b5912d
+  status: FAIL
+  purpose: "F0-T4f Step B — A/B PULITO Ridnik vs loss B. Replica ESATTA di F0-T4e\
+    \ (C=64, audio_aug, cosine LR, early-stop 20, input-agnostic, p1p2) cambiando\
+    \ SOLO la loss → ridnik. Corregge il confronto invalido del run #1 (C=32).\
+    \ Unica variabile = loss. Pass criterion D4: val F production calibrato ≥ 0.20."
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    baseline_only: true
+  model:
+    arch: F0-T4a TCN + F0-T4e ChannelAgnosticFrontend
+    channels: 64
+    in_channels: 9
+    params: 331225
+    channel_agnostic:
+      per_channel_channels: 4
+      aggregated_channels: 8
+  preprocessing:
+    kind: p1p2
+  loss:
+    kind: ridnik
+    pos_weight: density-derived
+    gamma_pos: 1.0
+    gamma_neg: 4.0
+    prob_clip_negative: 0.05
+    fp_to_fn_ratio: 30.0
+    label_smoothing: 0.05
+  augmentation:
+    audio_aug: true
+    channel_agnostic_aug: true
+    channel_agnostic_master_seed: 20260526
+  training:
+    epochs: 150
+    batch_size: 8
+    lr: 0.001
+    device: mps
+    use_cosine_lr: true
+    cosine_lr_warmup_epochs: 15
+    early_stop_patience: 20
+    grad_clip_max_norm: 0.5
+    skip_nonfinite_step: true
+    loss_preset: ridnik
+    autocast: false  # --no-amp
+    wall_time_s: 19808.9
+    epochs_run: 150
+    final_train_loss: 0.6037  # scala NLL+focusing Ridnik, NON comparabile con loss B
+    n_nonfinite_loss_skips: 0
+    n_nonfinite_grad_skips: 0
+  metrics:
+    val_F_mean_trainer_tuned: 0.173       # vs F0-T4e loss B 0.189 → -8.5 %
+    val_F_max: 0.644                       # vs F0-T4e 0.640 → pari
+    val_F_min: 0.007
+    val_F_production_no_calib: 0.0783      # calibration_sweep baseline thr=0.1
+    val_F_production_calibrated: 0.1633    # calibration_sweep per-bus optimum (Step A)
+    calibration_lift_pct: 108.4
+    buses_preferring_T_below_1: 6  # su 8 — sotto-confidence NON risolta da Ridnik anche a C=64
+  verdict:
+    gate: val_F_production_calibrated >= 0.20 (D4)
+    outcome: FAIL
+    delta_vs_F0T4e_clean_AB: "A/B PULITO (unica variabile = loss). PRODUCTION\
+      \ CALIBRATO: Ridnik 0.1633 vs loss B 0.149 = +9.4 % (Ridnik vince sulla metrica\
+      \ realistica). TRAINER-TUNED: Ridnik 0.173 vs B 0.189 = -8.5 % (Ridnik perde\
+      \ sulla metrica ottimistica). Il guadagno di Ridnik è specificamente\
+      \ nell'interazione con la calibrazione a soglia fissa, non in discriminabilità\
+      \ grezza."
+    notes: "Ipotesi centrale Step A (la sotto-confidence è curabile dal lato loss)\
+      \ → FALSIFICATA: 6/8 bus vogliono ancora T<1 anche a C=64. La sotto-confidence\
+      \ è strutturale (task/capacità), non loss-fixable. Ridnik resta un win modesto\
+      \ ma reale (+9.4 % production a costo zero) → candidabile come default loss\
+      \ per F2-T3. CONCLUSIONE STRATEGICA: il mini-L3 single-kit-val (ShittyKit)\
+      \ è SATURO come diagnostico — nessuna leva loss rompe oltre ~0.16-0.17\
+      \ production. Il gate reale si sposta a L4/E-GMD (~30 kit, distribuzione\
+      \ molto meno OOD). F2-T3 architettonicamente pronto."
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-F0T4f-c64-isolated-2026-05-28/report.html
+  calibration_sweep: docs/gates/F0-T4c_MINI_L3/listening_test_calibration_sweep_mini-l3-F0T4f-c64-isolated-2026-05-28/
+  checkpoint: artifacts/mini_l3_tcn_F0T4f_c64.pt
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 330  # 19809 s / 60

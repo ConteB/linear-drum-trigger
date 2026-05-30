@@ -169,7 +169,14 @@ def _recipe_yaml(
         f"midi_source:\n"
         f"  dataset: GMD\n"
         f"  file: {midi_source_file}\n"
-        f"  bus_mapping: midi_mapping_table.yaml@1.0\n"
+        # B1 (audit 2026-05-30): declare the source standard so orchestrate runs
+        # F0-T18 canonicalization. WITHOUT this the canonicalization is skipped
+        # (orchestrate gates on `standard is not None`) and the hi-hat edge GM
+        # 22/26 silent drop (10% onsets / 34% hi-hat) recurs at 1.5 TB scale.
+        # The Magenta GMD is Roland TD-11 (mirror of mini_l3_runner.py).
+        f"  standard: roland_td11\n"
+        # M5 (audit 2026-05-30): mapping table is now schema 2.0 (GM->9-channel).
+        f"  bus_mapping: midi_mapping_table.yaml@2.0\n"
         f"midi_jitter:\n"
         f"  time_jitter_ms: {midi_jitter['time_jitter_ms']}\n"
         f"  flam_probability: {midi_jitter['flam_probability']}\n"

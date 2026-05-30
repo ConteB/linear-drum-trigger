@@ -1,6 +1,7 @@
 """Gold-tensor writer — FP16 WebDataset sample triple (F0-T2a §3).
 
-Implements the F0-T2a §3 data contract: the ``flat-25`` target layout, the
+Implements the F0-T2a §3 data contract (F0-T19 §7b amendment): the ``flat-28``
+target layout, the
 frame-count formula, and the writer of the ``audio.f16`` / ``target.f16`` /
 ``dna.json`` sample triple. Buffers are written as raw little-endian float16,
 C-contiguous (F0-T2a §3.2/§3.3).
@@ -24,12 +25,13 @@ import numpy as np
 SAMPLE_RATE = 44100
 #: Target frame-rate, ratified by F0-T4a: 44100 / 128 (F0-T2a §3.4).
 R_TARGET_HZ = 344.53125
-#: Number of logical transcription buses (F0-T2a §3.3, midi_mapping_table.yaml).
-N_BUSES = 8
-#: flat-25 layout width: 8 buses x 3 channels + 1 Hi-Hat opening head.
-TARGET_COLS = 25
-#: Column index of the continuous Hi-Hat opening head (F0-T2a §3.3).
-HIHAT_OPENING_COL = 24
+#: Number of logical transcription channels (F0-T19 §7b — 9 type-classes;
+#: supersedes the 8-bus flat-25 layout whose "8" coincided with the mic count).
+N_CHANNELS = 9
+#: flat-28 layout width: 9 channels x 3 (onset/vel/microtiming) + 1 Hi-Hat opening head.
+TARGET_COLS = 28
+#: Column index of the continuous Hi-Hat opening head (F0-T19 §7b — 9*3 = 27).
+HIHAT_OPENING_COL = 27
 #: Maximum microphone channels in an ``audio`` buffer (F0-T2a §3.2 — n_mic in [1,8]).
 MAX_MIC_CHANNELS = 8
 #: Raw buffer dtype — little-endian float16 (F0-T2a §3.2/§3.3).
@@ -61,21 +63,21 @@ def n_frames(duration_s: float, r_target_hz: float = R_TARGET_HZ) -> int:
 
 
 def bus_columns(bus: int) -> tuple[int, int, int]:
-    """flat-25 column triple ``(3b, 3b+1, 3b+2)`` for ``bus`` ``b``.
+    """flat-28 column triple ``(3b, 3b+1, 3b+2)`` for channel ``b``.
 
-    The triple holds onset / velocity / microtiming respectively (F0-T2a §3.3).
+    The triple holds onset / velocity / microtiming respectively (F0-T19 §7b).
 
     Args:
-        bus: Bus index in ``[0, 7]``.
+        bus: Channel index in ``[0, 8]``.
 
     Returns:
         ``(onset_col, velocity_col, microtiming_col)``.
 
     Raises:
-        GoldWriterError: If ``bus`` is outside ``[0, 7]``.
+        GoldWriterError: If ``bus`` is outside ``[0, 8]``.
     """
-    if not 0 <= bus < N_BUSES:
-        raise GoldWriterError(f"bus index must be in [0, {N_BUSES - 1}], got {bus}")
+    if not 0 <= bus < N_CHANNELS:
+        raise GoldWriterError(f"channel index must be in [0, {N_CHANNELS - 1}], got {bus}")
     base = 3 * bus
     return (base, base + 1, base + 2)
 
@@ -107,10 +109,10 @@ def _validate_audio(audio: np.ndarray) -> None:
 def _validate_target(target: np.ndarray) -> None:
     """Fail loud on any ``target`` matrix that violates F0-T2a §3.3."""
     if target.ndim != 2:
-        raise GoldWriterError(f"target must be 2-D [n_frame, 25], got {target.ndim}-D")
+        raise GoldWriterError(f"target must be 2-D [n_frame, 28], got {target.ndim}-D")
     if target.shape[1] != TARGET_COLS:
         raise GoldWriterError(
-            f"target must have {TARGET_COLS} columns (flat-25), got {target.shape[1]}"
+            f"target must have {TARGET_COLS} columns (flat-28), got {target.shape[1]}"
         )
     if target.dtype != np.float16:
         raise GoldWriterError(f"target must be float16 (FP16 contract), got {target.dtype}")
@@ -144,7 +146,7 @@ def write_gold_sample(
         out_dir: Destination directory for the sample triple.
         key: The DNA barcode key (dot-free).
         audio: Input buffer, shape ``[n_mic, n_sample]``, ``n_mic in [1, 8]``.
-        target: Transcription matrix, shape ``[n_frame, 25]`` (flat-25).
+        target: Transcription matrix, shape ``[n_frame, 28]`` (flat-28).
         dna: The ``dna.json`` document (see :func:`~.dna_trace.build_dna_json`).
 
     Returns:

@@ -9,7 +9,7 @@ import pytest
 
 from evaluation.evaluation_suite import (
     MODULE_NAME,
-    N_BUSES,
+    N_CHANNELS,
     EvaluationSuiteError,
     _bootstrap_ci,
     _confusion_matrix,
@@ -91,16 +91,16 @@ def test_confusion_matrix_diagonal_when_perfect() -> None:
             {
                 "key": "K1",
                 "predictions": {str(b): [{"time_s": float(b) * 0.1, "prob": 0.9}]
-                                  for b in range(N_BUSES)},
+                                  for b in range(N_CHANNELS)},
                 "references": {str(b): [{"time_s": float(b) * 0.1, "velocity": 0.8}]
-                                 for b in range(N_BUSES)},
+                                 for b in range(N_CHANNELS)},
             }
         ]
     }
     M = _confusion_matrix(doc, tol_s=0.025)
-    for b in range(N_BUSES):
+    for b in range(N_CHANNELS):
         assert M[b][b] == 1
-        for other in range(N_BUSES):
+        for other in range(N_CHANNELS):
             if other != b:
                 assert M[b][other] == 0
 
@@ -182,14 +182,14 @@ def _write_predictions(
     rng = np.random.default_rng(0)
     for i in range(n_sample):
         ref = {str(b): [{"time_s": float(0.1 * j + 0.001 * b), "velocity": 0.7}
-                          for j in range(n_event_per_sample)] for b in range(N_BUSES)}
+                          for j in range(n_event_per_sample)] for b in range(N_CHANNELS)}
         # To hit F=f_target with perfect P=R, set hits = round(n*f_target).
         # F = 2PR/(P+R); P=R=f → F=f. So pick (hits, misses) such that
         # P=R=f_target: predict only at hit positions (no false positives).
         n_hit = int(round(n_event_per_sample * f_target))
         idx = sorted(rng.choice(n_event_per_sample, size=n_hit, replace=False))
         pred = {str(b): [{"time_s": float(0.1 * j + 0.001 * b), "prob": 0.9}
-                           for j in idx] for b in range(N_BUSES)}
+                           for j in idx] for b in range(N_CHANNELS)}
         samples.append({
             "key": f"K{i:03d}",
             "kit": kit,

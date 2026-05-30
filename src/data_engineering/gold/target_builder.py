@@ -1,24 +1,29 @@
-"""MIDI -> flat-25 target matrix builder (F0-T2a §3.3, DOSSIER §6.2).
+"""MIDI -> flat-28 target matrix builder (F0-T19 §7b, DOSSIER §6.2).
 
 The render engines (F0-T2b/c) produce the ``audio`` buffer of a Gold sample;
 this module produces its companion ``target`` matrix — the transcription
-ground truth the model is trained against. It reads a drum MIDI file, maps
-every General-MIDI drum note onto one of the 8 logical transcription buses via
-the versioned ``midi_mapping_table.yaml`` (F0-T2a §1.1), and emits the locked
-``flat-25`` layout (F0-T2a §3.3):
+ground truth the model is trained against. It reads a drum MIDI file (canonical
+GM, post F0-T18 :func:`~.midi_canonical.canonicalize_midi`), maps every GM drum
+note onto one of the 9 logical transcription channels (F0-T19 §7b type-class
+taxonomy) via the versioned ``midi_mapping_table.yaml`` (F0-T2a §1.1), and emits
+the locked ``flat-28`` layout:
 
-* per bus ``b in [0, 7]``: column ``3b`` onset (a Gaussian-smeared probability
-  — DOSSIER §6.2, never a digital spike), ``3b+1`` velocity (normalised from
-  the MIDI 0-127 range), ``3b+2`` microtiming (the sub-frame residual that
-  keeps the event sample-accurate, F0-T2a §3.4);
-* column 24: the continuous Hi-Hat opening head — a step-held signal driven by
-  the discrete hi-hat articulations (closed/pedal/open), projected onto
-  ``[0, 1]`` (F0-T2a §5).
+* per channel ``b in [0, 8]``: column ``3b`` onset (a Gaussian-smeared
+  probability — DOSSIER §6.2, never a digital spike), ``3b+1`` velocity
+  (normalised from the MIDI 0-127 range), ``3b+2`` microtiming (the sub-frame
+  residual that keeps the event sample-accurate, F0-T2a §3.4);
+* column 27: the continuous Hi-Hat opening head. Driven by the Roland **CC#4**
+  foot-controller (pedal position) when present — ``openness = 1 - cc4/127``
+  (empirically: closed hits co-occur with high pedal pressure, open with low) —
+  with a step-held fallback to the discrete hi-hat articulations
+  (closed/pedal/open) where CC#4 is absent (~9 % of GMD), projected onto
+  ``[0, 1]`` (F0-T19 §7b).
 
 Fail-loud (ENGINEERING_STANDARDS §6): every malformed input raises
 :class:`TargetBuilderError` and no partial matrix is ever returned.
 
-Spec: ``docs/methodology/F0-T2a_RECIPE_DATA_CONTRACT_SPEC.md`` §3.3.
+Spec: ``docs/methodology/F0-T19_PER_KIT_MIDI_TRANSLATION_SPEC.md`` §7b
+(supersedes F0-T2a §3.3 flat-25).
 """
 from __future__ import annotations
 
@@ -33,12 +38,17 @@ import yaml
 
 from data_engineering.gold.gold_writer import (
     HIHAT_OPENING_COL,
-    N_BUSES,
+    N_CHANNELS,
     R_TARGET_HZ,
     TARGET_COLS,
     bus_columns,
     n_frames,
 )
+
+#: MIDI controller number for the Roland TD-11 hi-hat pedal position (F0-T19
+#: §7b). Higher value = more pedal pressure = more closed; openness is its
+#: complement (``1 - cc4/127``).
+HIHAT_PEDAL_CC = 4
 
 #: Onset Gaussian-smear standard deviation, in milliseconds (F0-T2a §3.5,
 #: DOSSIER §6.2 — the ±3 ms symmetric smear; also recorded in ``dna.json``).
@@ -65,10 +75,10 @@ class TargetBuilderError(ValueError):
 
 @dataclass(frozen=True)
 class BusMapping:
-    """The GM-note -> 8-bus mapping, loaded from ``midi_mapping_table.yaml``.
+    """The GM-note -> 9-channel mapping, loaded from ``midi_mapping_table.yaml``.
 
     Attributes:
-        gm_to_bus: GM drum note -> bus index in ``[0, 7]`` (the ``flat-25``
+        gm_to_bus: GM drum note -> channel index in ``[0, 8]`` (the ``flat-28``
             0-based index, i.e. the table's 1-based ``id`` minus one).
         schema_version: Version string of the source table — checked against
             the ``midi_source.bus_mapping`` reference of a recipe.
@@ -79,7 +89,7 @@ class BusMapping:
 
 
 def load_bus_mapping(path: str | Path) -> BusMapping:
-    """Load and validate the GM -> 8-bus mapping table (F0-T2a §1.1).
+    """Load and validate the GM -> 9-channel mapping table (F0-T2a §1.1, F0-T19 §7b).
 
     Args:
         path: Filesystem path to ``midi_mapping_table.yaml``.
@@ -89,7 +99,7 @@ def load_bus_mapping(path: str | Path) -> BusMapping:
 
     Raises:
         TargetBuilderError: If the file cannot be read, is not valid YAML, or
-            its ``forward_gm_to_bus`` block violates the 8-bus contract.
+            its ``forward_gm_to_bus`` block violates the 9-channel contract.
     """
     file_path = Path(path)
     try:
@@ -119,11 +129,11 @@ def load_bus_mapping(path: str | Path) -> BusMapping:
             raise TargetBuilderError(f"mapping table: GM note {note} out of MIDI range")
         if not isinstance(bus_id, int) or isinstance(bus_id, bool):
             raise TargetBuilderError(f"mapping table: bus id {bus_id!r} is not an integer")
-        if not 1 <= bus_id <= N_BUSES:
+        if not 1 <= bus_id <= N_CHANNELS:
             raise TargetBuilderError(
-                f"mapping table: bus id {bus_id} for note {note} outside [1, {N_BUSES}]"
+                f"mapping table: channel id {bus_id} for note {note} outside [1, {N_CHANNELS}]"
             )
-        gm_to_bus[note] = bus_id - 1  # table is 1-based; flat-25 is 0-based
+        gm_to_bus[note] = bus_id - 1  # table is 1-based; flat-28 is 0-based
 
     return BusMapping(gm_to_bus=gm_to_bus, schema_version=version)
 
@@ -137,8 +147,15 @@ class _Onset:
     velocity: int
 
 
-def _extract_onsets(midi_path: Path) -> list[_Onset]:
-    """Read every note-on (velocity > 0) from ``midi_path``, timed in seconds."""
+def _extract_events(
+    midi_path: Path,
+) -> tuple[list[_Onset], list[tuple[float, float]]]:
+    """Read note-ons and CC#4 (hi-hat pedal) events, timed in seconds.
+
+    Returns ``(onsets, cc4)`` where ``cc4[i] = (time_s, openness)`` and
+    ``openness = clamp(1 - value/127, 0, 1)`` (F0-T19 §7b: high CC#4 pedal
+    pressure = more closed hi-hat, so openness is the complement).
+    """
     if not midi_path.is_file():
         raise TargetBuilderError(f"MIDI file not found: {midi_path}")
     try:
@@ -147,14 +164,24 @@ def _extract_onsets(midi_path: Path) -> list[_Onset]:
         raise TargetBuilderError(f"cannot parse MIDI file {midi_path}: {exc}") from exc
 
     onsets: list[_Onset] = []
+    cc4: list[tuple[float, float]] = []
     time_s = 0.0
     try:
         for msg in midi:  # iterating a MidiFile yields delta times in seconds
             time_s += msg.time
             if msg.type == "note_on" and msg.velocity > 0:
                 onsets.append(_Onset(time_s=time_s, note=msg.note, velocity=msg.velocity))
+            elif msg.type == "control_change" and msg.control == HIHAT_PEDAL_CC:
+                openness = min(1.0, max(0.0, 1.0 - msg.value / 127.0))
+                cc4.append((time_s, openness))
     except (OSError, ValueError, EOFError, KeyError, IndexError) as exc:
         raise TargetBuilderError(f"cannot iterate MIDI file {midi_path}: {exc}") from exc
+    return onsets, cc4
+
+
+def _extract_onsets(midi_path: Path) -> list[_Onset]:
+    """Read every note-on (velocity > 0) from ``midi_path``, timed in seconds."""
+    onsets, _ = _extract_events(midi_path)
     return onsets
 
 
@@ -171,7 +198,7 @@ def last_onset_seconds(
 
     Args:
         midi_path: Drum MIDI file to inspect.
-        bus_mapping: GM-note -> 8-bus mapping (notes outside it are ignored).
+        bus_mapping: GM-note -> 9-channel mapping (notes outside it are ignored).
         allow_empty: When ``False`` (default) a MIDI with no mapped onsets fails
             loud; set ``True`` for deliberate silence scenarios (returns ``0.0``).
 
@@ -204,21 +231,21 @@ def build_target(
     smear_ms: float = SMEAR_MS,
     allow_empty: bool = False,
 ) -> np.ndarray:
-    """Build the ``flat-25`` target matrix for one MIDI drum performance.
+    """Build the ``flat-28`` target matrix for one MIDI drum performance.
 
     Args:
-        midi_path: Drum MIDI file to transcribe.
+        midi_path: Drum MIDI file to transcribe (canonical GM, post F0-T18).
         duration_s: Length of the companion ``audio`` buffer, in seconds — the
             frame count is ``ceil(duration_s * r_target_hz)`` (F0-T2a §3.4), so
             ``target`` and ``audio`` describe the same time span.
-        bus_mapping: GM-note -> 8-bus mapping (see :func:`load_bus_mapping`).
+        bus_mapping: GM-note -> 9-channel mapping (see :func:`load_bus_mapping`).
         r_target_hz: Target frame-rate; defaults to the F0-T4a ratified value.
         smear_ms: Onset Gaussian-smear standard deviation, in milliseconds.
         allow_empty: When ``False`` (default) a MIDI with no mapped drum events
             fails loud; set ``True`` only for deliberate silence scenarios.
 
     Returns:
-        The ``[n_frame, 25]`` float16 target matrix (F0-T2a §3.3).
+        The ``[n_frame, 28]`` float16 target matrix (F0-T19 §7b).
 
     Raises:
         TargetBuilderError: On an unreadable/malformed MIDI, a non-positive
@@ -238,7 +265,7 @@ def build_target(
             f"duration_s {duration_s} yields a zero-frame target at {r_target_hz} Hz"
         )
 
-    onsets = _extract_onsets(Path(midi_path))
+    onsets, cc4_events = _extract_events(Path(midi_path))
     mapped = [o for o in onsets if o.note in bus_mapping.gm_to_bus]
     if not mapped and not allow_empty:
         raise TargetBuilderError(
@@ -289,9 +316,15 @@ def build_target(
         residual = onset.time_s * r_target_hz - frame_idx
         target[frame_idx, microtiming_col] = float(np.clip(2.0 * residual, -1.0, 1.0))
 
-    # Hi-Hat opening head — step-held: each hi-hat hit sets the opening, which
-    # holds until the next hi-hat hit (F0-T2a §3.3, continuous head).
-    for frame_float, opening in sorted(hihat_events):
+    # Hi-Hat opening head — continuous Roland CC#4 pedal position when present
+    # (F0-T19 §7b), with a step-held fallback to the discrete articulations
+    # where CC#4 is absent (~9 % of GMD). Both are step-held: each breakpoint
+    # sets the opening, which holds until the next breakpoint.
+    if cc4_events:
+        hihat_steps = [(t * r_target_hz, openness) for t, openness in cc4_events]
+    else:
+        hihat_steps = hihat_events
+    for frame_float, opening in sorted(hihat_steps):
         frame_idx = int(round(frame_float))
         if frame_idx < n_frame:
             target[max(0, frame_idx) :, HIHAT_OPENING_COL] = opening

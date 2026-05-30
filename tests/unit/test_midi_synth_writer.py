@@ -19,6 +19,7 @@ from data_engineering.midi_synth._writer import (
     VELOCITY_MIN,
     GrooveSpec,
     MidiSynthError,
+    loop_groove_to_min_duration,
     write_events_to_midi,
 )
 
@@ -115,8 +116,8 @@ def test_creates_parent_dirs(tmp_path: Path) -> None:
     assert nested.exists()
 
 
-def test_bus_to_gm_notes_covers_all_8_buses() -> None:
-    assert set(BUS_TO_GM_NOTES.keys()) == set(range(1, 9))
+def test_bus_to_gm_notes_covers_all_9_channels() -> None:
+    assert set(BUS_TO_GM_NOTES.keys()) == set(range(1, 10))  # F0-T19 flat-28
     for bus_id, notes in BUS_TO_GM_NOTES.items():
         assert len(notes) > 0, f"bus {bus_id} has empty note list"
         for note in notes:
@@ -126,3 +127,35 @@ def test_bus_to_gm_notes_covers_all_8_buses() -> None:
 def test_default_note_len_is_positive() -> None:
     """Sanity check on the module constant."""
     assert DEFAULT_NOTE_LEN_TICKS > 0
+
+
+def _groove_dur_s(spec: GrooveSpec) -> float:
+    max_tick = max(t for t, _, _ in spec.events) + DEFAULT_NOTE_LEN_TICKS
+    return max_tick / (TICKS_PER_BEAT * spec.bpm / 60.0)
+
+
+def test_loop_groove_reaches_min_duration() -> None:
+    """F0-T19: short synthetic grooves loop-extend to >= the mini-L3 crop.
+
+    A 2-bar groove at high BPM is < 5 s; the loop must tile it (bar-aligned)
+    until it spans >= min_duration_s, deterministically, with no overlap.
+    """
+    events = [(i * TICKS_PER_BEAT, 36 if i % 2 else 38, 100) for i in range(8)]
+    for bpm in (80, 120, 160, 200):
+        g = GrooveSpec(name="t", bpm=bpm, events=events)
+        ext = loop_groove_to_min_duration(g, min_duration_s=6.0)
+        assert _groove_dur_s(ext) >= 6.0, f"bpm={bpm} only {_groove_dur_s(ext)}s"
+        # deterministic
+        assert ext.events == loop_groove_to_min_duration(g, min_duration_s=6.0).events
+        # tiled count is an exact multiple of the original
+        assert len(ext.events) % len(events) == 0
+
+
+def test_loop_groove_leaves_long_groove_unchanged() -> None:
+    g = GrooveSpec(name="t", bpm=80, events=[(0, 36, 100), (40 * TICKS_PER_BEAT, 38, 100)])
+    assert loop_groove_to_min_duration(g, min_duration_s=6.0).events == g.events
+
+
+def test_loop_groove_empty_is_noop() -> None:
+    g = GrooveSpec(name="t", bpm=120, events=[])
+    assert loop_groove_to_min_duration(g, min_duration_s=6.0).events == []

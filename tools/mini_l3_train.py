@@ -256,7 +256,7 @@ def main() -> int:
         float(w) for w in density["pos_weight_per_bus"]
     )
     print(f"[mini-L3] pos_weight_per_bus = {pos_weight_tuple}")
-    assert len(pos_weight_tuple) == 8
+    assert len(pos_weight_tuple) == 9  # F0-T19 §7b flat-28: 9 channels
 
     device = pick_device(args.cpu)
     torch.manual_seed(args.seed)

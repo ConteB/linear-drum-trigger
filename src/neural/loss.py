@@ -31,10 +31,10 @@ from torch import nn
 
 from neural.model import HIHAT_OPENING_COL
 
-#: Number of output buses on the onset/velocity/microtiming heads
-#: (F0-T4a §3, ``flat-25`` layout). Used by the per-bus ``pos_weight`` tuple
-#: validation in :class:`LossConfig`.
-N_BUSES: int = 8
+#: Number of output channels on the onset/velocity/microtiming heads
+#: (F0-T19 §7b, ``flat-28`` layout — 9 type-classes). Used by the per-channel
+#: ``pos_weight`` tuple validation in :class:`LossConfig`.
+N_CHANNELS: int = 9
 
 #: Maximum allowed value of any element in a per-bus ``pos_weight`` tuple
 #: (F0-T4c B6b — Decision Lock CEO 2026-05-24). Caps gradient explosion on
@@ -54,10 +54,10 @@ class LossConfig:
     (segnale primario) e ridurre il peso di velocity/microtiming/hihat
     (storicamente dominavano il loss totale nel regime sparso).
 
-    **F0-T4c B6b amendment**: ``pos_weight`` accetta ora ``float`` (broadcast
-    su tutti gli 8 bus, comportamento legacy) **o** ``tuple[float, ...]`` di
-    lunghezza ``N_BUSES = 8`` (un peso per bus, calcolato da
-    :mod:`tools.scan_density`). Quando è tuple, ``train.py`` attiva
+    **F0-T4c B6b amendment** (F0-T19 §7b: 8→9 canali): ``pos_weight`` accetta
+    ora ``float`` (broadcast su tutti i 9 canali, comportamento legacy) **o**
+    ``tuple[float, ...]`` di lunghezza ``N_CHANNELS = 9`` (un peso per canale,
+    calcolato da :mod:`tools.scan_density`). Quando è tuple, ``train.py`` attiva
     automaticamente il :class:`WeightedRandomSampler` (B6a).
     """
 
@@ -81,7 +81,7 @@ class LossConfig:
     # regression test.
     fp_to_fn_ratio: float = 30.0
     # Class-imbalance correction (alpha-balance term implicit in Focal Loss).
-    # Scalar -> broadcast on all 8 buses; tuple of 8 -> per-bus weight (B6b).
+    # Scalar -> broadcast on all 9 channels; tuple of 9 -> per-channel weight (B6b).
     pos_weight: float | tuple[float, ...] = 200.0
     # Mask threshold on the Gaussian-smeared onset target — above this the
     # frame is considered "on" and the velocity/microtiming L1 contributes.
@@ -162,9 +162,9 @@ class LossConfig:
         # Fail-loud on per-bus ``pos_weight`` tuple of wrong length or
         # out-of-range values (F0-T4c B6b).
         if isinstance(self.pos_weight, tuple):
-            if len(self.pos_weight) != N_BUSES:
+            if len(self.pos_weight) != N_CHANNELS:
                 raise ValueError(
-                    f"pos_weight tuple must have {N_BUSES} elements, "
+                    f"pos_weight tuple must have {N_CHANNELS} elements, "
                     f"got {len(self.pos_weight)}"
                 )
             for i, w in enumerate(self.pos_weight):
@@ -180,7 +180,7 @@ class LossConfig:
                 )
         else:
             raise TypeError(
-                f"pos_weight must be float or tuple of {N_BUSES} floats, "
+                f"pos_weight must be float or tuple of {N_CHANNELS} floats, "
                 f"got {type(self.pos_weight).__name__}"
             )
 
@@ -206,16 +206,16 @@ class TCNLoss(nn.Module):
     def forward(
         self, pred: torch.Tensor, target: torch.Tensor
     ) -> dict[str, torch.Tensor]:
-        # pred / target: [B, T, 25] — flat-25 layout.
-        # Slice the four heads from flat-25.
-        onset_p = pred[..., 0:24:3]  # [B, T, 8]
-        velocity_p = pred[..., 1:24:3]
-        microtiming_p = pred[..., 2:24:3]
+        # pred / target: [B, T, 28] — flat-28 layout (F0-T19 §7b).
+        # Slice the four heads from flat-28 (HIHAT_OPENING_COL = 27 = 9*3).
+        onset_p = pred[..., 0:HIHAT_OPENING_COL:3]  # [B, T, 9]
+        velocity_p = pred[..., 1:HIHAT_OPENING_COL:3]
+        microtiming_p = pred[..., 2:HIHAT_OPENING_COL:3]
         hihat_p = pred[..., HIHAT_OPENING_COL]  # [B, T]
 
-        onset_t = target[..., 0:24:3]
-        velocity_t = target[..., 1:24:3]
-        microtiming_t = target[..., 2:24:3]
+        onset_t = target[..., 0:HIHAT_OPENING_COL:3]
+        velocity_t = target[..., 1:HIHAT_OPENING_COL:3]
+        microtiming_t = target[..., 2:HIHAT_OPENING_COL:3]
         hihat_t = target[..., HIHAT_OPENING_COL]
 
         # Edge mask — Decision Lock CEO 2026-05-25 (post-piano-roll). Skip
@@ -439,7 +439,7 @@ def _masked_l1(p: torch.Tensor, t: torch.Tensor, mask: torch.Tensor) -> torch.Te
 
 __all__ = [
     "LossConfig",
-    "N_BUSES",
+    "N_CHANNELS",
     "POS_WEIGHT_CAP",
     "TCNLoss",
     "_ridnik_asymmetric_loss",

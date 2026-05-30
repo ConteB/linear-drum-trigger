@@ -32,11 +32,12 @@ from neural.data import (
     ENCODER_STRIDE,
     HIHAT_OPENING_COL,
     MIN_CROP_SAMPLES,
+    TARGET_COLS,
     GoldDataset,
     GoldSample,
     load_pool,
 )
-from neural.loss import LossConfig, N_BUSES, TCNLoss
+from neural.loss import N_CHANNELS, LossConfig, TCNLoss
 from neural.metrics import (
     FRAME_PERIOD_MS,
     L3_F_MEASURE_MIN,
@@ -121,19 +122,19 @@ def _compute_sampler_weights(
     """
     if not isinstance(pos_weight, tuple):
         return None
-    if len(pos_weight) != N_BUSES:
+    if len(pos_weight) != N_CHANNELS:
         raise ValueError(
-            f"pos_weight tuple must have {N_BUSES} elements, got {len(pos_weight)}"
+            f"pos_weight tuple must have {N_CHANNELS} elements, got {len(pos_weight)}"
         )
     weights: list[float] = []
     for s in samples:
-        # Onset columns 0:24:3 — F0-T2a §3.3, flat-25 layout.
-        onset = s.target[:, 0:24:3]  # [n_frame, 8]
-        has_bus = (onset > onset_mask_threshold).any(axis=0)  # [8]
+        # Onset columns 0:HIHAT_OPENING_COL:3 — F0-T19 §7b, flat-28 layout.
+        onset = s.target[:, 0:HIHAT_OPENING_COL:3]  # [n_frame, 9]
+        has_bus = (onset > onset_mask_threshold).any(axis=0)  # [9]
         if not has_bus.any():
             weights.append(1.0)
             continue
-        bus_weights = [pos_weight[b] for b in range(N_BUSES) if has_bus[b]]
+        bus_weights = [pos_weight[b] for b in range(N_CHANNELS) if has_bus[b]]
         weights.append(min(cap, max(bus_weights)))
     return weights
 
@@ -162,7 +163,7 @@ def evaluate_holdout(
             if n_frame == 0:
                 # Sample too short — emit a placeholder zero verdict.
                 out[s.key] = evaluate_l3(
-                    np.zeros((1, 25), dtype=np.float32),
+                    np.zeros((1, TARGET_COLS), dtype=np.float32),
                     s.target[:1].astype(np.float32),
                 )
                 continue

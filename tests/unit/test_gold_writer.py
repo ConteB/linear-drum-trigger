@@ -13,7 +13,7 @@ import pytest
 
 from data_engineering.gold.gold_writer import (
     HIHAT_OPENING_COL,
-    N_BUSES,
+    N_CHANNELS,
     R_TARGET_HZ,
     TARGET_COLS,
     GoldWriterError,
@@ -44,16 +44,17 @@ def test_n_frames_is_ceil_of_duration_times_rate(duration_s, expected) -> None:
         pytest.param(0, (0, 1, 2), id="bus-0"),
         pytest.param(1, (3, 4, 5), id="bus-1"),
         pytest.param(7, (21, 22, 23), id="bus-7"),
+        pytest.param(8, (24, 25, 26), id="bus-8"),
     ],
 )
-def test_bus_columns_follow_flat25_layout(bus, cols) -> None:
-    # F0-T2a §3.3 — bus b -> columns (3b, 3b+1, 3b+2).
+def test_bus_columns_follow_flat28_layout(bus, cols) -> None:
+    # F0-T19 §7b — channel b -> columns (3b, 3b+1, 3b+2).
     assert bus_columns(bus) == cols
 
 
 def test_bus_columns_never_collide_with_hihat_head() -> None:
-    # The 24 onset/vel/microtiming columns must not overlap the Hi-Hat head.
-    for bus in range(8):
+    # The 27 onset/vel/microtiming columns must not overlap the Hi-Hat head.
+    for bus in range(N_CHANNELS):
         assert max(bus_columns(bus)) < HIHAT_OPENING_COL
 
 
@@ -84,9 +85,9 @@ def test_rejects_silent_zero_audio(gold_dir, make_audio, make_target, sample_dna
 
 
 def test_rejects_wrong_target_width(gold_dir, make_audio, sample_dna) -> None:
-    # F0-T2a §3.3 — the target matrix is flat-25; 24 columns is a violation.
+    # F0-T19 §7b — the target matrix is flat-28; 24 columns is a violation.
     bad_target = np.zeros((128, 24), dtype=np.float16)
-    with pytest.raises(GoldWriterError, match="flat-25"):
+    with pytest.raises(GoldWriterError, match="flat-28"):
         write_gold_sample(
             gold_dir, "K", audio=make_audio(), target=bad_target, dna=sample_dna
         )
@@ -108,10 +109,10 @@ def test_n_frames_honours_custom_rate() -> None:
     assert n_frames(2.0, r_target_hz=100.5) == 201
 
 
-@pytest.mark.parametrize("bad_bus", [-1, N_BUSES, 99])
+@pytest.mark.parametrize("bad_bus", [-1, N_CHANNELS, 99])
 def test_bus_columns_rejects_out_of_range(bad_bus) -> None:
-    # bus 8 would land on (24, 25, 26) — colliding with the Hi-Hat head.
-    with pytest.raises(GoldWriterError, match="bus index"):
+    # channel 9 would land on (27, 28, 29) — past the Hi-Hat head.
+    with pytest.raises(GoldWriterError, match="channel index"):
         bus_columns(bad_bus)
 
 

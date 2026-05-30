@@ -249,7 +249,7 @@ def build_dna_json(
         },
         "target": {
             **_buffer_integrity(target),
-            "layout": "flat-25",
+            "layout": "flat-28",
             "frame_rate_hz": recipe.target_frame_rate_hz,
         },
     }

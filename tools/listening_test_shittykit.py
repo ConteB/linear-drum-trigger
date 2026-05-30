@@ -51,8 +51,8 @@ from neural.reporter import evaluate_sample_for_report  # noqa: E402
 
 
 BUS_NAMES = [
-    "kick", "snare", "hihat", "tom_hi_mid", "floor",
-    "ride", "crash_a", "crash_b_misc",
+    "kick", "snare_head", "snare_sidestick", "hihat", "tom",
+    "ride_bow", "ride_bell", "crash", "aux",
 ]
 GATE_ROOT = _REPO_ROOT / "docs" / "gates" / "F0-T4c_MINI_L3"
 
@@ -183,14 +183,14 @@ def evaluate_with_fixed_threshold(
     if skip_edge_frames > 0:
         pred = pred[skip_edge_frames:]
         target = target[skip_edge_frames:]
-    # flat-25: onset cols are 0,3,6,9,12,15,18,21
-    onset_pred = pred[:, 0:24:3]
-    onset_target = target[:, 0:24:3]
+    # flat-28 (F0-T19 §7b): onset cols are 0,3,...,24 (9 channels)
+    onset_pred = pred[:, 0:27:3]
+    onset_target = target[:, 0:27:3]
 
     n_true_per_bus, n_pred_per_bus, n_matched_per_bus = [], [], []
     f_per_bus = []
     confusion = []
-    for b in range(8):
+    for b in range(9):
         peaks_pred = peak_pick(onset_pred[:, b], threshold=threshold)
         peaks_true = peak_pick(onset_target[:, b], threshold=0.5)
         n_m, _ = match_onsets(peaks_pred, peaks_true)

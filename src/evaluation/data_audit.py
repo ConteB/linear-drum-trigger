@@ -43,12 +43,12 @@ from evaluation.common import (
 #: Module identifier — anchors the report filename.
 MODULE_NAME = "data_audit"
 
-#: Number of transcription buses in the F0-T2a flat-25 layout (DOSSIER §6.2).
-N_BUSES = 8
-#: Column index of the continuous HH-opening head (F0-T2a §3.3).
-HIHAT_OPENING_COL = 24
-#: Total columns of the flat-25 target layout.
-TARGET_COLS = 25
+#: Number of transcription channels in the F0-T19 flat-28 layout (9 type-classes).
+N_CHANNELS = 9
+#: Column index of the continuous HH-opening head (F0-T19 §7b — 9*3 = 27).
+HIHAT_OPENING_COL = 27
+#: Total columns of the flat-28 target layout.
+TARGET_COLS = 28
 
 #: Onset detection floor — a frame counts as an onset only when its smeared
 #: probability column ``3b`` exceeds this AND is a strict local maximum. The
@@ -88,14 +88,14 @@ def _count_onsets(target: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     rule collapses the Gaussian skirt to a single event).
 
     Output:
-        counts: shape ``(N_BUSES,)``, dtype ``int64``.
-        velocities: shape ``(N_BUSES,)``, dtype ``object`` (each cell a
+        counts: shape ``(N_CHANNELS,)``, dtype ``int64``.
+        velocities: shape ``(N_CHANNELS,)``, dtype ``object`` (each cell a
             ``np.ndarray[float32]`` of normalised velocities at the detected
             onset frames).
     """
-    counts = np.zeros(N_BUSES, dtype=np.int64)
+    counts = np.zeros(N_CHANNELS, dtype=np.int64)
     velocities: list[np.ndarray] = []
-    for b in range(N_BUSES):
+    for b in range(N_CHANNELS):
         onset_col = target[:, 3 * b]
         vel_col = target[:, 3 * b + 1]
         above = onset_col > ONSET_PROB_FLOOR
@@ -146,7 +146,7 @@ def _build_velocity_histogram(
     """
     edges = np.linspace(0.0, 1.0, n_bin + 1)
     histograms: list[list[int]] = []
-    for b in range(N_BUSES):
+    for b in range(N_CHANNELS):
         all_v = np.concatenate([s[b] for s in velocities_per_sample if s[b].size > 0]) \
             if any(s[b].size > 0 for s in velocities_per_sample) else np.array([])
         hist, _ = np.histogram(all_v, bins=edges)
@@ -202,12 +202,12 @@ def _build_figure(metrics: dict[str, Any]) -> Any:
     # Panel 1 — class imbalance
     ax = axes[0, 0]
     class_pct = metrics["class_imbalance_pct"]
-    ax.bar(range(N_BUSES), class_pct, color="#1a1a1a")
+    ax.bar(range(N_CHANNELS), class_pct, color="#1a1a1a")
     ax.axhline(metrics["bus_minority_pct"], linestyle="--", linewidth=0.8, color="#a00000")
     ax.set_title("Class imbalance (% of onsets per bus)")
     ax.set_xlabel("Bus index")
     ax.set_ylabel("% onsets")
-    ax.set_xticks(range(N_BUSES))
+    ax.set_xticks(range(N_CHANNELS))
 
     # Panel 2 — duration histogram
     ax = axes[0, 1]
@@ -260,7 +260,7 @@ def run(
     thr = thresholds if isinstance(thresholds, Thresholds) else load_thresholds(thresholds)
     metas = scan_gold_dir(gold_dir)
 
-    total_onsets = np.zeros(N_BUSES, dtype=np.int64)
+    total_onsets = np.zeros(N_CHANNELS, dtype=np.int64)
     velocities_per_sample: list[np.ndarray] = []
     hh_total: Counter[str] = Counter({"closed": 0, "pedal": 0, "open": 0})
     for m in metas:
@@ -275,7 +275,7 @@ def run(
     class_pct = (
         (total_onsets.astype(np.float64) / n_all * 100.0).tolist()
         if n_all > 0
-        else [0.0] * N_BUSES
+        else [0.0] * N_CHANNELS
     )
     minority_buses = [
         b for b, pct in enumerate(class_pct) if 0.0 < pct < thr.bus_minority_pct

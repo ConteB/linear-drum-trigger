@@ -118,7 +118,7 @@ def test_sfizz_recipe_target_is_multi_bus(tmp_path: Path) -> None:
     result = build_gold_sample(recipe, out_dir=tmp_path, bus_mapping=bus_mapping)
 
     target = _read_f16(tmp_path / f"{result.key}.target.f16", TARGET_COLS).astype(np.float32)
-    onset_cols = target[:, [3 * b for b in range(8)]]
+    onset_cols = target[:, [3 * b for b in range(9)]]
     buses_with_onsets = int(np.count_nonzero(onset_cols.max(axis=0) > 0.5))
     assert buses_with_onsets >= 3, f"expected a multi-bus groove, got {buses_with_onsets}"
 

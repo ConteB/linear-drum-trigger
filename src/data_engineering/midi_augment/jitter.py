@@ -134,13 +134,13 @@ def apply_midi_jitter(
     #    tuples; we work in absolute tick space because every jitter voice
     #    needs symmetric access to a note's ``note_on`` and its matching
     #    ``note_off``. We re-emit deltas at the very end.
-    events, tempo_map = _flatten_to_absolute(midi)
+    events, tempo_map, passthrough = _flatten_to_absolute(midi)
 
     if variant_idx == 0:
         # Baseline branch: identity. We still derive the seed and walk the
         # event list for the round-trip invariant ``flatten ∘ unflatten ==
         # identity`` (catches bugs in the codec early).
-        return _build_midi(events, tempo_map, midi.ticks_per_beat)
+        return _build_midi(events, tempo_map, midi.ticks_per_beat, passthrough)
 
     ticks_per_second_fn = _ticks_per_second_resolver(tempo_map, midi.ticks_per_beat)
 
@@ -161,7 +161,7 @@ def apply_midi_jitter(
     #    velocity voices would waste RNG draws on doomed notes).
     events = _component_drop(events, rng, ticks_per_second_fn)
 
-    return _build_midi(events, tempo_map, midi.ticks_per_beat)
+    return _build_midi(events, tempo_map, midi.ticks_per_beat, passthrough)
 
 
 # ----------------------------------------------------------------------------
@@ -171,22 +171,32 @@ def apply_midi_jitter(
 
 def _flatten_to_absolute(
     midi: mido.MidiFile,
-) -> tuple[list[dict[str, int]], list[tuple[int, int]]]:
+) -> tuple[
+    list[dict[str, int]],
+    list[tuple[int, int]],
+    list[tuple[int, mido.Message | mido.MetaMessage]],
+]:
     """Flatten ``midi`` into a sorted list of absolute-tick drum events.
 
-    Returns ``(events, tempo_map)`` where:
+    Returns ``(events, tempo_map, passthrough)`` where:
 
     * ``events`` is a list of dicts ``{abs_tick_on, abs_tick_off, channel,
       note, velocity}`` — one entry per matched ``(note_on, note_off)`` pair.
     * ``tempo_map`` is a list of ``(abs_tick, tempo_us_per_beat)`` pairs,
       sorted by tick; the first entry covers tick 0 (defaulted to 500_000 /
       120 BPM if the source omits a ``set_tempo``).
+    * ``passthrough`` is a list of ``(abs_tick, msg)`` for every non-note,
+      non-tempo message (``control_change`` incl. the **CC#4 hi-hat pedal**,
+      pitchwheel, program_change, other meta). F0-T19 §7b: the continuous
+      hi-hat opening head reads CC#4 from the rendered MIDI, so CC#4 **must**
+      survive jitter — before this it was silently dropped.
     """
     if not midi.tracks:
         raise MidiAugmentError("midi: must have at least one track")
 
     events: list[dict[str, int]] = []
     tempo_map: list[tuple[int, int]] = []
+    passthrough: list[tuple[int, mido.Message | mido.MetaMessage]] = []
     # `note_on` waiting for its matching `note_off`, keyed by (track, channel,
     # note) — `track` keeps two tracks with overlapping channels distinct.
     pending: dict[tuple[int, int, int], tuple[int, int]] = {}
@@ -202,6 +212,8 @@ def _flatten_to_absolute(
             if msg.is_meta and msg.type == "set_tempo":
                 tempo_map.append((abs_tick, int(msg.tempo)))
                 continue
+            if msg.is_meta and msg.type == "end_of_track":
+                continue  # synthesized fresh in _build_midi
             if msg.type == "note_on" and msg.velocity > 0:
                 key = (track_idx, msg.channel, msg.note)
                 pending[key] = (abs_tick, msg.velocity)
@@ -223,6 +235,10 @@ def _flatten_to_absolute(
                         "velocity": start[1],
                     }
                 )
+                continue
+            # Everything else (CC#4 + other CC, pitchwheel, program_change,
+            # non-tempo meta): preserve verbatim at this absolute tick (F0-T19).
+            passthrough.append((abs_tick, msg))
 
     if pending:
         raise MidiAugmentError(
@@ -234,7 +250,8 @@ def _flatten_to_absolute(
 
     tempo_map.sort(key=lambda pair: pair[0])
     events.sort(key=lambda evt: (evt["abs_tick_on"], evt["note"], evt["channel"]))
-    return events, tempo_map
+    passthrough.sort(key=lambda pair: pair[0])
+    return events, tempo_map, passthrough
 
 
 def _ticks_per_second_resolver(
@@ -265,8 +282,14 @@ def _build_midi(
     events: list[dict[str, int]],
     tempo_map: list[tuple[int, int]],
     ticks_per_beat: int,
+    passthrough: list[tuple[int, mido.Message | mido.MetaMessage]] | None = None,
 ) -> mido.MidiFile:
-    """Rebuild a single-track :class:`mido.MidiFile` from absolute events."""
+    """Rebuild a single-track :class:`mido.MidiFile` from absolute events.
+
+    ``passthrough`` messages (CC#4 hi-hat pedal etc., F0-T19 §7b) are re-emitted
+    at their absolute tick with sort-kind 3 — after the note events at the same
+    tick (intra-tick order is immaterial to the continuous, step-held head).
+    """
     out = mido.MidiFile(ticks_per_beat=ticks_per_beat)
     track = mido.MidiTrack()
     out.tracks.append(track)
@@ -304,6 +327,8 @@ def _build_midi(
                 ),
             )
         )
+    for abs_tick, msg in passthrough or []:
+        timed.append((abs_tick, 3, msg))
     timed.sort(key=lambda item: (item[0], item[1]))
 
     prev = 0
@@ -496,7 +521,7 @@ def midi_to_event_list(midi: mido.MidiFile) -> list[tuple[int, int, int]]:
     Public because the acceptance harness and the recipe-matrix builder both
     want a stable, comparable view of a MIDI without re-parsing.
     """
-    events, _ = _flatten_to_absolute(midi)
+    events, _, _ = _flatten_to_absolute(midi)
     return [(e["abs_tick_on"], e["note"], e["velocity"]) for e in events]
 
 

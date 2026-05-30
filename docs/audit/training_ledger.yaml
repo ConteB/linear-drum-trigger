@@ -1686,55 +1686,56 @@ runs:
     grad_clip_max_norm: 0.5
     skip_nonfinite_step: true
     loss_preset: B
-    autocast: false  # --no-amp dopo MPS deadlock del run #1
+    autocast: false
     wall_time_s: 22601.7
     epochs_run: 150
     final_train_loss: 1.2991
-    grad_explosions_clipped: 3  # epoch 20, 40, 140 (grad_max 14M, 1.9M, 19.7M; clip 0.5 + skip-nonfinite assorbiti)
+    grad_explosions_clipped: 3
     n_nonfinite_loss_skips: 0
     n_nonfinite_grad_skips: 0
   metrics:
     val_F_mean_trainer_tuned: 0.189
-    val_F_max: 0.640
+    val_F_max: 0.64
     val_F_min: 0.008
-    val_F_range: [0.008, 0.640]
-    status_vs_gate: FAIL  # 0.189 < gate 0.55
+    val_F_range:
+    - 0.008
+    - 0.64
+    status_vs_gate: FAIL
     status_vs_baseline_allfixes: "+91 % lift (0.099 \u2192 0.189, +0.090 abs)"
-    f_max_first_cross_kit_above_gate: true  # PRIMA VOLTA: 0.640 > 0.55
+    f_max_first_cross_kit_above_gate: true
   verdict:
     pass_gate: false
-    status_vs_baseline: "STRONG PASS (+91 % lift vs +10-30 % atteso) \u2014 F0-T4e \
-      architettura ratificata empiricamente, anche se gate cross-kit 0.55 ancora\
-      non chiuso. F_max=0.640 supera per la PRIMA VOLTA il gate L3 su un sample\
-      val ShittyKit cross-kit \u2014 mai accaduto in tutto il mini-L3 della settimana."
-    notes: "Wall time 22601 s = 6.3 h su MPS fp32 (~15\u00d7 del baseline AMP ~25 min,\
-      prezzo del workaround --no-amp post deadlock MPS del run #1). Train loss\
-      ancora in calo a epoch 150 (1.30, vs 0.56 del baseline) \u2014 sintomo che\
-      l'aug channel_agnostic rende il task harder e c'\u00e8 margine con pi\u00f9 epoch.\
-      Gap F_min 0.008 \u2192 F_max 0.640: il problema residuo non \u00e8 capacit\u00e0/\
-      OOD ma VARIANZA per-sample. Prossima leva: listening_test + threshold\
-      tuning + eventuale extension a 300 epoch."
+    status_vs_baseline: "STRONG PASS (+91 % lift vs +10-30 % atteso) \u2014 F0-T4e\
+      \ architettura ratificata empiricamente, anche se gate cross-kit 0.55 ancoranon\
+      \ chiuso. F_max=0.640 supera per la PRIMA VOLTA il gate L3 su un sampleval ShittyKit\
+      \ cross-kit \u2014 mai accaduto in tutto il mini-L3 della settimana."
+    notes: "Wall time 22601 s = 6.3 h su MPS fp32 (~15\xD7 del baseline AMP ~25 min,prezzo\
+      \ del workaround --no-amp post deadlock MPS del run #1). Train lossancora in\
+      \ calo a epoch 150 (1.30, vs 0.56 del baseline) \u2014 sintomo chel'aug channel_agnostic\
+      \ rende il task harder e c'\xE8 margine con pi\xF9 epoch.Gap F_min 0.008 \u2192\
+      \ F_max 0.640: il problema residuo non \xE8 capacit\xE0/OOD ma VARIANZA per-sample.\
+      \ Prossima leva: listening_test + thresholdtuning + eventuale extension a 300\
+      \ epoch."
   report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-F0T4e-2026-05-27/report.html
-  listening_test: docs/gates/F0-T4c_MINI_L3/listening_test_mini-l3-F0T4e-2026-05-27/  # TBF
+  listening_test: docs/gates/F0-T4c_MINI_L3/listening_test_mini-l3-F0T4e-2026-05-27/
   checkpoint: artifacts/mini_l3_tcn_F0T4e.pt
   cost:
     azure_usd: 0.0
-    local_compute_min: 376  # 22601 s / 60 (notturno)
+    local_compute_min: 376
 - run_id: mini-l3-F0T4f-stepB-2026-05-27
   date: 2026-05-28 01:11:00+00:00
   git_commit: c0ff193
   status: FAIL
-  purpose: "F0-T4f Step B — Ridnik AsymmetricLoss + label smoothing (Decision\
-    \ Lock CEO 2026-05-27). Doveva attaccare la sotto-confidence sui TP rivelata\
-    \ dallo Step A calibration sweep (6/8 bus preferiscono T<1)."
-  caveat: "⚠ CONFRONTO NON ISOLATO — errore di esecuzione (Strategic Advisor).\
+  purpose: "F0-T4f Step B \u2014 Ridnik AsymmetricLoss + label smoothing (Decision\
+    \ Lock CEO 2026-05-27). Doveva attaccare la sotto-confidence sui TP rivelata dallo\
+    \ Step A calibration sweep (6/8 bus preferiscono T<1)."
+  caveat: "\u26A0 CONFRONTO NON ISOLATO \u2014 errore di esecuzione (Strategic Advisor).\
     \ La spec D2 prescriveva 'Ridnik isolato' ma il run ha usato i DEFAULT del trainer\
     \ invece di replicare F0-T4e: C=32 (non 64), audio_aug OFF (non ON), cosine LR\
-    \ OFF (non ON), early-stop 30 (non 20). 4 assi cambiati in direzioni opposte →\
-    \ il numero NON è un A/B loss-vs-loss valido. La conclusione 'Ridnik fallisce'\
-    \ è INFONDATA: a metà capacità + meno regolarizzazione Ridnik pareggia\
-    \ comunque F0-T4e (0.155 vs 0.149 calibrato). Vero A/B → run\
-    \ mini-l3-F0T4f-c64-isolated-2026-05-28."
+    \ OFF (non ON), early-stop 30 (non 20). 4 assi cambiati in direzioni opposte \u2192\
+    \ il numero NON \xE8 un A/B loss-vs-loss valido. La conclusione 'Ridnik fallisce'\
+    \ \xE8 INFONDATA: a met\xE0 capacit\xE0 + meno regolarizzazione Ridnik pareggia\
+    \ comunque F0-T4e (0.155 vs 0.149 calibrato). Vero A/B \u2192 run mini-l3-F0T4f-c64-isolated-2026-05-28."
   dataset:
     pool_root: data/gold/mini_l3_train
     n_train_samples: 577
@@ -1742,7 +1743,7 @@ runs:
     baseline_only: true
   model:
     arch: F0-T4a TCN + F0-T4e ChannelAgnosticFrontend
-    channels: 32  # ERRORE: doveva essere 64 per match F0-T4e
+    channels: 32
     in_channels: 9
     params: 83705
   preprocessing:
@@ -1756,7 +1757,7 @@ runs:
     fp_to_fn_ratio: 30.0
     label_smoothing: 0.05
   augmentation:
-    audio_aug: false  # ERRORE: doveva essere true
+    audio_aug: false
     channel_agnostic_aug: true
     channel_agnostic_master_seed: 20260526
   training:
@@ -1764,51 +1765,52 @@ runs:
     batch_size: 8
     lr: 0.001
     device: mps
-    use_cosine_lr: false  # ERRORE: doveva essere true
-    early_stop_patience: 30  # divergenza minore: doveva essere 20
+    use_cosine_lr: false
+    early_stop_patience: 30
     grad_clip_max_norm: 0.5
     skip_nonfinite_step: true
     loss_preset: ridnik
-    autocast: false  # --no-amp
+    autocast: false
     wall_time_s: 13829.3
     epochs_run: 150
-    final_train_loss: 0.787  # minimo storico — Ridnik overfitta il train
-    grad_explosions_clipped: many  # grad_max fino a 32M, clip 0.5 + skip-nonfinite assorbiti
+    final_train_loss: 0.787
+    grad_explosions_clipped: many
     n_nonfinite_loss_skips: 0
     n_nonfinite_grad_skips: 0
   metrics:
     val_F_mean_trainer_tuned: 0.099
     val_F_max: 0.303
     val_F_min: 0.007
-    val_F_production_no_calib: 0.0704     # calibration_sweep baseline thr=0.1
-    val_F_production_calibrated: 0.1550   # calibration_sweep per-bus optimum (Step A)
+    val_F_production_no_calib: 0.0704
+    val_F_production_calibrated: 0.155
     calibration_lift_pct: 120.3
-    buses_preferring_T_below_1: 6  # su 8 — sotto-confidence NON risolta da Ridnik
+    buses_preferring_T_below_1: 6
   verdict:
     gate: val_F_production >= 0.20 (D4)
     outcome: FAIL
-    delta_vs_F0T4e_calibrated: "+0.006 (+4 %) — ma confronto invalido (C=32 vs\
+    delta_vs_F0T4e_calibrated: "+0.006 (+4 %) \u2014 ma confronto invalido (C=32 vs\
       \ C=64 + 3 assi). Ridnik NON ha risolto la sotto-confidence (6/8 bus ancora\
       \ T<1, threshold ottimi saliti a 0.35-0.45 vs 0.13-0.30 di F0-T4e). Train loss\
-      \ 0.79 (minimo storico) ma val peggio → overfit. Inconcludente per l'errore\
+      \ 0.79 (minimo storico) ma val peggio \u2192 overfit. Inconcludente per l'errore\
       \ di setup; superseded dal run isolato C=64."
     notes: "Lezione operativa: replicare SEMPRE la baseline esplicitamente coi flag,\
       \ mai affidarsi ai default del trainer per un A/B. Lo Step A (calibration_sweep)\
-      \ recupera +120 % come su F0-T4e — il path post-hoc resta valido."
+      \ recupera +120 % come su F0-T4e \u2014 il path post-hoc resta valido."
   report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-F0T4f-stepB-2026-05-27/report.html
   calibration_sweep: docs/gates/F0-T4c_MINI_L3/listening_test_calibration_sweep_mini-l3-F0T4f-stepB-2026-05-28/
   checkpoint: artifacts/mini_l3_tcn_F0T4f.pt
   cost:
     azure_usd: 0.0
-    local_compute_min: 230  # 13829 s / 60
+    local_compute_min: 230
 - run_id: mini-l3-F0T4f-c64-isolated-2026-05-28
   date: 2026-05-28 14:40:00+00:00
   git_commit: 3b5912d
   status: FAIL
-  purpose: "F0-T4f Step B — A/B PULITO Ridnik vs loss B. Replica ESATTA di F0-T4e\
+  purpose: "F0-T4f Step B \u2014 A/B PULITO Ridnik vs loss B. Replica ESATTA di F0-T4e\
     \ (C=64, audio_aug, cosine LR, early-stop 20, input-agnostic, p1p2) cambiando\
-    \ SOLO la loss → ridnik. Corregge il confronto invalido del run #1 (C=32).\
-    \ Unica variabile = loss. Pass criterion D4: val F production calibrato ≥ 0.20."
+    \ SOLO la loss \u2192 ridnik. Corregge il confronto invalido del run #1 (C=32).\
+    \ Unica variabile = loss. Pass criterion D4: val F production calibrato \u2265\
+    \ 0.20."
   dataset:
     pool_root: data/gold/mini_l3_train
     n_train_samples: 577
@@ -1847,40 +1849,206 @@ runs:
     grad_clip_max_norm: 0.5
     skip_nonfinite_step: true
     loss_preset: ridnik
-    autocast: false  # --no-amp
+    autocast: false
     wall_time_s: 19808.9
     epochs_run: 150
-    final_train_loss: 0.6037  # scala NLL+focusing Ridnik, NON comparabile con loss B
+    final_train_loss: 0.6037
     n_nonfinite_loss_skips: 0
     n_nonfinite_grad_skips: 0
   metrics:
-    val_F_mean_trainer_tuned: 0.173       # vs F0-T4e loss B 0.189 → -8.5 %
-    val_F_max: 0.644                       # vs F0-T4e 0.640 → pari
+    val_F_mean_trainer_tuned: 0.173
+    val_F_max: 0.644
     val_F_min: 0.007
-    val_F_production_no_calib: 0.0783      # calibration_sweep baseline thr=0.1
-    val_F_production_calibrated: 0.1633    # calibration_sweep per-bus optimum (Step A)
+    val_F_production_no_calib: 0.0783
+    val_F_production_calibrated: 0.1633
     calibration_lift_pct: 108.4
-    buses_preferring_T_below_1: 6  # su 8 — sotto-confidence NON risolta da Ridnik anche a C=64
+    buses_preferring_T_below_1: 6
   verdict:
     gate: val_F_production_calibrated >= 0.20 (D4)
     outcome: FAIL
-    delta_vs_F0T4e_clean_AB: "A/B PULITO (unica variabile = loss). PRODUCTION\
-      \ CALIBRATO: Ridnik 0.1633 vs loss B 0.149 = +9.4 % (Ridnik vince sulla metrica\
-      \ realistica). TRAINER-TUNED: Ridnik 0.173 vs B 0.189 = -8.5 % (Ridnik perde\
-      \ sulla metrica ottimistica). Il guadagno di Ridnik è specificamente\
-      \ nell'interazione con la calibrazione a soglia fissa, non in discriminabilità\
-      \ grezza."
-    notes: "Ipotesi centrale Step A (la sotto-confidence è curabile dal lato loss)\
-      \ → FALSIFICATA: 6/8 bus vogliono ancora T<1 anche a C=64. La sotto-confidence\
-      \ è strutturale (task/capacità), non loss-fixable. Ridnik resta un win modesto\
-      \ ma reale (+9.4 % production a costo zero) → candidabile come default loss\
-      \ per F2-T3. CONCLUSIONE STRATEGICA: il mini-L3 single-kit-val (ShittyKit)\
-      \ è SATURO come diagnostico — nessuna leva loss rompe oltre ~0.16-0.17\
-      \ production. Il gate reale si sposta a L4/E-GMD (~30 kit, distribuzione\
+    delta_vs_F0T4e_clean_AB: "A/B PULITO (unica variabile = loss). PRODUCTION CALIBRATO:\
+      \ Ridnik 0.1633 vs loss B 0.149 = +9.4 % (Ridnik vince sulla metrica realistica).\
+      \ TRAINER-TUNED: Ridnik 0.173 vs B 0.189 = -8.5 % (Ridnik perde sulla metrica\
+      \ ottimistica). Il guadagno di Ridnik \xE8 specificamente nell'interazione con\
+      \ la calibrazione a soglia fissa, non in discriminabilit\xE0 grezza."
+    notes: "Ipotesi centrale Step A (la sotto-confidence \xE8 curabile dal lato loss)\
+      \ \u2192 FALSIFICATA: 6/8 bus vogliono ancora T<1 anche a C=64. La sotto-confidence\
+      \ \xE8 strutturale (task/capacit\xE0), non loss-fixable. Ridnik resta un win\
+      \ modesto ma reale (+9.4 % production a costo zero) \u2192 candidabile come\
+      \ default loss per F2-T3. CONCLUSIONE STRATEGICA: il mini-L3 single-kit-val\
+      \ (ShittyKit) \xE8 SATURO come diagnostico \u2014 nessuna leva loss rompe oltre\
+      \ ~0.16-0.17 production. Il gate reale si sposta a L4/E-GMD (~30 kit, distribuzione\
       \ molto meno OOD). F2-T3 architettonicamente pronto."
   report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-F0T4f-c64-isolated-2026-05-28/report.html
   calibration_sweep: docs/gates/F0-T4c_MINI_L3/listening_test_calibration_sweep_mini-l3-F0T4f-c64-isolated-2026-05-28/
   checkpoint: artifacts/mini_l3_tcn_F0T4f_c64.pt
   cost:
     azure_usd: 0.0
-    local_compute_min: 330  # 19809 s / 60
+    local_compute_min: 330
+- run_id: mini-l3-F0T19-flat28-2026-05-29
+  date: '2026-05-29'
+  git_commit: c4c4b79+flat28-uncommitted
+  status: FAIL
+  purpose: F0-T19 flat-28 contract A/B vs F0-T4e baseline (0.149 prod / 0.189 trainer-tuned).
+    Exact F0-T4e config (C=64, P1+P2, input-agnostic seed 20260526, loss B fp_ratio=30,
+    cosine warmup 15, early-stop 20, grad-clip 0.5, --no-amp); ONLY variable = new
+    Gold (flat-28 9-class taxonomy + dialect render Arrow2 + F0-T18 canonicalization
+    + continuous CC4 hihat head).
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 115
+    baseline_only: true
+    notes: 'Re-rendered through F0-T19 pipeline: dialect midimaps (generated, Plan-A
+      retired) + flat-28 targets + continuous CC4 (jitter now preserves control_change).
+      1150 train rendered (916 DG + 234 SFZ), 577 baseline-only used. Val 115 ShittyKit
+      (cross-kit OOD).'
+  model:
+    arch: F0-T4a TCN + F0-T4e ChannelAgnosticFrontend, flat-28 9-channel heads
+    channels: 64
+    in_channels: 9
+    params: 331420
+    target_cols: 28
+    n_channels: 9
+  preprocessing:
+    kind: p1p2
+  loss:
+    kind: afl
+    preset: B
+    fp_to_fn_ratio: 30.0
+    focal_gamma: 2.0
+    pos_weight: density-derived 9-tuple (132.4,65.5,1000,112.6,123.5,260.6,1000,1000,1000)
+  augmentation:
+    audio_aug: true
+    channel_agnostic_aug: true
+    channel_agnostic_master_seed: 20260526
+  training:
+    epochs: 150
+    epochs_run: 111
+    early_stopped: 111
+    batch_size: 8
+    lr: 0.001
+    device: mps
+    autocast: false
+    cosine_lr_warmup_epochs: 15
+    early_stop_patience: 20
+    grad_clip_max_norm: 0.5
+    skip_nonfinite_step: true
+    wall_time_s: 14608.8
+    best_train_loss: 1.185
+  metrics:
+    val_F_mean_trainer_tuned: 0.257
+    val_F_max: 0.763
+    val_F_min: 0.01
+    val_F_production_calibrated: 0.1455
+    val_F_production_baseline_uncal: 0.0996
+    status_vs_gate: FAIL (0.1455 prod < 0.55)
+    status_vs_baseline_F0T4e_production: FLAT (0.1455 vs 0.149, -2.3%)
+    status_vs_baseline_F0T4e_trainer_tuned: +36% (0.257 vs 0.189) but confounded by
+      8->9 channel averaging
+    f_max_vs_baseline: 0.763 vs 0.640 (new cross-kit peak)
+  verdict:
+    pass_gate: false
+    status_vs_baseline: 'PRODUCTION FLAT (~0.145 vs 0.149) on the saturated single-kit-val
+      ShittyKit; F_max new high 0.763 (raw discriminability up). The flat-28 9-class
+      split adds 4 rare channels (snare_sidestick/ride_bell/crash/aux) near-EMPTY
+      on ShittyKit (per-bus F~0) that DILUTE the mean (in flat-25 these were collapsed
+      into channels-with-signal). Consistent with F0-T4f conclusion: mini-L3 single-kit-val
+      is saturated (~0.15 ceiling). F0-T19 contract validated (trains clean, no regression,
+      richer correct taxonomy + cleaner Gold: hihat +51%, 0 phantoms, continuous CC4).
+      The dilution will REVERSE on a multi-kit val where rare channels carry signal.
+      Real validation gate = L4/E-GMD (~30 kits, far less OOD).'
+    notes: Architecturally GO for F2-T3. The flat-28 contract + dialect render + canonicalization
+      + CC4 are all ratified by a clean training run; the mini-L3 production headline
+      is at the known saturated floor, not a regression.
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-F0T19-flat28-2026-05-29/report.html
+  calibration: docs/gates/F0-T4c_MINI_L3/listening_test_mini-l3-F0T19-flat28-2026-05-29/calibration_sweep.json
+  checkpoint: artifacts/mini_l3_tcn_F0T19.pt
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 243
+- run_id: mini-l3-F0T19synth-2026-05-30
+  date: 2026-05-30
+  git_commit: c4c4b79+f0t19synth-uncommitted
+  status: FAIL
+  purpose: Synthetic-MIDI integration A/B vs F0-T19 baseline (0.1455 prod / 0.257 trainer-tuned).
+    Tests the pipeline-audit F1/F5 + CEO hypothesis that rare-channel STARVATION (snare_sidestick/ride_bell/crash/aux
+    near-empty in GMD-only val) diluted the per-sample mean. Pool expanded 117 -> 250
+    MIDI (117 GMD + 50 rare_emphasis + 83 chaos via midi_synth/, both train AND ShittyKit
+    val). Exact F0-T19 config; ONLY variable = synthetic MIDIs in the pool (train capped
+    to 577 via --max-train-samples to match baseline n_train AND fit 16 GB RAM; val grew
+    115 -> 248 now carrying rare-channel signal).
+  dataset:
+    pool_root: data/gold/mini_l3_train
+    n_train_samples: 577
+    n_val_samples: 248
+    baseline_only: true
+    notes: 'Re-rendered 250-MIDI synthetic-integrated pool (2466 train both-variants ->
+      baseline-only 1232 -> stride-2 capped 577). Rare channels now populated (chaos
+      Poisson + rare_emphasis). BigRustyDrums 14/500 rare-china entries failed (Sfizz
+      120s watchdog timeout, dense china grooves) -> tolerable, DG kits cover rare channels.
+      Val 248 ShittyKit (GMD+synthetic, rare channels carry signal vs near-empty in F0-T19 baseline).'
+  model:
+    arch: F0-T4a TCN + F0-T4e ChannelAgnosticFrontend, flat-28 9-channel heads
+    channels: 64
+    in_channels: 9
+    params: 331420
+    target_cols: 28
+    n_channels: 9
+  preprocessing:
+    kind: p1p2
+  loss:
+    kind: afl
+    preset: B
+    fp_to_fn_ratio: 30.0
+    focal_gamma: 2.0
+    pos_weight: density-derived 9-tuple (61.4,49.3,82.5,46.8,48.3,71.0,75.6,69.8,62.3)
+      -- NO CAP (rare channels now populated, vs F0-T19 baseline 4x 1000-cap)
+  augmentation:
+    audio_aug: true
+    channel_agnostic_aug: true
+    channel_agnostic_master_seed: 20260526
+  training:
+    epochs: 150
+    epochs_run: 98
+    early_stopped: 98
+    batch_size: 8
+    lr: 0.001
+    device: mps
+    autocast: false
+    cosine_lr_warmup_epochs: 15
+    early_stop_patience: 20
+    grad_clip_max_norm: 0.5
+    skip_nonfinite_step: true
+    wall_time_s: 11476.8
+    best_train_loss: 2.0663
+  metrics:
+    val_F_mean_trainer_tuned: 0.164
+    val_F_max: 0.667
+    val_F_min: 0.006
+    val_F_production_calibrated: 0.1503
+    val_F_production_baseline_uncal: 0.0905
+    per_bus_rare_channels_calibrated: 'snare_sidestick 0.110, ride_bell 0.117, crash
+      0.115, aux 0.112 (were ~0 / diluting in F0-T19 baseline)'
+    status_vs_gate: FAIL (0.1503 prod < 0.55)
+    status_vs_baseline_F0T19_production: FLAT (0.1503 vs 0.1455, +3.3%)
+  verdict:
+    pass_gate: false
+    status_vs_baseline: 'PRODUCTION FLAT (+3.3%, 0.1503 vs 0.1455). The CEO/audit-F1
+      rare-channel-starvation hypothesis was TESTED and the dilution reversal DID happen:
+      the 4 rare channels went from ~0 (diluting) to ~0.11 calibrated F. But the headline
+      stayed flat because ALL channels (common included) sit at a ~0.09-0.12 production
+      ceiling -> the bottleneck is NOT rare-channel starvation but structural per-channel
+      under-confidence (predict-everywhere, F0-T4f). Synthetic integration technically
+      works (rare channels now detectable) but does not break the saturated single-kit-val
+      floor. Confirms definitively: no data-side lever moves the mini-L3 ShittyKit headline
+      past ~0.15.'
+    notes: Architecturally GO for F2-T3 (unchanged). The mini-L3 single-kit-val ShittyKit
+      is a saturated diagnostic; real validation gate = L4/E-GMD (~30 kits, far less
+      OOD). Hypothesis cleanly falsified before spending Azure credit on it.
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-F0T19synth-2026-05-30/report.html
+  calibration: docs/gates/F0-T4c_MINI_L3/listening_test_mini-l3-F0T19synth-2026-05-30/calibration_sweep.json
+  checkpoint: artifacts/mini_l3_tcn_F0T19synth.pt
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 191

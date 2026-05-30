@@ -10,8 +10,8 @@ Four stages:
    skip; dilations ``[1, 2, 4, 8, 16, 32, 64, 128]``. Conv1d are *causal*
    (past-only) — RTNeural streams them stateful.
 4. **Heads** — 4 × Conv1d k=1 producing onset/velocity/microtiming/hihat,
-   concatenated to the F0-T2a flat-25 layout
-   (cols ``3b/3b+1/3b+2`` per bus + col 24 = hihat opening).
+   concatenated to the F0-T19 flat-28 layout
+   (cols ``3b/3b+1/3b+2`` per channel + col 27 = hihat opening).
 
 Baseline ``C = 32`` (F0-T4a §3, tarable). Encoder activations are ReLU
 (F0-T4a §3 line ②).
@@ -31,12 +31,13 @@ ENCODER_KERNEL = 8
 #: F0-T4a §3 — trunk dilations per residual block.
 TRUNK_DILATIONS: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128)
 TRUNK_KERNEL = 3
-#: F0-T4a §4 — fixed 8-slot input width (zero-fill for unused slots).
+#: F0-T4a §4 — fixed 8-slot input width (zero-fill for unused slots). Input is
+#: still up to 8 audio channels (F0-T19 §0.2 "8 in / 9 out" is deliberate).
 N_INPUT_SLOTS = 8
-#: F0-T2a §3.3 — flat-25 = 8 buses × 3 channels + 1 hihat opening.
-N_BUSES = 8
-TARGET_COLS = 25
-HIHAT_OPENING_COL = 24
+#: F0-T19 §7b — flat-28 = 9 type-class channels × 3 (onset/vel/mt) + 1 hihat opening.
+N_CHANNELS = 9
+TARGET_COLS = 28
+HIHAT_OPENING_COL = 27
 
 
 @dataclass(frozen=True)
@@ -162,12 +163,12 @@ class TCNModel(nn.Module):
     """The F0-T4a TCN model.
 
     Forward shape:
-        ``[B, 8, n_sample]`` → ``[B, n_frame, 25]``, with
+        ``[B, 8, n_sample]`` → ``[B, n_frame, 28]``, with
         ``n_frame = n_sample // 128``.
 
-    The model output is the F0-T2a flat-25 target layout: columns ``3b``
+    The model output is the F0-T19 flat-28 target layout: columns ``3b``
     (onset, sigmoid), ``3b+1`` (velocity, sigmoid), ``3b+2`` (microtiming,
-    tanh) for bus ``b ∈ [0, 7]``, and column ``24`` (hihat opening, sigmoid).
+    tanh) for channel ``b ∈ [0, 8]``, and column ``27`` (hihat opening, sigmoid).
     """
 
     def __init__(self, config: TCNConfig | None = None) -> None:
@@ -185,11 +186,11 @@ class TCNModel(nn.Module):
             ]
         )
         # Heads are exported as four Conv1d k=1; F0-T4a §8 open item lets us
-        # fuse them later into one Conv1d C→25 if RTNeural prefers a single
+        # fuse them later into one Conv1d C→28 if RTNeural prefers a single
         # graph.
-        self.head_onset = nn.Conv1d(C, N_BUSES, kernel_size=1)
-        self.head_velocity = nn.Conv1d(C, N_BUSES, kernel_size=1)
-        self.head_microtiming = nn.Conv1d(C, N_BUSES, kernel_size=1)
+        self.head_onset = nn.Conv1d(C, N_CHANNELS, kernel_size=1)
+        self.head_velocity = nn.Conv1d(C, N_CHANNELS, kernel_size=1)
+        self.head_microtiming = nn.Conv1d(C, N_CHANNELS, kernel_size=1)
         self.head_hihat = nn.Conv1d(C, 1, kernel_size=1)
 
     # NOTE: this is the "training-time" forward. The *streaming-time* forward
@@ -206,16 +207,16 @@ class TCNModel(nn.Module):
         velocity = torch.sigmoid(self.head_velocity(x))
         microtiming = torch.tanh(self.head_microtiming(x))
         hihat = torch.sigmoid(self.head_hihat(x))
-        # Assemble flat-25: interleave bus columns (3b, 3b+1, 3b+2) and append col 24.
-        # Build a [B, 25, T] tensor then transpose to [B, T, 25].
+        # Assemble flat-28: interleave channel columns (3b, 3b+1, 3b+2) and
+        # append col 27. Build a [B, 28, T] tensor then transpose to [B, T, 28].
         B, _, T = x.shape  # noqa: N806
         flat = torch.empty((B, TARGET_COLS, T), dtype=x.dtype, device=x.device)
-        # Interleave columns: for bus b, cols [3b, 3b+1, 3b+2] = onset, vel, mt.
-        flat[:, 0:24:3, :] = onset
-        flat[:, 1:24:3, :] = velocity
-        flat[:, 2:24:3, :] = microtiming
+        # Interleave columns: for channel b, cols [3b, 3b+1, 3b+2] = onset, vel, mt.
+        flat[:, 0:HIHAT_OPENING_COL:3, :] = onset
+        flat[:, 1:HIHAT_OPENING_COL:3, :] = velocity
+        flat[:, 2:HIHAT_OPENING_COL:3, :] = microtiming
         flat[:, HIHAT_OPENING_COL, :] = hihat.squeeze(1)
-        return flat.transpose(1, 2).contiguous()  # [B, T, 25]
+        return flat.transpose(1, 2).contiguous()  # [B, T, 28]
 
 
 def count_parameters(model: nn.Module) -> int:
@@ -234,7 +235,7 @@ class ComposedTCN(nn.Module):
            ↓ PreprocessingFrontend (F0-T4d, optional)
         preprocessed [B, n_in + (1 if P2 else 0), T]
            ↓ TCNModel (F0-T4a)
-        [B, T_frame, 25]
+        [B, T_frame, 28]
 
     Either or both of the frontends can be ``None``; the TCN's
     ``in_channels`` must match the number of channels emerging from
@@ -252,7 +253,7 @@ class ComposedTCN(nn.Module):
 
     def __init__(
         self,
-        tcn: "TCNModel",
+        tcn: TCNModel,
         *,
         channel_agnostic: nn.Module | None = None,
         preprocessing: nn.Module | None = None,
@@ -283,7 +284,7 @@ __all__ = [
     "ENCODER_KERNEL",
     "ENCODER_STRIDES",
     "HIHAT_OPENING_COL",
-    "N_BUSES",
+    "N_CHANNELS",
     "N_INPUT_SLOTS",
     "StridedEncoder",
     "TARGET_COLS",

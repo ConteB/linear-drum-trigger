@@ -28,7 +28,7 @@ import torch
 
 from neural.model import (
     HIHAT_OPENING_COL,
-    N_BUSES,
+    N_CHANNELS,
     N_INPUT_SLOTS,
     TARGET_COLS,
     TCNModel,
@@ -140,10 +140,10 @@ def export_tcn(model: TCNModel, path: Path | str) -> Path:
             "dtype": "float32",
         },
         "output": {
-            "layout": "flat-25",
+            "layout": "flat-28",
             "frame_rate_hz": 44100 / 128,
             "n_columns": TARGET_COLS,
-            "n_buses": N_BUSES,
+            "n_channels": N_CHANNELS,
             "hihat_opening_col": HIHAT_OPENING_COL,
         },
         "topology": {
@@ -283,17 +283,17 @@ def numpy_reference_forward(doc: dict[str, Any], audio: np.ndarray) -> np.ndarra
 
         activations[lid] = x
 
-    onset = activations["head_onset"]  # [8, T]
+    onset = activations["head_onset"]  # [9, T]
     velocity = activations["head_velocity"]
     microtiming = activations["head_microtiming"]
     hihat = activations["head_hihat"]  # [1, T]
     t_out = onset.shape[1]
     flat = np.zeros((TARGET_COLS, t_out), dtype=np.float32)
-    flat[0:24:3, :] = onset
-    flat[1:24:3, :] = velocity
-    flat[2:24:3, :] = microtiming
+    flat[0:HIHAT_OPENING_COL:3, :] = onset
+    flat[1:HIHAT_OPENING_COL:3, :] = velocity
+    flat[2:HIHAT_OPENING_COL:3, :] = microtiming
     flat[HIHAT_OPENING_COL, :] = hihat[0]
-    return flat.T  # [T, 25]
+    return flat.T  # [T, 28]
 
 
 __all__ = [

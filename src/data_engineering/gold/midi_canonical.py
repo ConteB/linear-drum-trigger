@@ -37,8 +37,8 @@ import yaml
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 #: The versioned source-standards SSoT (F0-T18).
 DEFAULT_STANDARDS_PATH = _REPO_ROOT / "docs" / "specs" / "midi_source_standards.yaml"
-#: Number of logical transcription buses (F0-T2a §3.3).
-N_BUSES = 8
+#: Number of logical transcription channels (F0-T19 §7b — 9 type-classes).
+N_CHANNELS = 9
 
 
 class CanonicalizationError(ValueError):
@@ -154,9 +154,9 @@ def load_source_standards(path: str | Path = DEFAULT_STANDARDS_PATH) -> SourceSt
             raise CanonicalizationError(
                 f"standards SSoT: articulation {name} bus {bus!r} not an int"
             )
-        if not 1 <= bus <= N_BUSES:
+        if not 1 <= bus <= N_CHANNELS:
             raise CanonicalizationError(
-                f"standards SSoT: articulation {name} bus {bus} outside [1, {N_BUSES}]"
+                f"standards SSoT: articulation {name} bus {bus} outside [1, {N_CHANNELS}]"
             )
         hho = body.get("hihat_opening")
         if hho is not None and not (isinstance(hho, (int, float)) and 0.0 <= float(hho) <= 1.0):

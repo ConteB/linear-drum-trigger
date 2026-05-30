@@ -69,14 +69,14 @@ def bus_mapping() -> BusMapping:
 # --------------------------------------------------------------------------
 # load_bus_mapping
 # --------------------------------------------------------------------------
-def test_mapping_table_loads_the_eight_buses(bus_mapping: BusMapping) -> None:
-    """The locked table maps kick/snare/hi-hat onto buses 0/1/2 (0-based)."""
-    assert bus_mapping.schema_version == "1.0"
+def test_mapping_table_loads_the_nine_channels(bus_mapping: BusMapping) -> None:
+    """The locked table maps kick/snare/hi-hat onto channels 0/1/3 (0-based, F0-T19)."""
+    assert bus_mapping.schema_version == "2.0"
     assert bus_mapping.gm_to_bus[_KICK] == 0
     assert bus_mapping.gm_to_bus[_SNARE] == 1
-    assert bus_mapping.gm_to_bus[_HH_CLOSED] == 2
-    # Every mapped bus index stays inside the 8-bus contract.
-    assert all(0 <= bus <= 7 for bus in bus_mapping.gm_to_bus.values())
+    assert bus_mapping.gm_to_bus[_HH_CLOSED] == 3  # hihat is channel 4 (1-based)
+    # Every mapped channel index stays inside the 9-channel contract.
+    assert all(0 <= bus <= 8 for bus in bus_mapping.gm_to_bus.values())
 
 
 def test_mapping_table_missing_file_fails_loud() -> None:
@@ -86,10 +86,10 @@ def test_mapping_table_missing_file_fails_loud() -> None:
 
 
 def test_mapping_table_rejects_bus_id_out_of_range(tmp_path: Path) -> None:
-    """A bus id outside [1, 8] is a contract violation — fail loud."""
+    """A channel id outside [1, 9] is a contract violation — fail loud."""
     bad = tmp_path / "bad.yaml"
-    bad.write_text('schema_version: "1.0"\nforward_gm_to_bus: {36: 9}\n', encoding="utf-8")
-    with pytest.raises(TargetBuilderError, match="bus id 9"):
+    bad.write_text('schema_version: "1.0"\nforward_gm_to_bus: {36: 10}\n', encoding="utf-8")
+    with pytest.raises(TargetBuilderError, match="channel id 10"):
         load_bus_mapping(bad)
 
 
@@ -104,8 +104,8 @@ def test_mapping_table_rejects_missing_forward_block(tmp_path: Path) -> None:
 # --------------------------------------------------------------------------
 # build_target — layout & frame count
 # --------------------------------------------------------------------------
-def test_target_has_flat25_shape_and_dtype(tmp_path: Path, bus_mapping: BusMapping) -> None:
-    """The matrix is ``[n_frame, 25]`` float16 (F0-T2a §3.3)."""
+def test_target_has_flat28_shape_and_dtype(tmp_path: Path, bus_mapping: BusMapping) -> None:
+    """The matrix is ``[n_frame, 28]`` float16 (F0-T19 §7b)."""
     midi = _make_midi(tmp_path / "g.mid", [(0, _KICK, 100), (480, _SNARE, 90)])
     target = build_target(midi, duration_s=2.0, bus_mapping=bus_mapping)
     assert target.shape == (n_frames(2.0), TARGET_COLS)
@@ -172,12 +172,12 @@ def test_numeric_ranges_respect_the_contract(
     target = build_target(
         _make_midi(tmp_path / "g.mid", events), duration_s=2.0, bus_mapping=bus_mapping
     ).astype(np.float32)
-    for bus in range(8):
+    for bus in range(9):
         assert target[:, 3 * bus].min() >= 0.0 and target[:, 3 * bus].max() <= 1.0
         assert target[:, 3 * bus + 1].min() >= 0.0 and target[:, 3 * bus + 1].max() <= 1.0
         micro = target[:, 3 * bus + 2]
         assert micro.min() >= -1.0 and micro.max() <= 1.0
-    assert target[:, 24].min() >= 0.0 and target[:, 24].max() <= 1.0
+    assert target[:, 27].min() >= 0.0 and target[:, 27].max() <= 1.0
 
 
 def test_microtiming_encodes_the_sub_frame_residual(
@@ -206,10 +206,57 @@ def test_hihat_opening_head_tracks_articulation(
         [(_TICKS_PER_SECOND, _HH_CLOSED, 90), (2 * _TICKS_PER_SECOND, _HH_OPEN, 90)],
     )
     target = build_target(midi, duration_s=3.0, bus_mapping=bus_mapping).astype(np.float32)
-    opening = target[:, 24]
+    opening = target[:, 27]
     assert opening[0] == 0.0  # closed before any hit
     assert opening[-1] == pytest.approx(HIHAT_OPENING_BY_NOTE[_HH_OPEN])  # held open
     assert set(np.unique(opening)).issubset({0.0, 0.5, 1.0})
+
+
+def _make_midi_with_cc4(
+    path: Path, notes: list[tuple[int, int, int]], cc4: list[tuple[int, int]]
+) -> Path:
+    """MIDI of note hits + CC#4 (hi-hat pedal) events, both in absolute ticks."""
+    midi = mido.MidiFile(ticks_per_beat=_TPB)
+    track = mido.MidiTrack()
+    midi.tracks.append(track)
+    track.append(mido.MetaMessage("set_tempo", tempo=mido.bpm2tempo(_BPM), time=0))
+    timed: list[tuple[int, int, mido.Message]] = []
+    for abs_tick, note, vel in notes:
+        timed.append((abs_tick, 1, mido.Message("note_on", note=note, velocity=vel)))
+        timed.append((abs_tick + 30, 0, mido.Message("note_off", note=note, velocity=0)))
+    for abs_tick, value in cc4:
+        timed.append((abs_tick, 2, mido.Message("control_change", control=4, value=value)))
+    timed.sort(key=lambda item: (item[0], item[1]))
+    prev = 0
+    for abs_tick, _, message in timed:
+        track.append(message.copy(time=abs_tick - prev))
+        prev = abs_tick
+    track.append(mido.MetaMessage("end_of_track", time=0))
+    midi.save(str(path))
+    return path
+
+
+def test_hihat_opening_head_uses_cc4_pedal_when_present(
+    tmp_path: Path, bus_mapping: BusMapping
+) -> None:
+    """With CC#4 present, the opening head = clamp(1 - cc4/127) (F0-T19 §7b).
+
+    Empirically (GMD probe 2026-05-29): high pedal pressure = closed = low
+    openness, so CC#4 = 0 -> fully open (1.0), CC#4 = 127 -> fully closed (0.0).
+    The continuous pedal supersedes the discrete-note articulations.
+    """
+    # CC4=0 (open) at t=0; CC4=127 (closed) at t=1 s. A hi-hat hit anchors mapped onsets.
+    midi = _make_midi_with_cc4(
+        tmp_path / "g.mid",
+        notes=[(0, _HH_CLOSED, 90), (2 * _TICKS_PER_SECOND, _HH_CLOSED, 90)],
+        cc4=[(0, 0), (_TICKS_PER_SECOND, 127)],
+    )
+    target = build_target(midi, duration_s=3.0, bus_mapping=bus_mapping).astype(np.float32)
+    opening = target[:, 27]
+    early = int(0.5 * R_TARGET_HZ)  # within the open (CC4=0) segment
+    late = int(2.0 * R_TARGET_HZ)   # within the closed (CC4=127) segment
+    assert opening[early] == pytest.approx(1.0, abs=1e-3)
+    assert opening[late] == pytest.approx(0.0, abs=1e-3)
 
 
 # --------------------------------------------------------------------------

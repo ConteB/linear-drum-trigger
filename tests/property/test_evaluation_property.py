@@ -18,7 +18,7 @@ from hypothesis import strategies as st
 from tests.unit.test_evaluation_common import _make_dna
 from tests.unit.test_evaluation_data_audit import _write_target_with_onsets
 
-from evaluation.data_audit import N_BUSES
+from evaluation.data_audit import N_CHANNELS
 from evaluation.data_audit import run as run_data_audit
 from evaluation.evaluation_suite import _bootstrap_ci, _f_measure
 
@@ -36,7 +36,7 @@ THRESHOLDS = Path("src/evaluation/thresholds.yaml")
 )
 @given(
     onsets_per_bus=st.lists(
-        st.integers(min_value=1, max_value=10), min_size=N_BUSES, max_size=N_BUSES,
+        st.integers(min_value=1, max_value=10), min_size=N_CHANNELS, max_size=N_CHANNELS,
     )
 )
 def test_data_audit_run_is_byte_deterministic(
@@ -105,7 +105,7 @@ def test_bootstrap_ci_mean_is_sample_mean(base: float, n: int) -> None:
 @given(
     onsets=st.lists(
         st.integers(min_value=2, max_value=5),
-        min_size=N_BUSES, max_size=N_BUSES,
+        min_size=N_CHANNELS, max_size=N_CHANNELS,
     )
 )
 def test_data_audit_monotonicity_minority_threshold(

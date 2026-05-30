@@ -16,7 +16,7 @@ import torch
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from neural.loss import N_BUSES, _ridnik_asymmetric_loss
+from neural.loss import N_CHANNELS, _ridnik_asymmetric_loss
 
 _SETTINGS = settings(
     max_examples=25,
@@ -29,10 +29,10 @@ def _from_seed(seed: int, B: int = 1, T: int = 16) -> tuple[torch.Tensor, torch.
     """Reproducible (pred, target) tensors from a single integer seed."""
     rng = np.random.default_rng(seed)
     p = torch.from_numpy(
-        rng.uniform(1e-3, 1.0 - 1e-3, size=(B, T, N_BUSES)).astype(np.float32),
+        rng.uniform(1e-3, 1.0 - 1e-3, size=(B, T, N_CHANNELS)).astype(np.float32),
     )
     t = torch.from_numpy(
-        rng.uniform(0.0, 1.0, size=(B, T, N_BUSES)).astype(np.float32),
+        rng.uniform(0.0, 1.0, size=(B, T, N_CHANNELS)).astype(np.float32),
     )
     return p, t
 
@@ -41,7 +41,7 @@ def _from_seed(seed: int, B: int = 1, T: int = 16) -> tuple[torch.Tensor, torch.
 @given(seed=st.integers(min_value=0, max_value=1_000_000))
 def test_ridnik_non_negative(seed: int) -> None:
     p, t = _from_seed(seed)
-    pw = torch.ones(N_BUSES, dtype=torch.float32)
+    pw = torch.ones(N_CHANNELS, dtype=torch.float32)
     loss = _ridnik_asymmetric_loss(
         p, t, gamma_pos=1.0, gamma_neg=4.0,
         prob_clip_negative=0.05, fp_to_fn_ratio=30.0, pos_weight=pw,
@@ -60,9 +60,9 @@ def test_ridnik_bus_permutation_invariance(seed: int, perm_seed: int) -> None:
     per-bus weights, which is permutation-invariant when all 3 are permuted
     together."""
     p, t = _from_seed(seed)
-    pw = torch.linspace(1.0, 8.0, N_BUSES, dtype=torch.float32)
+    pw = torch.linspace(1.0, 8.0, N_CHANNELS, dtype=torch.float32)
     perm_rng = np.random.default_rng(perm_seed)
-    perm = perm_rng.permutation(N_BUSES)
+    perm = perm_rng.permutation(N_CHANNELS)
     perm_t = torch.as_tensor(perm, dtype=torch.long)
     p_perm = p.index_select(-1, perm_t)
     t_perm = t.index_select(-1, perm_t)
@@ -90,7 +90,7 @@ def test_ridnik_pos_weight_monotonia(seed: int, scale: float) -> None:
     p, t = _from_seed(seed)
     # ensure at least one positive frame
     t[0, 0, 0] = 1.0
-    pw_base = torch.ones(N_BUSES, dtype=torch.float32)
+    pw_base = torch.ones(N_CHANNELS, dtype=torch.float32)
     pw_scaled = pw_base * scale
     loss_base = _ridnik_asymmetric_loss(
         p, t, gamma_pos=1.0, gamma_neg=4.0,
@@ -116,7 +116,7 @@ def test_ridnik_byte_determinism_across_dtype_preserving_runs(seed: int) -> None
     This pins the absence of nondeterministic primitives in the Ridnik path
     (no Dropout, no atomics, no device-side scatter)."""
     p, t = _from_seed(seed)
-    pw = torch.ones(N_BUSES, dtype=torch.float32)
+    pw = torch.ones(N_CHANNELS, dtype=torch.float32)
     loss_a = _ridnik_asymmetric_loss(
         p, t, gamma_pos=1.0, gamma_neg=4.0,
         prob_clip_negative=0.05, fp_to_fn_ratio=30.0, pos_weight=pw,

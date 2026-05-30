@@ -38,9 +38,9 @@ from data_engineering.midi_synth.chaos_generator import (
 # ----------------------------------------------------------------------------
 
 
-def test_default_count_is_30() -> None:
+def test_default_count_is_100() -> None:
     grooves = generate_chaos_grooves()
-    assert len(grooves) == N_GROOVES == 30
+    assert len(grooves) == N_GROOVES == 100  # F0-T19: cap 30 → 100
 
 
 def test_deterministic_same_seed() -> None:
@@ -81,7 +81,7 @@ def test_rejects_out_of_range_n() -> None:
     with pytest.raises(ValueError, match="outside"):
         generate_chaos_grooves(n=0)
     with pytest.raises(ValueError, match="outside"):
-        generate_chaos_grooves(n=31)
+        generate_chaos_grooves(n=N_GROOVES + 1)
 
 
 # ----------------------------------------------------------------------------

@@ -24,6 +24,15 @@ Severity:
   target risk). Reported; non-zero only with ``--strict``.
 * **OK** — full coherence.
 
+**F0-T19 supersession (2026-05-29).** Point 2 (render coverage) inspects the
+*vendor* DrumGizmo midimaps. Since F0-T19 (Arrow ②) the render no longer uses
+them for roster kits: ``orchestrate`` generates a per-kit midimap from
+``kit_dialect_map.yaml`` (validated 0-phantom by
+``tools/poc_validate_dialect_maps.py``), and the Plan-A vendor patches were
+retired (``*.orig`` restored). So a render-coverage WARN here on a roster kit is
+about a now-unused vendor file — informational, not a render risk; the
+authoritative render-coverage check is the dialect-map validation.
+
 Usage::
 
     python tools/audit_midi_coherence.py                 # all kits, default standard
@@ -48,6 +57,7 @@ if str(_REPO_ROOT / "src") not in sys.path:
 import mido  # type: ignore[import-untyped]  # noqa: E402
 
 from data_engineering.gold.midi_canonical import (  # noqa: E402
+    N_CHANNELS,
     SourceStandards,
     load_source_standards,
 )
@@ -146,8 +156,10 @@ def audit(
 
     # 3. Bus coverage (re-assert SSoT invariant).
     for name, art in std.articulations.items():
-        if not 1 <= art.bus <= 8:
-            blockers.append(f"[BLOCKER] articulation {name} bus {art.bus} out of [1,8]")
+        if not 1 <= art.bus <= N_CHANNELS:
+            blockers.append(
+                f"[BLOCKER] articulation {name} bus {art.bus} out of [1,{N_CHANNELS}]"
+            )
 
     return blockers, warnings
 

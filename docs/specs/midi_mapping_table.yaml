@@ -1,81 +1,96 @@
 # ============================================================================
-# MIDI MAPPING TABLE — GM ↔ 8-BUS  (Artefatto versionato)
+# MIDI MAPPING TABLE — GM ↔ 9-CHANNEL  (Artefatto versionato)
 # Progetto: drum-trigger-fresh / OP-NeuroTrigger
-# Riferimenti: DOSSIER_TECNICO.md §4 (Matrice di Output MIDI), §2.2 (Hi-Hat)
-#              Decision Lock STRP-001 2026-05-20 (D2-bis)
+# Riferimenti: F0-T19 §7b (Canonical I/O Mapping Layer — flat-28 output contract)
+#              F0-T18 (MIDI Standard Translation Layer), DOSSIER_TECNICO.md §4/§2.2
 # ----------------------------------------------------------------------------
-# STATO: LOCKED — Decision Lock F0-T2a, 2026-05-20 (Executive Briefing).
-# Bidirezionale: forward (GM→bus) costruisce il target dai MIDI GMD;
-#                reverse (bus→GM) genera il MIDI d'uscita in modalità Note-discrete.
+# STATO: LOCKED — Decision Lock CEO 2026-05-28 (F0-T19, STRP-001 D7–D9).
+# Supersede: schema 1.0 (8-bus flat-25). Il vecchio "8" coincideva col conteggio
+#            dei microfoni — quella coincidenza ERA il difetto (F0-T19 §0.1).
+# Bidirezionale: forward (GM→channel) costruisce il target dal MIDI canonico;
+#                reverse (channel→GM) genera il MIDI d'uscita (Arrow 3).
 # ============================================================================
-schema_version: "1.0"
+schema_version: "2.0"
 status: LOCKED
 
-# --- 8 bus logici di trascrizione (DOSSIER §4) ------------------------------
-buses:
+# --- 9 canali logici di trascrizione (F0-T19 §7b) ---------------------------
+# Principio (CEO): raggruppa per TIPO (collassa l'identità fisica — quale tom,
+# quale crash); PRESERVA l'articolazione (come è stato colpito lo strumento).
+channels:
   - id: 1
     name: kick
   - id: 2
-    name: snare
+    name: snare_head
   - id: 3
-    name: hihat          # bus con testa di apertura continua dedicata (§2.2)
+    name: snare_sidestick   # articolazione separata da snare (D8)
   - id: 4
-    name: tom_hi_mid
+    name: hihat             # testa di apertura continua dedicata (CC#4, col 27)
   - id: 5
-    name: floor_tom
+    name: tom               # tutti i tom collassati (D9; nessuna testa di registro)
   - id: 6
-    name: ride
+    name: ride_bow
   - id: 7
-    name: crash_a
+    name: ride_bell         # articolazione separata da ride (D8)
   - id: 8
-    name: crash_b_misc
+    name: crash             # tutti i crash collassati (D9)
+  - id: 9
+    name: aux               # china + splash (secondari, 0.74 % degli onset GMD)
 
-# --- FORWARD: nota GM (canale batteria) -> bus ------------------------------
-# Usato da ugt_generator per costruire il target [frame,8,3] dal MIDI GMD.
+# --- FORWARD: nota GM (MIDI canonico) -> channel ----------------------------
+# Usato dal target_builder per costruire il target flat-28 dal MIDI canonico
+# (post F0-T18 canonicalize_midi). Le chiavi sono le note GM canoniche; le note
+# Roland-only (22/26/58) sono già tradotte in canoniche a monte. Le note grezze
+# pre-canonicalizzazione restano mappate per robustezza dei consumatori diretti.
 forward_gm_to_bus:
   35: 1    # Acoustic Bass Drum
   36: 1    # Bass Drum 1
   38: 2    # Acoustic Snare
-  40: 2    # Electric Snare
-  37: 2    # Side Stick      -> articolazione di snare (collassata, v1.0)
-  42: 3    # Closed Hi-Hat
-  44: 3    # Pedal Hi-Hat
-  46: 3    # Open Hi-Hat
-  48: 4    # Hi-Mid Tom
-  50: 4    # High Tom
-  47: 4    # Low-Mid Tom
+  40: 2    # Electric Snare        -> snare_head (rimshot rinviato, F0-T19 §7b)
+  37: 3    # Side Stick            -> canale dedicato (D8)
+  42: 4    # Closed Hi-Hat
+  44: 4    # Pedal Hi-Hat
+  46: 4    # Open Hi-Hat
   41: 5    # Low Floor Tom
   43: 5    # High Floor Tom
   45: 5    # Low Tom
-  51: 6    # Ride Cymbal 1
-  59: 6    # Ride Cymbal 2
-  53: 6    # Ride Bell       -> articolazione di ride (collassata, v1.0)
-  49: 7    # Crash Cymbal 1
+  47: 5    # Low-Mid Tom
+  48: 5    # Hi-Mid Tom
+  50: 5    # High Tom
+  58: 5    # Hi Floor Tom (Roland) -> tom (canonicalizzato a 43 a monte)
+  51: 6    # Ride Cymbal 1         -> ride_bow
+  59: 6    # Ride Cymbal 2         -> ride_bow
+  53: 7    # Ride Bell             -> canale dedicato (D8)
+  49: 8    # Crash Cymbal 1
   57: 8    # Crash Cymbal 2
-  52: 8    # Chinese Cymbal
-  55: 8    # Splash Cymbal
+  52: 9    # Chinese Cymbal        -> aux
+  55: 9    # Splash Cymbal         -> aux
 
-# --- REVERSE: bus -> nota GM rappresentativa (modalità Note-discrete) -------
+# --- REVERSE: channel -> nota GM rappresentativa (Arrow 3, modalità Note) ----
+# Output MIDI = GM-compatible reduced set (D10): una nota GM di default per
+# classe + note di articolazione. L'utente rimappa la singola nota tom/crash/aux
+# sui pezzi specifici del suo kit. Mirror della Arrow 2 (stesso SSoT).
 reverse_bus_to_gm:
-  1: 36    # kick           -> Bass Drum 1
-  2: 38    # snare          -> Acoustic Snare
-  3: null  # hihat          -> vedi hihat_output (gestione articolata)
-  4: 48    # tom_hi_mid     -> Hi-Mid Tom
-  5: 43    # floor_tom      -> High Floor Tom
-  6: 51    # ride           -> Ride Cymbal 1
-  7: 49    # crash_a        -> Crash Cymbal 1
-  8: 57    # crash_b_misc   -> Crash Cymbal 2
+  1: 36    # kick            -> Bass Drum 1
+  2: 38    # snare_head      -> Acoustic Snare
+  3: 37    # snare_sidestick -> Side Stick
+  4: null  # hihat           -> vedi hihat_output (gestione articolata)
+  5: 47    # tom             -> Low-Mid Tom (default neutro; utente rimappa)
+  6: 51    # ride_bow        -> Ride Cymbal 1
+  7: 53    # ride_bell       -> Ride Bell
+  8: 49    # crash           -> Crash Cymbal 1
+  9: 55    # aux             -> Splash Cymbal
 
-# --- Hi-Hat: toggle d'uscita (D2-bis) ---------------------------------------
-# Il modello emette SEMPRE la testa di apertura continua [0.0..1.0].
-# Il toggle agisce solo sullo stadio MIDI d'uscita; il modello resta invariato.
+# --- Hi-Hat: toggle d'uscita (D2-bis / F0-T19 §7b) --------------------------
+# Il modello emette SEMPRE la testa di apertura continua [0.0..1.0] (col 27),
+# costruita dal CC#4 Roland (pedal position) quando presente, con fallback alle
+# articolazioni discrete. Il toggle agisce solo sullo stadio MIDI d'uscita.
 hihat_output:
   default_mode: cc_continuous
   modes:
     cc_continuous:
       description: "Apertura continua instradata su CC. Max espressione (SD3/EZd)."
       cc_number: 4               # Foot Controller (DOSSIER §2.2)
-      value_range: [0, 127]      # 0.0->0 , 1.0->127
+      value_range: [0, 127]      # openness 0.0->0 , 1.0->127
     note_discrete:
       description: "Apertura quantizzata su articolazioni GM per compatibilita' universale."
       # soglie applicate al valore continuo di apertura [0.0..1.0]
@@ -84,10 +99,11 @@ hihat_output:
         - { max_open: 0.55, gm_note: 44 }   # Pedal Hi-Hat
         - { max_open: 1.00, gm_note: 46 }   # Open Hi-Hat
 
-# --- Articolazioni intra-bus: nota di scope ---------------------------------
-# v1.0: side-stick (37), ride bell (53) e simili sono COLLASSATI nel bus di
-#       appartenenza (un solo onset per bus per frame). La classificazione
-#       sub-articolatoria e' rinviata a v2.0 (Dual-Path Network, DOSSIER §6.3).
+# --- Articolazioni intra-classe: nota di scope (F0-T19 §0.2) ----------------
+# v1.0 (F0-T19): identità fisica COLLASSATA (tutti i tom -> tom, tutti i crash
+#       -> crash, china+splash -> aux); articolazioni PRESERVATE come canali
+#       dedicati (snare_head vs snare_sidestick, ride_bow vs ride_bell) + testa
+#       di apertura hi-hat continua. Rimshot rinviato (Roland 40 -> snare_head).
 articulation_scope:
-  v1_0: collapsed
-  v2_0: per_articulation_head
+  v1_0: type_classes_with_preserved_articulation
+  deferred: [rimshot, tom_register_head]

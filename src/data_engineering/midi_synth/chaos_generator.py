@@ -2,9 +2,11 @@
 
 DOSSIER §3.4 LOCKED concept, here implemented:
 
-* **Per-bus independent Poisson processes** — each of the 8 logical buses
-  (kick/snare/hi-hat/tom-mid/tom-floor/ride/crash-A/crash-B-misc) fires
-  according to its own Poisson process with rate ``λ ∈ [2, 15] hits/sec``.
+* **Per-channel independent Poisson processes** — each of the **9 logical
+  channels** (F0-T19 §7b: kick/snare_head/snare_sidestick/hi-hat/tom/ride_bow/
+  ride_bell/crash/aux) fires according to its own Poisson process with rate
+  ``λ ∈ [2, 15] hits/sec``. The 9-channel split (vs the old 8-bus) gives the
+  rare channels (sidestick, ride_bell) their own density.
 * **Sub-grid onsets** — inter-arrival times come from
   :func:`random.Random.expovariate`, so onsets land off any 16th/32nd grid
   and the model cannot exploit grid position as a shortcut.
@@ -24,10 +26,12 @@ from __future__ import annotations
 import random
 from typing import Final
 
-from ._writer import BUS_TO_GM_NOTES, GrooveSpec
+from ._writer import BUS_TO_GM_NOTES, N_CHANNELS, GrooveSpec
 
-#: Number of grooves emitted by :func:`generate_chaos_grooves`.
-N_GROOVES: Final[int] = 30
+#: Max grooves emitted by :func:`generate_chaos_grooves`. Raised 30 → 100
+#: (F0-T19, 2026-05-29) so the mini-L3 can pull a larger chaos share to
+#: populate the rare channels; each groove is (seed, index)-deterministic.
+N_GROOVES: Final[int] = 100
 
 #: Default master seed (Decision CEO 2026-05-23 — distinct from mix seed).
 _DEFAULT_MASTER_SEED: Final[int] = 19260424
@@ -102,7 +106,7 @@ def _generate_chaos_groove(*, index: int, master_seed: int) -> GrooveSpec:
     duration_s = rng.uniform(DURATION_S_MIN, DURATION_S_MAX)
 
     events: list[tuple[int, int, int]] = []
-    for bus_id in range(1, 9):
+    for bus_id in range(1, N_CHANNELS + 1):
         events.extend(_generate_bus_events(rng, bus_id, duration_s, bpm))
 
     # Sort chronologically — _writer also sorts, but defensive deterministic

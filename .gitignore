@@ -58,5 +58,9 @@ mutants/
 /artifacts/
 /logs/
 
+# Mini-L3 smoke validation reports — 1-epoch throwaway runs (20-50 MB HTML each),
+# not real results. The real run reports under docs/gates/F0-T4c_MINI_L3/ are tracked.
+docs/gates/F0-T4c_MINI_L3/*-smoke/
+
 # C++ build output — only the source + CMakeLists.txt is tracked.
 /cpp/*/build/

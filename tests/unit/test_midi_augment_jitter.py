@@ -364,3 +364,35 @@ class TestFailLoud:
             apply_midi_jitter(
                 midi, variant_idx=0, master_seed=42, source_midi_id="x"
             )
+
+
+def _cc4_values(m: mido.MidiFile) -> list[int]:
+    return [msg.value for msg in m if msg.type == "control_change" and msg.control == 4]
+
+
+def test_jitter_preserves_cc4_hihat_pedal() -> None:
+    """F0-T19 §7b: ``control_change`` (CC#4 hi-hat pedal) survives jitter.
+
+    Before the fix the jitter rebuilt the MIDI from notes only, silently
+    dropping CC#4 — which left the continuous hi-hat opening head inert. The
+    head reads CC#4 from the rendered MIDI, so jitter must preserve it.
+    """
+    midi = mido.MidiFile(ticks_per_beat=_TPB)
+    track = mido.MidiTrack()
+    midi.tracks.append(track)
+    track.append(mido.MetaMessage("set_tempo", tempo=mido.bpm2tempo(_BPM), time=0))
+    track.append(mido.Message("control_change", control=4, value=10, time=0))
+    track.append(mido.Message("note_on", note=KICK_NOTE, velocity=100, time=0))
+    track.append(mido.Message("note_off", note=KICK_NOTE, velocity=64, time=60))
+    track.append(mido.Message("control_change", control=4, value=90, time=60))
+    track.append(mido.Message("note_on", note=SNARE_NOTE, velocity=90, time=60))
+    track.append(mido.Message("note_off", note=SNARE_NOTE, velocity=64, time=60))
+    track.append(mido.MetaMessage("end_of_track", time=0))
+
+    assert _cc4_values(midi) == [10, 90]
+    # variant 0 (identity): CC#4 preserved exactly, in order.
+    out0 = apply_midi_jitter(midi, variant_idx=0, master_seed=7, source_midi_id="cc4")
+    assert _cc4_values(out0) == [10, 90]
+    # variant 1 (jittered): every CC#4 event still present (notes may be dropped).
+    out1 = apply_midi_jitter(midi, variant_idx=1, master_seed=7, source_midi_id="cc4")
+    assert sorted(_cc4_values(out1)) == [10, 90]

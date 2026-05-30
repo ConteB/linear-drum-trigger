@@ -55,10 +55,10 @@ sys.path.insert(0, str(_REPO_ROOT / "tools"))
 from listening_test_shittykit import load_model_from_checkpoint  # noqa: E402
 
 BUS_NAMES = [
-    "kick", "snare", "hihat", "tom_hi_mid", "floor",
-    "ride", "crash_a", "crash_b_misc",
+    "kick", "snare_head", "snare_sidestick", "hihat", "tom",
+    "ride_bow", "ride_bell", "crash", "aux",
 ]
-N_BUS = 8
+N_BUS = 9  # F0-T19 §7b flat-28: 9 type-class channels
 GATE_ROOT = _REPO_ROOT / "docs" / "gates" / "F0-T4c_MINI_L3"
 
 # Sweep grids — coarse enough to be fast, fine enough to find the optimum.
@@ -90,9 +90,9 @@ def collect_raw_predictions(
                 pred = pred[:target.shape[0]]
             else:
                 target = s.target[:pred.shape[0]]
-            # flat-25: onset columns 0,3,6,9,12,15,18,21
-            onset_pred = pred[:, 0:24:3]      # [T, 8]
-            onset_target = target[:, 0:24:3]  # [T, 8]
+            # flat-28 (F0-T19 §7b): onset columns 0,3,...,24 (9 channels)
+            onset_pred = pred[:, 0:27:3]      # [T, 9]
+            onset_target = target[:, 0:27:3]  # [T, 9]
             per_sample_pred.append(onset_pred.astype(np.float32))
             per_sample_target.append(onset_target.astype(np.float32))
     return per_sample_pred, per_sample_target

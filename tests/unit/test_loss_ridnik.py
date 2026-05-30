@@ -22,7 +22,7 @@ import pytest
 import torch
 
 from neural.loss import (
-    N_BUSES,
+    N_CHANNELS,
     LossConfig,
     TCNLoss,
     _ridnik_asymmetric_loss,
@@ -93,12 +93,12 @@ def test_ridnik_validation_skipped_when_kind_is_afl() -> None:
 
 
 def _make_pos_weight(value: float = 1.0) -> torch.Tensor:
-    return torch.full((N_BUSES,), value, dtype=torch.float32)
+    return torch.full((N_CHANNELS,), value, dtype=torch.float32)
 
 
 def test_ridnik_returns_scalar_finite() -> None:
     pw = _make_pos_weight()
-    p = torch.rand(2, 32, N_BUSES, dtype=torch.float32) * 0.5
+    p = torch.rand(2, 32, N_CHANNELS, dtype=torch.float32) * 0.5
     t = torch.zeros_like(p)
     t[:, ::4, 0] = 1.0
     loss = _ridnik_asymmetric_loss(
@@ -118,8 +118,8 @@ def test_ridnik_non_negative_on_random_inputs() -> None:
     pw = _make_pos_weight(value=2.0)
     for seed in range(5):
         torch.manual_seed(seed)
-        p = torch.rand(2, 32, N_BUSES, dtype=torch.float32).clamp(1e-3, 1 - 1e-3)
-        t = torch.rand(2, 32, N_BUSES, dtype=torch.float32)
+        p = torch.rand(2, 32, N_CHANNELS, dtype=torch.float32).clamp(1e-3, 1 - 1e-3)
+        t = torch.rand(2, 32, N_CHANNELS, dtype=torch.float32)
         loss = _ridnik_asymmetric_loss(
             p, t,
             gamma_pos=1.0, gamma_neg=4.0,
@@ -138,8 +138,8 @@ def test_ridnik_prob_clip_silences_easy_negatives() -> None:
     xs_neg ≈ 1 + (clip - p) → clamped to 1.0 → log(1) = 0 → zero contribution.
     """
     pw = _make_pos_weight()
-    p_easy = torch.full((1, 1, N_BUSES), 0.01, dtype=torch.float32)
-    p_med = torch.full((1, 1, N_BUSES), 0.30, dtype=torch.float32)
+    p_easy = torch.full((1, 1, N_CHANNELS), 0.01, dtype=torch.float32)
+    p_med = torch.full((1, 1, N_CHANNELS), 0.30, dtype=torch.float32)
     t = torch.zeros_like(p_easy)
     loss_easy = _ridnik_asymmetric_loss(
         p_easy, t,
@@ -165,7 +165,7 @@ def test_ridnik_prob_clip_silences_easy_negatives() -> None:
 def test_ridnik_prob_clip_zero_disables_shifting() -> None:
     """With clip=0 the formula reduces to a vanilla asymmetric BCE (xs_neg = 1 - p)."""
     pw = _make_pos_weight()
-    p = torch.full((1, 1, N_BUSES), 0.30, dtype=torch.float32)
+    p = torch.full((1, 1, N_CHANNELS), 0.30, dtype=torch.float32)
     t = torch.zeros_like(p)
     # clip=0 → xs_neg = 1 - 0.3 = 0.7 → -log(0.7) ≈ 0.357 per element
     # base term: fp_to_fn_ratio * 1 * log(0.7) → -0.357 → loss positive
@@ -187,9 +187,9 @@ def test_ridnik_pos_weight_per_bus_broadcasts() -> None:
     """Per-bus pos_weight multiplies the loss_pos term per bus."""
     pw_uniform = _make_pos_weight(value=1.0)
     pw_heavy = torch.tensor(
-        [10.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], dtype=torch.float32,
+        [10.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], dtype=torch.float32,
     )
-    p = torch.full((1, 4, N_BUSES), 0.2, dtype=torch.float32)
+    p = torch.full((1, 4, N_CHANNELS), 0.2, dtype=torch.float32)
     # ground-truth positives only on bus 0
     t = torch.zeros_like(p)
     t[:, :, 0] = 1.0
@@ -207,7 +207,7 @@ def test_ridnik_pos_weight_per_bus_broadcasts() -> None:
 def test_ridnik_gamma_pos_zero_recovers_unfocused_positive() -> None:
     """gamma_pos=0 → (1 - pt)^0 = 1 on the positive branch (no focusing)."""
     pw = _make_pos_weight()
-    p = torch.full((1, 1, N_BUSES), 0.9, dtype=torch.float32)  # high-conf TPs
+    p = torch.full((1, 1, N_CHANNELS), 0.9, dtype=torch.float32)  # high-conf TPs
     t = torch.ones_like(p)
     # With gamma_pos=0, an already-confident TP is NOT down-weighted; loss stays
     # at ~ -log(p). With gamma_pos=4, the loss collapses to nearly zero.
@@ -232,7 +232,7 @@ def test_ridnik_signature_pushes_confidence_on_tps() -> None:
     already easy).
     """
     pw = _make_pos_weight()
-    p = torch.full((1, 1, N_BUSES), 0.5, dtype=torch.float32)
+    p = torch.full((1, 1, N_CHANNELS), 0.5, dtype=torch.float32)
     t = torch.ones_like(p)
     loss_ridnik = _ridnik_asymmetric_loss(
         p, t, gamma_pos=1.0, gamma_neg=4.0,
@@ -251,8 +251,8 @@ def test_ridnik_deterministic_on_cpu() -> None:
     """Same seed + same inputs ⇒ bit-identical loss output."""
     pw = _make_pos_weight()
     torch.manual_seed(42)
-    p1 = torch.rand(2, 16, N_BUSES, dtype=torch.float32).clamp(1e-3, 1 - 1e-3)
-    t1 = torch.rand(2, 16, N_BUSES, dtype=torch.float32)
+    p1 = torch.rand(2, 16, N_CHANNELS, dtype=torch.float32).clamp(1e-3, 1 - 1e-3)
+    t1 = torch.rand(2, 16, N_CHANNELS, dtype=torch.float32)
     loss_a = _ridnik_asymmetric_loss(
         p1, t1, gamma_pos=1.0, gamma_neg=4.0,
         prob_clip_negative=0.05, fp_to_fn_ratio=30.0, pos_weight=pw,
@@ -269,9 +269,9 @@ def test_ridnik_deterministic_on_cpu() -> None:
 # ----------------------------------------------------------------------------
 
 
-def _flat25_target(B: int, T: int, peak_density: float = 0.1) -> torch.Tensor:
-    """Synthetic flat-25 target with a few sparse onsets on bus 0."""
-    target = torch.zeros(B, T, 25, dtype=torch.float32)
+def _flat28_target(B: int, T: int, peak_density: float = 0.1) -> torch.Tensor:
+    """Synthetic flat-28 target with a few sparse onsets on channel 0."""
+    target = torch.zeros(B, T, 28, dtype=torch.float32)
     n_onsets = max(1, int(T * peak_density))
     stride = max(1, T // n_onsets)
     target[:, ::stride, 0] = 1.0          # onset bus 0
@@ -284,8 +284,8 @@ def _flat25_target(B: int, T: int, peak_density: float = 0.1) -> torch.Tensor:
 def test_tcnloss_ridnik_forward_returns_5_keys() -> None:
     cfg = LossConfig(kind="ridnik")
     loss_fn = TCNLoss(cfg)
-    pred = torch.rand(2, 64, 25, dtype=torch.float32) * 0.5
-    target = _flat25_target(2, 64)
+    pred = torch.rand(2, 64, 28, dtype=torch.float32) * 0.5
+    target = _flat28_target(2, 64)
     out = loss_fn(pred, target)
     assert set(out.keys()) == {"total", "onset", "velocity", "microtiming", "hihat"}
     for k, v in out.items():
@@ -295,14 +295,14 @@ def test_tcnloss_ridnik_forward_returns_5_keys() -> None:
 def test_tcnloss_ridnik_backward_finite() -> None:
     cfg = LossConfig(kind="ridnik")
     loss_fn = TCNLoss(cfg)
-    pred = (torch.rand(2, 64, 25, dtype=torch.float32) * 0.5).requires_grad_(True)
-    target = _flat25_target(2, 64)
+    pred = (torch.rand(2, 64, 28, dtype=torch.float32) * 0.5).requires_grad_(True)
+    target = _flat28_target(2, 64)
     out = loss_fn(pred, target)
     out["total"].backward()
     assert pred.grad is not None
     assert torch.isfinite(pred.grad).all()
     # Sanity: non-zero gradient on the onset columns
-    onset_grad = pred.grad[..., 0:24:3]
+    onset_grad = pred.grad[..., 0:HIHAT_OPENING_COL:3]
     assert onset_grad.abs().sum().item() > 0.0
 
 
@@ -315,8 +315,8 @@ def test_tcnloss_label_smoothing_changes_onset_loss() -> None:
     loss_hard = TCNLoss(cfg_hard)
     loss_smooth = TCNLoss(cfg_smooth)
     torch.manual_seed(7)
-    pred = torch.rand(1, 32, 25, dtype=torch.float32) * 0.5
-    target = _flat25_target(1, 32)
+    pred = torch.rand(1, 32, 28, dtype=torch.float32) * 0.5
+    target = _flat28_target(1, 32)
     out_hard = loss_hard(pred, target)
     out_smooth = loss_smooth(pred, target)
     assert out_hard["onset"].item() != out_smooth["onset"].item()
@@ -338,8 +338,8 @@ def test_tcnloss_label_smoothing_works_for_afl_kind_too() -> None:
     cfg_hard = LossConfig(kind="afl", label_smoothing=0.0)
     cfg_smooth = LossConfig(kind="afl", label_smoothing=0.05)
     torch.manual_seed(3)
-    pred = torch.rand(1, 32, 25, dtype=torch.float32) * 0.5
-    target = _flat25_target(1, 32)
+    pred = torch.rand(1, 32, 28, dtype=torch.float32) * 0.5
+    target = _flat28_target(1, 32)
     out_hard = TCNLoss(cfg_hard)(pred, target)
     out_smooth = TCNLoss(cfg_smooth)(pred, target)
     assert out_hard["onset"].item() != out_smooth["onset"].item()
@@ -353,8 +353,8 @@ def test_tcnloss_afl_backcompat_unchanged() -> None:
     assert cfg.label_smoothing == 0.0
     loss_fn = TCNLoss(cfg)
     torch.manual_seed(11)
-    pred = torch.rand(1, 32, 25, dtype=torch.float32) * 0.5
-    target = _flat25_target(1, 32)
+    pred = torch.rand(1, 32, 28, dtype=torch.float32) * 0.5
+    target = _flat28_target(1, 32)
     out = loss_fn(pred, target)
     # Just sanity-check it runs end-to-end + finite.
     assert torch.isfinite(out["total"]).item()
@@ -364,8 +364,8 @@ def test_tcnloss_afl_backcompat_unchanged() -> None:
 def test_tcnloss_ridnik_vs_afl_differ() -> None:
     """Ridnik and AFL produce different losses on the same input."""
     torch.manual_seed(13)
-    pred = torch.rand(2, 64, 25, dtype=torch.float32) * 0.5
-    target = _flat25_target(2, 64)
+    pred = torch.rand(2, 64, 28, dtype=torch.float32) * 0.5
+    target = _flat28_target(2, 64)
     out_afl = TCNLoss(LossConfig(kind="afl"))(pred, target)
     out_ridnik = TCNLoss(LossConfig(kind="ridnik"))(pred, target)
     # Different math paths → different scalar value (modulo a vanishingly
@@ -379,8 +379,8 @@ def test_tcnloss_ridnik_deterministic() -> None:
     a = TCNLoss(cfg)
     b = TCNLoss(cfg)
     torch.manual_seed(17)
-    pred = torch.rand(2, 32, 25, dtype=torch.float32) * 0.5
-    target = _flat25_target(2, 32)
+    pred = torch.rand(2, 32, 28, dtype=torch.float32) * 0.5
+    target = _flat28_target(2, 32)
     out_a = a(pred, target)
     out_b = b(pred, target)
     for key in ("total", "onset", "velocity", "microtiming", "hihat"):

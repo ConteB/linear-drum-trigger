@@ -47,13 +47,13 @@ from evaluation.common import (
 #: Module identifier.
 MODULE_NAME = "evaluation_suite"
 
-#: Number of transcription buses (F0-T2a flat-25 layout).
-N_BUSES = 8
+#: Number of transcription channels (F0-T19 flat-28 layout — 9 type-classes).
+N_CHANNELS = 9
 
-#: Canonical bus names — only used for plot labels (not in the gate decision).
+#: Canonical channel names — only used for plot labels (not in the gate decision).
 BUS_NAMES = [
-    "kick", "snare_top", "snare_bot_or_rim", "hihat",
-    "tom1", "tom2", "tom3_floor", "cymbals",
+    "kick", "snare_head", "snare_sidestick", "hihat", "tom",
+    "ride_bow", "ride_bell", "crash", "aux",
 ]
 
 
@@ -126,9 +126,9 @@ def _f_measure(pred_times: np.ndarray, ref_times: np.ndarray, *, tol_s: float) -
 
 def _per_bus_f_measures(doc: dict[str, Any], *, tol_s: float) -> dict[int, list[float]]:
     """For each bus, the list of per-sample F-measures (one per sample)."""
-    per_bus: dict[int, list[float]] = {b: [] for b in range(N_BUSES)}
+    per_bus: dict[int, list[float]] = {b: [] for b in range(N_CHANNELS)}
     for s in doc["samples"]:
-        for b in range(N_BUSES):
+        for b in range(N_CHANNELS):
             pt, _, rt = _bus_arrays(s, b)
             per_bus[b].append(_f_measure(pt, rt, tol_s=tol_s))
     return per_bus
@@ -160,12 +160,12 @@ def _confusion_matrix(doc: dict[str, Any], *, tol_s: float) -> list[list[int]]:
     cell ``M[pred_bus][gt_bus]`` is incremented; the diagonal is the
     correctly-attributed onsets.
     """
-    M = np.zeros((N_BUSES, N_BUSES), dtype=np.int64)
+    M = np.zeros((N_CHANNELS, N_CHANNELS), dtype=np.int64)
     for s in doc["samples"]:
         # Flatten predictions and references with their bus label.
         preds: list[tuple[float, int]] = []
         refs: list[tuple[float, int]] = []
-        for b in range(N_BUSES):
+        for b in range(N_CHANNELS):
             pt, _, rt = _bus_arrays(s, b)
             preds.extend((float(t), b) for t in pt)
             refs.extend((float(t), b) for t in rt)
@@ -195,7 +195,7 @@ def _calibration_per_bus(
 ) -> list[dict[str, Any]]:
     """Per-bus reliability curve over the predicted probability head."""
     rows: list[dict[str, Any]] = []
-    for b in range(N_BUSES):
+    for b in range(N_CHANNELS):
         probs: list[float] = []
         hits: list[int] = []
         for s in doc["samples"]:
@@ -243,7 +243,7 @@ def _sliced_metrics(
     # Density: total ref events normalised by sample duration; sparse < 4 ev/s.
     def _density_bin(s: dict[str, Any]) -> str:
         n_ev = sum(
-            len(s.get("references", {}).get(str(b), [])) for b in range(N_BUSES)
+            len(s.get("references", {}).get(str(b), [])) for b in range(N_CHANNELS)
         )
         dur = float(s.get("duration_s", 1.0)) or 1.0
         return "sparse" if (n_ev / dur) < 4.0 else "dense"
@@ -253,7 +253,7 @@ def _sliced_metrics(
             return float("nan")
         f_vals = []
         for s in subset:
-            for b in range(N_BUSES):
+            for b in range(N_CHANNELS):
                 pt, _, rt = _bus_arrays(s, b)
                 f_vals.append(_f_measure(pt, rt, tol_s=tol_s))
         return float(np.mean(f_vals)) if f_vals else float("nan")
@@ -301,7 +301,7 @@ def _mcnemar(
     b_hits: list[int] = []
     for key in common:
         sa, sb = samples_a[key], samples_b[key]
-        for bus in range(N_BUSES):
+        for bus in range(N_CHANNELS):
             _, _, rt = _bus_arrays(sa, bus)
             pa, _, _ = _bus_arrays(sa, bus)
             pb, _, _ = _bus_arrays(sb, bus)
@@ -347,11 +347,11 @@ def _build_figure(metrics: dict[str, Any]) -> Any:
     means = [b["mean"] for b in bus_ci]
     err_lo = [b["mean"] - b["lo"] for b in bus_ci]
     err_hi = [b["hi"] - b["mean"] for b in bus_ci]
-    ax.bar(range(N_BUSES), means, color="#1a1a1a",
+    ax.bar(range(N_CHANNELS), means, color="#1a1a1a",
             yerr=[err_lo, err_hi], capsize=3)
     ax.axhline(metrics["per_bus_f_min"], linestyle="--", linewidth=0.8, color="#a00000")
     ax.set_title("Per-bus F-measure (95 % CI)")
-    ax.set_xticks(range(N_BUSES))
+    ax.set_xticks(range(N_CHANNELS))
     ax.set_xticklabels(BUS_NAMES, rotation=30, ha="right")
     ax.set_ylim(0, 1.05)
 
@@ -361,9 +361,9 @@ def _build_figure(metrics: dict[str, Any]) -> Any:
     M_norm = M / M.sum(axis=1, keepdims=True).clip(min=1)
     im = ax.imshow(M_norm, cmap="Greys", vmin=0, vmax=1)
     ax.set_title("Inter-bus confusion (row-normalised)")
-    ax.set_xticks(range(N_BUSES))
+    ax.set_xticks(range(N_CHANNELS))
     ax.set_xticklabels(BUS_NAMES, rotation=30, ha="right")
-    ax.set_yticks(range(N_BUSES))
+    ax.set_yticks(range(N_CHANNELS))
     ax.set_yticklabels(BUS_NAMES)
     ax.set_xlabel("Ground truth bus")
     ax.set_ylabel("Predicted bus")
@@ -432,11 +432,11 @@ def run(
     per_bus = _per_bus_f_measures(doc, tol_s=tol_s)
 
     per_bus_ci: list[dict[str, Any]] = []
-    for b in range(N_BUSES):
+    for b in range(N_CHANNELS):
         ci = _bootstrap_ci(per_bus[b], n_resamples=thr.bootstrap_n_resamples, seed=seed + b)
         per_bus_ci.append({"bus": b, **ci, "n_sample": len(per_bus[b])})
 
-    f_macro_vals = [float(np.mean(per_bus[b])) for b in range(N_BUSES) if per_bus[b]]
+    f_macro_vals = [float(np.mean(per_bus[b])) for b in range(N_CHANNELS) if per_bus[b]]
     f_macro_ci = _bootstrap_ci(f_macro_vals, n_resamples=thr.bootstrap_n_resamples, seed=seed)
 
     confusion = _confusion_matrix(doc, tol_s=tol_s)

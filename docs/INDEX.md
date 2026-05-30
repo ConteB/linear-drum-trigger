@@ -14,13 +14,14 @@ related: [LIN-DT-DOCSTD-001]
 > **File generato** da `tools/gen_docs_index.py` (Doc Standard LIN-DT-DOCSTD-001 §5).
 > Non editare a mano — rigenerare. Rilancia lo script dopo ogni modifica al frontmatter.
 
-Documenti indicizzati: **54** · senza frontmatter: **21**.
+Documenti indicizzati: **55** · senza frontmatter: **21**.
 
 ## Documenti
 
 | id | title | type | status | phase | path |
 | :-- | :-- | :-- | :-- | :-- | :-- |
 | `LIN-DT-AUDIT-001` | Audit Resolution Log — Coerenza Documentale | registro | ACTIVE | cross-cutting | `04_INTELLIGENCE/AUDIT_RESOLUTION_LOG.md` |
+| `LIN-DT-AUDIT-2026-05-29` | "Pipeline Audit 2026-05-29 — post-F0-T19 (flat-28), local improvement hunt" |  | FINDINGS (for CEO Decision Lock) | — | `docs/gates/PIPELINE_AUDIT_2026-05-29.md` |
 | `LIN-DT-AUGAUDIT-001` | Augmentation — Audit Backlog (gap analysis post/pre-render) | registro | DRAFT — partially superseded | F0 | `docs/methodology/AUGMENTATION_AUDIT_BACKLOG.md` |
 | `LIN-DT-BLUEPRINT-001` | Task Blueprint — Avvio Fase F0 (SOP-016 / ERM-005) | registro | ARCHIVED | F0 | `04_INTELLIGENCE/TASK_BLUEPRINT.md` |
 | `LIN-DT-CHKLST-001` | Master Checklist — OP-NEUROTRIGGER Launchpad | checklist | ACTIVE | cross-cutting | `MASTER_CHECKLIST.md` |
@@ -221,6 +222,7 @@ Documenti indicizzati: **54** · senza frontmatter: **21**.
 | documento | related → | ← backlink |
 | :-- | :-- | :-- |
 | `LIN-DT-AUDIT-001` | `LIN-DT-DOCSTD-001`, `LIN-DT-CHKLST-001`, `LIN-DT-DOSSIER-001` | `LIN-DT-DIARY-001` |
+| `LIN-DT-AUDIT-2026-05-29` | — | — |
 | `LIN-DT-AUGAUDIT-001` | `LIN-DT-DOSSIER-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a`, `LIN-DT-SPEC-F0T15PRE` | `LIN-DT-DOSSIER-001`, `LIN-DT-SPEC-F0T15POST` |
 | `LIN-DT-BLUEPRINT-001` | `LIN-DT-MSCHED-001` | — |
 | `LIN-DT-CHKLST-001` | `LIN-DT-MSCHED-001`, `LIN-DT-SCHED-001`, `LIN-DT-DOSSIER-001` | `LIN-DT-AUDIT-001`, `LIN-DT-DOSSIER-001`, `LIN-DT-ENGSTD-001`, `LIN-DT-GOV-001`, `LIN-DT-HOLDOUT-F0T1c`, `LIN-DT-MKTOCULAR-001`, `LIN-DT-MSCHED-001`, `LIN-DT-SCHED-001`, `LIN-DT-SPEC-F0T2a`, `LIN-DT-SPEC-F0T4a`, `LIN-DT-SPEC-F0T8`, `LIN-DT-TESTDOC-001` |

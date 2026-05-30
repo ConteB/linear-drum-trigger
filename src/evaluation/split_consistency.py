@@ -41,7 +41,7 @@ from evaluation.common import (
     write_report_json,
 )
 from evaluation.data_audit import (
-    N_BUSES,
+    N_CHANNELS,
     _count_onsets,
     _load_target,
 )
@@ -60,8 +60,8 @@ def _per_sample_features(meta: GoldSampleMeta) -> dict[str, Any]:
     counts, velocities_per_bus = _count_onsets(target)
 
     # Microtiming column ``3b+2`` at the onset frames — same local-max gate.
-    microtiming: list[list[float]] = [[] for _ in range(N_BUSES)]
-    for b in range(N_BUSES):
+    microtiming: list[list[float]] = [[] for _ in range(N_CHANNELS)]
+    for b in range(N_CHANNELS):
         onset_col = target[:, 3 * b]
         # Reproduce the local-max mask from _count_onsets to index the column.
         above = onset_col > 0.5
@@ -101,7 +101,7 @@ def _ks_per_bus(
 ) -> list[dict[str, Any]]:
     """Per-bus KS test; returns one row per bus with statistic, p-value, n."""
     rows: list[dict[str, Any]] = []
-    for b in range(N_BUSES):
+    for b in range(N_CHANNELS):
         a = np.asarray(train_values[b], dtype=float)
         c = np.asarray(val_values[b], dtype=float)
         if a.size < 2 or c.size < 2:
@@ -203,8 +203,8 @@ def _aggregate_split(
     metas: list[GoldSampleMeta],
 ) -> dict[str, Any]:
     """Collect per-split feature pools that fuel the KS / χ² tests."""
-    velocity_pool: list[list[float]] = [[] for _ in range(N_BUSES)]
-    microtiming_pool: list[list[float]] = [[] for _ in range(N_BUSES)]
+    velocity_pool: list[list[float]] = [[] for _ in range(N_CHANNELS)]
+    microtiming_pool: list[list[float]] = [[] for _ in range(N_CHANNELS)]
     durations: list[float] = []
     engine_counts: Counter[str] = Counter()
     kit_counts: Counter[str] = Counter()
@@ -213,7 +213,7 @@ def _aggregate_split(
     for m in metas:
         f = _per_sample_features(m)
         durations.append(f["duration_s"])
-        for b in range(N_BUSES):
+        for b in range(N_CHANNELS):
             velocity_pool[b].extend(f["velocity_per_bus"][b])
             microtiming_pool[b].extend(f["microtiming_per_bus"][b])
         engine_counts[m.engine] += 1
@@ -333,8 +333,8 @@ def run(
     midi_leakage = sorted(train_agg["midi_sha"] & val_agg["midi_sha"])
 
     failures: list[str] = []
-    # Bonferroni adjustment for per-bus KS family — multiply each p by N_BUSES.
-    bonferroni_factor = N_BUSES
+    # Bonferroni adjustment for per-bus KS family — multiply each p by N_CHANNELS.
+    bonferroni_factor = N_CHANNELS
 
     def _ks_check(rows: list[dict[str, Any]], label: str) -> None:
         for r in rows:

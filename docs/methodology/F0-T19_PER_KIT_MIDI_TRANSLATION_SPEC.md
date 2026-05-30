@@ -161,6 +161,71 @@ TCN output heads (F0-T4a §3), loss, and re-runs the mini-L3. **All local, $0 Az
 and pre-F2** — exactly the stortura that is cheap to fix now and expensive after the
 burn.
 
+## 7b. Phase B — `flat-28` output contract (CONFIRMED, CEO 2026-05-28)
+
+The ratified D7–D9 taxonomy + D8 articulation preservation, made concrete as the
+new target layout that supersedes `flat-25` (F0-T2a §3.3).
+
+**`flat-28` = 9 onset channels × 3 (onset/velocity/microtiming) + 1 hi-hat opening head.**
+
+| ch | name | collapses / from canonical render notes |
+|:--:|:--|:--|
+| 0 | kick | 36 |
+| 1 | snare_head | 38, 40 |
+| 2 | snare_sidestick | 37 *(separated from snare — D8)* |
+| 3 | hihat | 42/44/46 **+ continuous opening head (col 27) from Roland CC#4**, robust solution, CEO 2026-05-28; fallback to discrete-note openness where CC4 absent (~9% of GMD) |
+| 4 | tom | 41,43,45,47,48,50,58 *(all toms collapsed — D9)* |
+| 5 | ride_bow | 51, 59 |
+| 6 | ride_bell | 53 *(separated — D8)* |
+| 7 | crash | 49, 57 *(all crashes collapsed — D9)* |
+| 8 | aux | 52, 55 *(china + splash collapsed — D9)* |
+
+- `TARGET_COLS: 25 → 28`; `N_BUSES: 8 → 9` (rename → `N_CHANNELS`). HH opening col `24 → 27`.
+- **Rimshot deferred** (CEO "procedi come desideri" 2026-05-28): the canonical set does
+  not separate it (Roland 40→snare); adding it needs a `midi_source_standards` amendment.
+- **Hi-hat: CC#4 robust** (CEO): GMD carries CC#4 pedal position (50 604 events /
+  120 files sampled, present in 91% of files) — the openness head is built from the
+  *actual continuous pedal position*, not a discrete-note step function.
+
+### Migration footprint (atomic — no safe partial state)
+Contract modules: `gold_writer` (constants), `target_builder` (channel map + CC4 head),
+`midi_mapping_table.yaml` (GM→9-channel), `model.py` (`TARGET_COLS`/heads), `loss.py`
+(per-channel pos_weight + Ridnik over 9), `src/evaluation/*` (per-class metrics),
+`dna_trace`/`data`/`metrics`/`export`/`reporter`. Tests: ~25 files hardcode the 8-bus/25
+contract (`test_loss_ridnik` 30 refs, gold_writer/evaluation/target_builder, meta
+self-check, conftest, acceptance, property). Then **re-render mini-L3** (new audio +
+new target) + **re-train ~6 h MPS**.
+
+### Execution plan (green chunks, do NOT half-migrate)
+1. Contract constants + `midi_mapping_table.yaml` 9-channel + `gold_writer` + `target_builder`
+   (incl. CC4 hihat head) + their tests → green.
+2. `model.py` heads + `loss.py` per-channel + evaluation + their tests → green.
+3. Re-render mini-L3 through the F0-T19 pipeline (dialect render + flat-28 target).
+4. Re-train mini-L3 → measure the boost vs F0-T4e baseline (0.149/0.189).
+
+### Build status — chunks 1+2 DONE & green (2026-05-29)
+- **Contract migrated `flat-25 → flat-28`** (atomic, single run). `N_BUSES → N_CHANNELS = 9`,
+  `TARGET_COLS 25 → 28`, `HIHAT_OPENING_COL 24 → 27`. Touched: `midi_mapping_table.yaml`
+  (schema 2.0, GM→9-channel + reverse + 9-channel list), `midi_source_standards.yaml`
+  (articulation `bus` → new channels, kept `= forward_gm_to_bus[render_gm]`), `gold_writer`,
+  `target_builder` (+ **CC#4 hihat-opening head**, `openness = clamp(1 − cc4/127)`, discrete
+  fallback), `midi_canonical`, `dna_trace` (layout `flat-28`), `model` (9-channel heads +
+  flat-28 assembly), `loss` (per-channel pos_weight 9 + ridnik), `metrics`, `data`, `export`
+  (layout + `n_channels`), `reporter` (9 names + 3×3 confusion grid), `evaluation/{data_audit,
+  split_consistency,evaluation_suite}`, `train`, plus tools (`scan_density`, `mini_l3_train`,
+  `calibration_sweep`, `listening_test_shittykit`).
+- **CC#4 direction** decided empirically (GMD probe 2026-05-29): 100 % of GMD files carry CC#4;
+  closed-hat notes co-occur with high pedal (median 90), open with low (median 17) → CC#4 is
+  pedal pressure → `openness = 1 − cc4/127`.
+- **Tests:** ~22 files migrated + new CC#4 oracle. Suite **645 passed, 1 failed** (the latter is
+  the pre-existing `test_bootstrap_ci_mean_is_sample_mean` ε≈3e-17 float flake, commit `6e5db70`,
+  unrelated to F0-T19). `ruff` net −1 vs HEAD (zero new), `mypy --strict` identical 3 pre-existing
+  errors (zero new). Ocular Proof: 9 Sfizz acceptance render → flat-28; neural smoke
+  `model→[B,T,28]` + 9-channel ridnik loss finite + `evaluate_l3` OK.
+- ⏳ **chunks 3+4 pending:** re-render mini-L3 (dialect + flat-28; DG OrbStack + Sfizz macOS) →
+  `scan_density` (9-tuple) → re-train ~6 h MPS (exact F0-T4e config) → calibration verdict
+  vs baseline 0.149/0.189.
+
 ## 7. Docs Update (STRP-001 §6 — post-approval)
 
 Stamp `LOCKED v1.0.0`; add F0-T19 to `MASTER_SCHEDULING.md` §6/§7 as a hard gate of

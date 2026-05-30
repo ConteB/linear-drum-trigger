@@ -19,7 +19,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from neural.model import HIHAT_OPENING_COL, N_BUSES
+from neural.model import HIHAT_OPENING_COL, N_CHANNELS
 
 #: F0-T4a §2 — target frame-rate ≡ 44100 / 128.
 R_TARGET_HZ = 344.53125
@@ -39,7 +39,7 @@ L3_HIHAT_MAE_MAX = 0.15
 class OnsetReport:
     """Per-bus onset metrics + a summary."""
 
-    f_measure_per_bus: np.ndarray  # [N_BUSES]
+    f_measure_per_bus: np.ndarray  # [N_CHANNELS]
     precision_per_bus: np.ndarray
     recall_per_bus: np.ndarray
     timing_mae_ms: float
@@ -145,22 +145,22 @@ def onset_report(
     threshold: float = 0.5,
     min_distance_frames: int = 3,
 ) -> OnsetReport:
-    """Compute the per-bus onset report from the flat-25 onset slices.
+    """Compute the per-channel onset report from the flat-28 onset slices.
 
     Args:
-        onset_pred: ``[T, 8]`` predicted onset probabilities.
-        onset_target: ``[T, 8]`` Gaussian-smeared ground-truth onset matrix.
+        onset_pred: ``[T, 9]`` predicted onset probabilities.
+        onset_target: ``[T, 9]`` Gaussian-smeared ground-truth onset matrix.
         threshold: Peak-picking threshold for both pred and target.
         min_distance_frames: Refractory window for peak picking.
     """
-    f_per_bus = np.full(N_BUSES, np.nan, dtype=np.float64)
-    p_per_bus = np.full(N_BUSES, np.nan, dtype=np.float64)
-    r_per_bus = np.full(N_BUSES, np.nan, dtype=np.float64)
+    f_per_bus = np.full(N_CHANNELS, np.nan, dtype=np.float64)
+    p_per_bus = np.full(N_CHANNELS, np.nan, dtype=np.float64)
+    r_per_bus = np.full(N_CHANNELS, np.nan, dtype=np.float64)
     drifts_all: list[float] = []
     n_pred_total = 0
     n_true_total = 0
     n_matched_total = 0
-    for b in range(N_BUSES):
+    for b in range(N_CHANNELS):
         pred = peak_pick(
             onset_pred[:, b], threshold=threshold, min_distance_frames=min_distance_frames
         )
@@ -279,13 +279,14 @@ def evaluate_l3(
     """Compute the full L3 verdict from a single sample's prediction and target.
 
     Args:
-        pred_flat25: ``[T, 25]`` predicted flat-25 output.
-        target_flat25: ``[T, 25]`` ground-truth flat-25 target.
+        pred_flat25: ``[T, 28]`` predicted flat-28 output (F0-T19 §7b; the
+            parameter keeps its historical name for caller backcompat).
+        target_flat25: ``[T, 28]`` ground-truth flat-28 target.
         threshold: Peak-picking threshold; if ``None``, tuned on the prediction
             itself per :func:`tune_threshold`.
     """
-    onset_pred = pred_flat25[:, 0:24:3]
-    onset_target = target_flat25[:, 0:24:3]
+    onset_pred = pred_flat25[:, 0:HIHAT_OPENING_COL:3]
+    onset_target = target_flat25[:, 0:HIHAT_OPENING_COL:3]
     hihat_pred = pred_flat25[:, HIHAT_OPENING_COL]
     hihat_target = target_flat25[:, HIHAT_OPENING_COL]
     if threshold is None:

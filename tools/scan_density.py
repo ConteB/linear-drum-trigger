@@ -40,19 +40,23 @@ if str(_REPO_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from data_engineering.gold.dna_trace import validate_dna_json  # noqa: E402
-from data_engineering.gold.gold_writer import TARGET_COLS  # noqa: E402
-from neural.loss import N_BUSES, POS_WEIGHT_CAP  # noqa: E402
+from data_engineering.gold.gold_writer import (  # noqa: E402
+    HIHAT_OPENING_COL,
+    TARGET_COLS,
+)
+from neural.loss import N_CHANNELS, POS_WEIGHT_CAP  # noqa: E402
 
-#: Canonical bus labels — must match F0-T2a §3.3 / midi_mapping_table.yaml.
+#: Canonical channel labels — F0-T19 §7b type-class taxonomy (9 channels).
 BUS_LABELS: tuple[str, ...] = (
     "kick",
-    "snare",
+    "snare_head",
+    "snare_sidestick",
     "hihat",
-    "tom_hi_mid",
-    "floor_tom",
-    "ride",
-    "crash_a",
-    "crash_b_misc",
+    "tom",
+    "ride_bow",
+    "ride_bell",
+    "crash",
+    "aux",
 )
 
 
@@ -96,7 +100,7 @@ def scan_density(
         raise FileNotFoundError(f"pool_root not a directory: {pool_root}")
 
     n_frame_total = 0
-    n_pos_per_bus = np.zeros(N_BUSES, dtype=np.int64)
+    n_pos_per_bus = np.zeros(N_CHANNELS, dtype=np.int64)
     sample_index: list[dict[str, object]] = []
     n_skipped = 0
 
@@ -104,7 +108,7 @@ def scan_density(
         if target.shape[0] < min_frames:
             n_skipped += 1
             continue
-        onset = target[:, 0:24:3]  # [n_frame, 8]
+        onset = target[:, 0:HIHAT_OPENING_COL:3]  # [n_frame, 9]
         pos = (onset > onset_threshold).sum(axis=0).astype(np.int64)
         n_pos_per_bus += pos
         n_frame_total += target.shape[0]

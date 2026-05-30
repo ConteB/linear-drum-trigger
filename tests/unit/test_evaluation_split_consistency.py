@@ -10,7 +10,7 @@ from tests.unit.test_evaluation_common import _make_dna
 from tests.unit.test_evaluation_data_audit import _write_target_with_onsets
 
 from evaluation.common import GoldSampleMeta
-from evaluation.data_audit import N_BUSES
+from evaluation.data_audit import N_CHANNELS
 from evaluation.split_consistency import (
     MODULE_NAME,
     _chi2_categorical,
@@ -46,20 +46,20 @@ def test_ks_clearly_different_distributions_yields_low_p() -> None:
 
 
 def test_ks_per_bus_skips_with_insufficient_samples() -> None:
-    train_v: list[list[float]] = [[0.5]] * N_BUSES   # only 1 sample each
-    val_v: list[list[float]] = [[0.5]] * N_BUSES
+    train_v: list[list[float]] = [[0.5]] * N_CHANNELS   # only 1 sample each
+    val_v: list[list[float]] = [[0.5]] * N_CHANNELS
     rows = _ks_per_bus(train_v, val_v, label="velocity")
-    assert len(rows) == N_BUSES
+    assert len(rows) == N_CHANNELS
     assert all(r.get("skipped_reason") for r in rows)
     assert all(r["statistic"] is None for r in rows)
 
 
 def test_ks_per_bus_returns_one_row_per_bus() -> None:
     rng = np.random.default_rng(2)
-    pool_a = [rng.normal(0.5, 0.05, size=50).tolist() for _ in range(N_BUSES)]
-    pool_b = [rng.normal(0.5, 0.05, size=50).tolist() for _ in range(N_BUSES)]
+    pool_a = [rng.normal(0.5, 0.05, size=50).tolist() for _ in range(N_CHANNELS)]
+    pool_b = [rng.normal(0.5, 0.05, size=50).tolist() for _ in range(N_CHANNELS)]
     rows = _ks_per_bus(pool_a, pool_b, label="velocity")
-    assert [r["bus"] for r in rows] == list(range(N_BUSES))
+    assert [r["bus"] for r in rows] == list(range(N_CHANNELS))
     assert all(r["metric"] == "velocity" for r in rows)
 
 
@@ -148,7 +148,7 @@ def _make_gold_with_splits(
     in their DNA. Otherwise builds ``root/train/`` and ``root/val/``.
     """
     if onsets_per_bus is None:
-        onsets_per_bus = [3] * N_BUSES
+        onsets_per_bus = [3] * N_CHANNELS
     base_train = root if flat else root / "train"
     base_val = root if flat else root / "val"
     base_train.mkdir(parents=True, exist_ok=True)

@@ -12,7 +12,7 @@ import pytest
 from tests.unit.test_evaluation_common import _make_dna
 
 from evaluation.data_audit import (
-    N_BUSES,
+    N_CHANNELS,
     ONSET_PROB_FLOOR,
     TARGET_COLS,
     _build_duration_histogram,
@@ -34,7 +34,7 @@ def _make_target(n_frame: int = 32) -> np.ndarray:
 
 def test_count_onsets_zero_target_returns_zeros() -> None:
     counts, vels = _count_onsets(_make_target())
-    assert counts.tolist() == [0] * N_BUSES
+    assert counts.tolist() == [0] * N_CHANNELS
     assert all(v.size == 0 for v in vels)
 
 
@@ -83,8 +83,8 @@ def test_hh_articulation_counts_segments_not_frames() -> None:
     """A long held 'open' segment counts as ONE open event, not N."""
     t = _make_target(20)
     # closed for frames 0..4, then open for 5..14, then pedal for 15..19
-    t[5:15, 24] = 0.9   # open
-    t[15:, 24] = 0.4    # pedal
+    t[5:15, 27] = 0.9   # open
+    t[15:, 27] = 0.4    # pedal
     counts = _hh_articulation_counts(t)
     assert counts == {"closed": 1, "pedal": 1, "open": 1}
 
@@ -157,24 +157,24 @@ def _make_sample_with_onsets(gold_dir: Path, key: str, onsets_per_bus: list[int]
 def test_run_class_imbalance_pct_matches_onset_counts(tmp_path: Path) -> None:
     # Sample A: bus 0 → 10 onsets, every other bus → 1 (so no empty-bus failure).
     gold = tmp_path / "gold"
-    _make_sample_with_onsets(gold, "A", [10, 1, 1, 1, 1, 1, 1, 1])
+    _make_sample_with_onsets(gold, "A", [10, 1, 1, 1, 1, 1, 1, 1, 1])
     result = run(
         gold_dir=gold,
         thresholds=Path("src/evaluation/thresholds.yaml"),
         out_dir=tmp_path / "out",
     )
     assert result.passed is True
-    # 10/(10+7) = 58.82 % for bus 0.
-    assert result.metrics["class_imbalance_pct"][0] == pytest.approx(10 / 17 * 100.0)
-    for b in range(1, N_BUSES):
-        assert result.metrics["class_imbalance_pct"][b] == pytest.approx(1 / 17 * 100.0)
+    # 10/(10+8) = 55.56 % for bus 0 (9 channels).
+    assert result.metrics["class_imbalance_pct"][0] == pytest.approx(10 / 18 * 100.0)
+    for b in range(1, N_CHANNELS):
+        assert result.metrics["class_imbalance_pct"][b] == pytest.approx(1 / 18 * 100.0)
 
 
 def test_run_empty_bus_surfaces_as_warning_not_failure(tmp_path: Path) -> None:
     """Empty buses are *informative* (F0-T17 §7) — surfaced in warnings, not failures."""
     gold = tmp_path / "gold"
     gold.mkdir()
-    _make_sample_with_onsets(gold, "A", [10, 5, 0, 0, 0, 0, 0, 0])
+    _make_sample_with_onsets(gold, "A", [10, 5, 0, 0, 0, 0, 0, 0, 0])
     result = run(
         gold_dir=gold,
         thresholds=Path("src/evaluation/thresholds.yaml"),
@@ -182,14 +182,14 @@ def test_run_empty_bus_surfaces_as_warning_not_failure(tmp_path: Path) -> None:
     )
     assert result.passed is True  # informative — never blocks
     assert result.failures == []
-    assert result.metrics["empty_buses"] == [2, 3, 4, 5, 6, 7]
+    assert result.metrics["empty_buses"] == [2, 3, 4, 5, 6, 7, 8]
     assert any("empty bus" in w for w in result.metrics["warnings"])
 
 
 def test_run_all_buses_populated_passes(tmp_path: Path) -> None:
     gold = tmp_path / "gold"
     gold.mkdir()
-    _make_sample_with_onsets(gold, "A", [4, 4, 4, 4, 4, 4, 4, 4], n_frame=64)
+    _make_sample_with_onsets(gold, "A", [4, 4, 4, 4, 4, 4, 4, 4, 4], n_frame=64)
     result = run(
         gold_dir=gold,
         thresholds=Path("src/evaluation/thresholds.yaml"),
@@ -197,7 +197,7 @@ def test_run_all_buses_populated_passes(tmp_path: Path) -> None:
     )
     assert result.passed is True
     assert result.metrics["empty_buses"] == []
-    assert result.metrics["minority_buses"] == []  # 4/32 = 12.5 % each
+    assert result.metrics["minority_buses"] == []  # 4/36 = 11.1 % each
 
 
 def test_run_minority_buses_surfaced_but_not_blocking(tmp_path: Path) -> None:

@@ -135,7 +135,7 @@ def make_audio() -> Callable[..., np.ndarray]:
 
 @pytest.fixture
 def make_target() -> Callable[..., np.ndarray]:
-    """Factory for a contract-valid ``target`` matrix — float16, ``[n_frame, 25]``."""
+    """Factory for a contract-valid ``target`` matrix — float16, ``[n_frame, 28]``."""
 
     def _make(n_frame: int = 128) -> np.ndarray:
         t = np.zeros((n_frame, TARGET_COLS), dtype=np.float16)
@@ -158,5 +158,5 @@ def sample_dna() -> dict:
         "recipe_id": "R-GMD042-DGZ-001",
         "split": "train",
         "audio": {"shape": [4, 4096], "dtype": "float16", "n_nonfinite": 0},
-        "target": {"shape": [128, 25], "dtype": "float16", "n_nonfinite": 0},
+        "target": {"shape": [128, 28], "dtype": "float16", "n_nonfinite": 0},
     }

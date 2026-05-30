@@ -30,9 +30,9 @@ def test_n_frames_is_monotonic_in_duration(a, b) -> None:
     assert n_frames(lo) <= n_frames(hi)
 
 
-@given(st.integers(min_value=0, max_value=7))
-def test_bus_columns_partition_the_first_24_columns(bus) -> None:
-    # F0-T2a §3.3 — buses tile columns 0..23 in contiguous triples.
+@given(st.integers(min_value=0, max_value=8))
+def test_bus_columns_partition_the_first_27_columns(bus) -> None:
+    # F0-T19 §7b — channels tile columns 0..26 in contiguous triples.
     cols = bus_columns(bus)
     assert cols == (3 * bus, 3 * bus + 1, 3 * bus + 2)
-    assert all(0 <= c < 24 for c in cols)
+    assert all(0 <= c < 27 for c in cols)

@@ -153,16 +153,60 @@ CRASH_2: int = 57
 CHINA: int = 52
 SPLASH: int = 55
 
-#: Bus → list of GM notes voiced on DRSKit. Used by the chaos generator.
-#: Mirrors ``midi_mapping_table.yaml::forward_gm_to_bus`` restricted to the
-#: notes actually rendered by DRSKit (kit-driven, not theoretical).
+#: Channel → list of GM notes. **F0-T19 §7b 9-channel taxonomy** (was the
+#: flat-25 8-bus map). One Poisson rate per *channel* in the chaos generator, so
+#: the newly-separated rare channels (snare_sidestick, ride_bell) get their own
+#: density instead of sharing a rate with snare/ride. Keys are the 1-based
+#: ``forward_gm_to_bus`` channel ids.
 BUS_TO_GM_NOTES: dict[int, tuple[int, ...]] = {
-    1: (KICK,),                       # kick
-    2: (SNARE, SIDE_STICK),           # snare
-    3: (HH_CLOSED, HH_PEDAL, HH_OPEN),  # hihat
-    4: (HI_MID_TOM, HIGH_TOM, LOW_MID_TOM),  # tom_hi_mid
-    5: (LOW_FLOOR_TOM, HIGH_FLOOR_TOM, LOW_TOM),  # floor_tom
-    6: (RIDE, RIDE_BELL),             # ride
-    7: (CRASH_1,),                    # crash_a
-    8: (CRASH_2, CHINA, SPLASH),      # crash_b_misc
+    1: (KICK,),                                              # kick
+    2: (SNARE,),                                             # snare_head
+    3: (SIDE_STICK,),                                        # snare_sidestick
+    4: (HH_CLOSED, HH_PEDAL, HH_OPEN),                       # hihat
+    5: (HI_MID_TOM, HIGH_TOM, LOW_MID_TOM,
+        LOW_FLOOR_TOM, HIGH_FLOOR_TOM, LOW_TOM),             # tom (all collapsed)
+    6: (RIDE,),                                              # ride_bow
+    7: (RIDE_BELL,),                                         # ride_bell
+    8: (CRASH_1, CRASH_2),                                   # crash
+    9: (CHINA, SPLASH),                                      # aux (china + splash)
 }
+#: Number of logical channels (F0-T19 flat-28). Used by the chaos generator.
+N_CHANNELS: int = 9
+
+
+def loop_groove_to_min_duration(
+    spec: GrooveSpec,
+    *,
+    min_duration_s: float,
+    ticks_per_beat: int = TICKS_PER_BEAT,
+    note_len_ticks: int = DEFAULT_NOTE_LEN_TICKS,
+) -> GrooveSpec:
+    """Repeat ``spec``'s pattern (bar-aligned) until it lasts ``>= min_duration_s``.
+
+    The synthetic generators emit short loops (2-3 bars / 2-6 s); the mini-L3
+    crop needs ``>= 5 s`` (F0-T4c B4). Drum grooves loop naturally, so we tile
+    the pattern on a **bar boundary** (no musical seam, no overlap) up to the
+    target. Returns ``spec`` unchanged when it is already long enough or empty.
+    Deterministic: same input ⇒ same output.
+    """
+    import math  # noqa: PLC0415
+
+    if not spec.events or min_duration_s <= 0.0:
+        return spec
+    max_tick = max(t for t, _, _ in spec.events) + note_len_ticks
+    ticks_per_second = ticks_per_beat * spec.bpm / 60.0
+    if max_tick / ticks_per_second >= min_duration_s:
+        return spec
+    bar_ticks = 4 * ticks_per_beat
+    period = math.ceil(max_tick / bar_ticks) * bar_ticks  # round up to whole bars
+    # After ``n_reps`` tiles the last event lands at ``(n_reps-1)*period +
+    # max_tick``; solve that ``>= min_duration`` (counting period spans alone
+    # under-fills, because events end inside the last period).
+    min_ticks = min_duration_s * ticks_per_second
+    n_reps = 1 + math.ceil((min_ticks - max_tick) / period)
+    looped: list[tuple[int, int, int]] = [
+        (tick + rep * period, note, vel)
+        for rep in range(n_reps)
+        for (tick, note, vel) in spec.events
+    ]
+    return spec._replace(events=looped)

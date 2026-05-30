@@ -43,10 +43,10 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined  # noqa: E402
 #: Blueprint spec version (synchronise with the doc's frontmatter).
 BLUEPRINT_VERSION = "1.0.0"
 
-#: Canonical bus names (mapping table). Index = bus slot 0..7.
+#: Canonical channel names (F0-T19 §7b type-class taxonomy). Index = channel 0..8.
 BUS_NAMES: tuple[str, ...] = (
-    "kick", "snare", "hihat", "tom_hi_mid",
-    "floor_tom", "ride", "crash_a", "crash_b_misc",
+    "kick", "snare_head", "snare_sidestick", "hihat", "tom",
+    "ride_bow", "ride_bell", "crash", "aux",
 )
 
 #: Templates directory (relative to repo root).
@@ -166,9 +166,12 @@ class ChartFactory:
         per_bus_confusion: list[dict[str, int]],
         bus_names: tuple[str, ...] = BUS_NAMES,
     ) -> str:
-        """Grid of 8 mini confusion matrices (one per bus)."""
-        fig, axes = plt.subplots(2, 4, figsize=(10, 5))
+        """Grid of 9 mini confusion matrices (one per channel, F0-T19 §7b)."""
+        fig, axes = plt.subplots(3, 3, figsize=(10, 8))
         for b, ax in enumerate(axes.flatten()):
+            if b >= len(per_bus_confusion):
+                ax.set_axis_off()
+                continue
             cm = per_bus_confusion[b]
             mat = np.array([[cm["TP"], cm["FP"]],
                             [cm["FN"], cm["TN"]]], dtype=float)
@@ -534,8 +537,8 @@ def evaluate_sample_for_report(
             .squeeze(0).numpy().astype(np.float32, copy=False)
         )
     target_cut = target_np[:n_frame].astype(np.float32, copy=False)
-    onset_pred = pred[:, 0:24:3]
-    onset_target = target_cut[:, 0:24:3]
+    onset_pred = pred[:, 0:HIHAT_OPENING_COL:3]
+    onset_target = target_cut[:, 0:HIHAT_OPENING_COL:3]
     hihat_pred = pred[:, HIHAT_OPENING_COL]
     hihat_target = target_cut[:, HIHAT_OPENING_COL]
 
@@ -552,7 +555,7 @@ def evaluate_sample_for_report(
     target_peak_frames: list[list[int]] = []
     pred_peak_frames: list[list[int]] = []
 
-    for b in range(8):
+    for b in range(len(BUS_NAMES)):
         pred_pks = peak_pick(onset_pred[:, b], threshold=thr, min_distance_frames=3)
         true_pks = peak_pick(onset_target[:, b], threshold=thr, min_distance_frames=3)
         n_matched, drifts = match_onsets(pred_pks, true_pks)
@@ -698,7 +701,7 @@ def build_default_context(
     # Aggregate per-bus mean F on train.
     per_bus_train_mean: list[float | None] = []
     per_bus_train_ntrue: list[int] = []
-    for b in range(8):
+    for b in range(len(BUS_NAMES)):
         f_values = [e["f_per_bus"][b] for e in train_evals]
         n_true_total = sum(e["n_true_per_bus"][b] for e in train_evals)
         clean = [x for x in f_values if x is not None and not math.isnan(x)]
@@ -720,7 +723,7 @@ def build_default_context(
         )
     else:
         charts["per_bus_holdout"] = cf.per_bus_f_bars(
-            [None] * 8, [0] * 8,
+            [None] * len(BUS_NAMES), [0] * len(BUS_NAMES),
             title="F-measure per-bus — HOLDOUT (n/a)",
             gate_threshold=gate_f_threshold,
         )
@@ -732,7 +735,7 @@ def build_default_context(
     # Confusion grid aggregated over holdout.
     if holdout_evals:
         agg = []
-        for b in range(8):
+        for b in range(len(BUS_NAMES)):
             cell = {"TP": 0, "FP": 0, "FN": 0, "TN": 0}
             for e in holdout_evals:
                 for k in cell:

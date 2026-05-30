@@ -36,20 +36,20 @@ status: LOCKED
 #              apertura [0..1] (F0-T2a §5; closed→0, pedal→0.5, open→1).
 articulations:
   kick:          { render_gm: 36, bus: 1 }
-  snare:         { render_gm: 38, bus: 2 }
-  side_stick:    { render_gm: 37, bus: 2 }   # collassato in snare, v1.0
-  hihat_closed:  { render_gm: 42, bus: 3, hihat_opening: 0.0 }
-  hihat_pedal:   { render_gm: 44, bus: 3, hihat_opening: 0.5 }
-  hihat_open:    { render_gm: 46, bus: 3, hihat_opening: 1.0 }
-  tom_high:      { render_gm: 48, bus: 4 }
-  tom_low_mid:   { render_gm: 47, bus: 4 }
+  snare:         { render_gm: 38, bus: 2 }   # snare_head (rimshot rinviato, F0-T19)
+  side_stick:    { render_gm: 37, bus: 3 }   # canale dedicato (D8), F0-T19 §7b
+  hihat_closed:  { render_gm: 42, bus: 4, hihat_opening: 0.0 }
+  hihat_pedal:   { render_gm: 44, bus: 4, hihat_opening: 0.5 }
+  hihat_open:    { render_gm: 46, bus: 4, hihat_opening: 1.0 }
+  tom_high:      { render_gm: 48, bus: 5 }   # tom (identità collassata, D9)
+  tom_low_mid:   { render_gm: 47, bus: 5 }
   tom_floor:     { render_gm: 43, bus: 5 }
-  ride:          { render_gm: 51, bus: 6 }
-  ride_bell:     { render_gm: 53, bus: 6 }   # collassato in ride, v1.0
-  crash_1:       { render_gm: 49, bus: 7 }
+  ride:          { render_gm: 51, bus: 6 }   # ride_bow
+  ride_bell:     { render_gm: 53, bus: 7 }   # canale dedicato (D8), F0-T19 §7b
+  crash_1:       { render_gm: 49, bus: 8 }   # crash (identità collassata, D9)
   crash_2:       { render_gm: 57, bus: 8 }
-  china:         { render_gm: 52, bus: 8 }   # collassato in crash_b, v1.0
-  splash:        { render_gm: 55, bus: 8 }   # collassato in crash_b, v1.0
+  china:         { render_gm: 52, bus: 9 }   # aux (china+splash, D9)
+  splash:        { render_gm: 55, bus: 9 }   # aux
 
 # --- STANDARD SORGENTE: nota MIDI → articolazione canonica -------------------
 standards:

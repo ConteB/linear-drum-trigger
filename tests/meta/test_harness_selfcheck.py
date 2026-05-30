@@ -23,12 +23,12 @@ def test_skeleton_modules_import() -> None:
         assert module is not None
 
 
-def test_flat25_layout_constants() -> None:
-    # F0-T2a §3.3 — flat-25 = 8 buses x 3 channels + 1 Hi-Hat opening head.
-    assert gold_writer.N_BUSES == 8
-    assert gold_writer.TARGET_COLS == 25
-    assert gold_writer.N_BUSES * 3 + 1 == gold_writer.TARGET_COLS
-    assert gold_writer.HIHAT_OPENING_COL == 24
+def test_flat28_layout_constants() -> None:
+    # F0-T19 §7b — flat-28 = 9 type-class channels x 3 + 1 Hi-Hat opening head.
+    assert gold_writer.N_CHANNELS == 9
+    assert gold_writer.TARGET_COLS == 28
+    assert gold_writer.N_CHANNELS * 3 + 1 == gold_writer.TARGET_COLS
+    assert gold_writer.HIHAT_OPENING_COL == 27
     assert gold_writer.HIHAT_OPENING_COL == gold_writer.TARGET_COLS - 1
 
 

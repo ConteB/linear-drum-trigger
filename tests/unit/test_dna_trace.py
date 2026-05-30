@@ -125,7 +125,7 @@ def test_dna_json_records_full_lineage(sample_barcode, sample_recipe,
     assert lineage["render"]["mic_config"] == sample_recipe.render.mic_config.value
     assert lineage["augmentation"]["level"] == sample_recipe.augmentation.level
     assert lineage["midi_source"]["file"] == sample_recipe.midi_source.file
-    assert dna["target"]["layout"] == "flat-25"
+    assert dna["target"]["layout"] == "flat-28"
     assert dna["target"]["frame_rate_hz"] == sample_recipe.target_frame_rate_hz
 
 

@@ -79,7 +79,17 @@ from data_engineering.midi_augment.recipe_matrix import (  # noqa: E402
     RecipeMatrixEntry,
     build_recipe_matrix_entries,
 )
-
+from data_engineering.midi_synth._writer import (  # noqa: E402
+    GrooveSpec,
+    loop_groove_to_min_duration,
+    write_events_to_midi,
+)
+from data_engineering.midi_synth.chaos_generator import (  # noqa: E402
+    generate_chaos_grooves,
+)
+from data_engineering.midi_synth.rare_emphasis import (  # noqa: E402
+    generate_rare_emphasis_grooves,
+)
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -111,6 +121,17 @@ MIN_MIDI_DURATION_S = 5.0
 #: Tradeoff: > 15 s would yield > 117 grooves but explode the storage budget
 #: well past the 20 GB cap.
 MAX_MIDI_DURATION_S = 15.0
+
+#: F0-T19 (CEO 2026-05-29): synthetic grooves appended to the GMD pool to
+#: populate the rare channels (crash 7 onsets / ride_bell 28 / sidestick 40 in
+#: the GMD val → starved → spam + dilution; PIPELINE_AUDIT_2026-05-29 F1/F5).
+#: NOT extra kits — synthetic grooves rendered on the SAME kits, in both the
+#: train pool and the ShittyKit val. Total ≈ 117 GMD + 50 rare + 83 chaos = 250.
+N_RARE = 50
+N_CHAOS = 83
+#: Synthetic grooves are short loops (2-6 s); loop-extend to >= this so they
+#: fill the mini-L3 crop (>= 5 s, F0-T4c B4). Same kits, no padding-silence.
+SYNTH_MIN_DURATION_S = 6.0
 
 #: Train kits — roster F0-T1b training partition.
 #: Decision Lock CEO 2026-05-25 (post C=64 FAIL): paradigma misto DG+SFZ per
@@ -291,6 +312,26 @@ def select_midi_subset() -> list[Path]:
         dst = MIDI_SUBSET_DIR / f"{i:04d}_{slug}.mid"
         shutil.copy2(src_path, dst)
         out.append(dst)
+
+    # F0-T19 (CEO 2026-05-29): append synthetic rare-emphasis + chaos grooves to
+    # the SAME pool — they render on the same kits (train kits AND ShittyKit val)
+    # and give the rare channels real onsets. Each is loop-extended to fill the
+    # crop. The recipe matrix + canonicalization (roland_td11 maps these GM notes
+    # identically) + flat-28 target builder pick them up with zero special-casing.
+    gi = len(sampled)
+    synthetic: list[GrooveSpec] = [
+        *generate_rare_emphasis_grooves(n=N_RARE),
+        *generate_chaos_grooves(n=N_CHAOS),
+    ]
+    for groove in synthetic:
+        extended = loop_groove_to_min_duration(
+            groove, min_duration_s=SYNTH_MIN_DURATION_S
+        )
+        slug = "".join(c for c in extended.name if c.isalnum() or c in "._-")
+        dst = MIDI_SUBSET_DIR / f"{gi:04d}_{slug}.mid"
+        write_events_to_midi(extended, dst)
+        out.append(dst)
+        gi += 1
     return out
 
 

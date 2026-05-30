@@ -29,8 +29,8 @@ def test_loss_curve_is_deterministic() -> None:
 
 
 def test_per_bus_bars_is_deterministic() -> None:
-    f_per_bus = [0.9, 0.8, 0.7, None, 0.5, 0.4, 0.3, 0.2]
-    n_true = [10, 10, 10, 0, 10, 10, 10, 10]
+    f_per_bus = [0.9, 0.8, 0.7, None, 0.5, 0.4, 0.3, 0.2, 0.6]
+    n_true = [10, 10, 10, 0, 10, 10, 10, 10, 10]
     a = ChartFactory.per_bus_f_bars(
         f_per_bus, n_true, title="t", gate_threshold=0.80
     )
@@ -41,7 +41,7 @@ def test_per_bus_bars_is_deterministic() -> None:
 
 
 def test_confusion_grid_is_deterministic() -> None:
-    cm = [{"TP": 10, "FP": 3, "FN": 2, "TN": 985} for _ in range(8)]
+    cm = [{"TP": 10, "FP": 3, "FN": 2, "TN": 985} for _ in range(9)]
     a = ChartFactory.confusion_grid(cm)
     b = ChartFactory.confusion_grid(cm)
     assert a == b
@@ -71,14 +71,14 @@ def test_full_report_is_deterministic(tmp_path) -> None:
                 [{"epoch": 1.0, "train_loss": 0.5}, {"epoch": 2.0, "train_loss": 0.25}]
             ),
             "per_bus_train": ChartFactory.per_bus_f_bars(
-                [0.5] * 8, [10] * 8, title="t", gate_threshold=0.80,
+                [0.5] * 9, [10] * 9, title="t", gate_threshold=0.80,
             ),
             "per_bus_holdout": ChartFactory.per_bus_f_bars(
-                [0.3] * 8, [5] * 8, title="h", gate_threshold=0.80,
+                [0.3] * 9, [5] * 9, title="h", gate_threshold=0.80,
             ),
             "timing_mae_hist": ChartFactory.timing_mae_hist([0.5, -0.3], 2.902),
             "confusion_grid": ChartFactory.confusion_grid(
-                [{"TP": 1, "FP": 1, "FN": 1, "TN": 1}] * 8,
+                [{"TP": 1, "FP": 1, "FN": 1, "TN": 1}] * 9,
             ),
             "shuffle_control": ChartFactory.shuffle_control(
                 [{"key": "K1-X-Y-Z-V-W", "f_real": 0.5, "f_shuffle": 0.05}], 0.10,

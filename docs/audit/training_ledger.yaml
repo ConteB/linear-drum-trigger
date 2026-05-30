@@ -2052,3 +2052,77 @@ runs:
   cost:
     azure_usd: 0.0
     local_compute_min: 191
+- run_id: mini-l3-F0T20-franken-2026-05-30
+  date: 2026-05-31
+  git_commit: fca4b6b+f0t20b
+  status: FAIL
+  purpose: F0-T20b Franken-Kit A/B — cross-kit combinatorial augmentation vs the
+    single-kit saturated floor (F0-T19 0.1455 / F0-T4e 0.149 production). Each franken
+    sample is a hybrid kit (every instrument rendered through a DIFFERENT roster kit,
+    summed). Tests whether timbral diversity breaks the ~0.15 floor. Exact F0-T4e config
+    (C=64, P1+P2, input-agnostic seed 20260526, loss B, audio-aug, cosine warmup 15,
+    early-stop 20, grad-clip 0.5, --no-amp); ONLY variable = the franken dataset.
+  dataset:
+    pool_root: data/gold/franken_train
+    n_train_samples: 496
+    n_val_samples: 248
+    baseline_only: false
+    notes: '50% franken (230) + 50% single-kit (266) per D3, x2 jitter variants, from
+      the 250-MIDI mini_l3 pool rendered through 4 DG kits (DRSKit/Muldjord/Crocell/
+      Aasimonster). Val 248 ShittyKit (held-out cross-kit, same as F0-T19 baseline).
+      Within-engine v1.0 (D2, DG only). 6 drummer7 silent-zero rejects (known).'
+  model:
+    arch: F0-T4a TCN + F0-T4e ChannelAgnosticFrontend, flat-28 9-channel heads
+    channels: 64
+    in_channels: 9
+    params: 331420
+  preprocessing:
+    kind: p1p2
+  loss:
+    kind: afl
+    preset: B
+    fp_to_fn_ratio: 30.0
+    focal_gamma: 2.0
+    pos_weight: density-derived 9-tuple (61.7,49.5,83.2,47.0,48.7,71.4,75.7,71.1,62.5)
+  augmentation:
+    audio_aug: true
+    channel_agnostic_aug: true
+    channel_agnostic_master_seed: 20260526
+    franken_kit: true
+  training:
+    epochs: 150
+    epochs_run: 144
+    early_stopped: 144
+    batch_size: 8
+    lr: 0.001
+    device: mps
+    autocast: false
+    cosine_lr_warmup_epochs: 15
+    early_stop_patience: 20
+    grad_clip_max_norm: 0.5
+    skip_nonfinite_step: true
+    wall_time_s: 14155.9
+    best_train_loss: 2.232
+  metrics:
+    val_F_mean_trainer_tuned: 0.165
+    val_F_max: 0.672
+    val_F_min: 0.006
+    val_F_production_calibrated: 0.1599
+    val_F_production_baseline_uncal: 0.0971
+    status_vs_gate: FAIL (0.1599 prod < 0.55)
+    status_vs_baseline_F0T19_production: +9.9% (0.1599 vs 0.1455)
+  verdict:
+    pass_gate: false
+    status_vs_baseline: 'MODEST REAL LIFT (+9.9%, 0.1599 vs 0.1455) — the best production
+      number on the ShittyKit cross-kit val to date. Franken-kit timbral diversity nudges
+      the saturated floor up, consistent with the hypothesis (the net relies slightly less
+      on kit-timbre fingerprint). Still FAIL the 0.55 gate (mini-L3 single-kit-val is a
+      saturated diagnostic). F_max 0.672 ~= prior peaks. C=128 capacity A/B launched to see
+      if more capacity exploits the richer franken diversity.'
+    notes: Architecturally validated; real gate = L4/E-GMD (~30 kits). $0 Azure.
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-F0T20-franken-2026-05-30/report.html
+  calibration: docs/gates/F0-T4c_MINI_L3/listening_test_mini-l3-F0T20-franken-2026-05-30/calibration_sweep.json
+  checkpoint: artifacts/mini_l3_tcn_F0T20franken.pt
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 236

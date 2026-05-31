@@ -57,6 +57,15 @@ class TCNConfig:
     encoder_strides: tuple[int, ...] = ENCODER_STRIDES
     trunk_kernel: int = TRUNK_KERNEL
     trunk_dilations: tuple[int, ...] = TRUNK_DILATIONS
+    # F0-T20c (CEO 2026-05-31) — front-end A/B. "raw": learned strided-conv
+    # encoder over the waveform (F0-T4a baseline). "mel": log-mel spectrogram
+    # front-end (hop = total_stride → frame rate directly), keeping trunk+heads.
+    # The literature standard for ADT; tests whether learning onset features
+    # from raw audio is the floor's cause. Streamable (STFT hop=128, look-ahead
+    # n_fft/2 ≈ 5.8 ms ≪ PDC budget) → RTNeural-compatible.
+    frontend: str = "raw"
+    mel_n_fft: int = 512
+    mel_n_mels: int = 64
 
     @property
     def total_stride(self) -> int:
@@ -175,10 +184,28 @@ class TCNModel(nn.Module):
         super().__init__()
         self.config = config or TCNConfig()
         C = self.config.channels  # noqa: N806 — match the spec notation
-        self.projection = nn.Conv1d(self.config.in_channels, C, kernel_size=1)
-        self.encoder = StridedEncoder(
-            C, self.config.encoder_kernel, self.config.encoder_strides
-        )
+        self.frontend = self.config.frontend
+        if self.frontend == "mel":
+            # F0-T20c — log-mel front-end replaces projection+encoder.
+            import torchaudio  # type: ignore[import-untyped]  # local import (mel A/B)
+
+            self.melspec = torchaudio.transforms.MelSpectrogram(
+                sample_rate=44100,
+                n_fft=self.config.mel_n_fft,
+                hop_length=self.config.total_stride,  # = 128 → frame rate
+                n_mels=self.config.mel_n_mels,
+                power=2.0,
+                center=True,
+            )
+            self.projection = nn.Conv1d(
+                self.config.in_channels * self.config.mel_n_mels, C, kernel_size=1
+            )
+            self.encoder = None
+        else:
+            self.projection = nn.Conv1d(self.config.in_channels, C, kernel_size=1)
+            self.encoder = StridedEncoder(
+                C, self.config.encoder_kernel, self.config.encoder_strides
+            )
         self.trunk = nn.ModuleList(
             [
                 DilatedTCNBlock(C, self.config.trunk_kernel, dilation=d)
@@ -198,8 +225,18 @@ class TCNModel(nn.Module):
     # numerical equivalence between the two is the F0-T4b L3 round-trip gate.
     def forward(self, audio: torch.Tensor) -> torch.Tensor:
         # audio: [B, 8, n_sample] — n_sample must be a multiple of total_stride.
-        x = self.projection(audio)
-        x = self.encoder(x)
+        if self.frontend == "mel":
+            B, ch, n_sample = audio.shape  # noqa: N806
+            T = n_sample // self.config.total_stride  # noqa: N806
+            mel = self.melspec(audio)  # [B, ch, n_mels, T_mel]
+            mel = torch.log1p(mel)
+            mel = mel[..., :T]  # crop to the exact target frame count
+            x = mel.reshape(B, ch * self.config.mel_n_mels, T)
+            x = self.projection(x)  # [B, C, T]
+        else:
+            assert self.encoder is not None  # raw front-end always has the encoder
+            x = self.projection(audio)
+            x = self.encoder(x)
         for block in self.trunk:
             x = block(x)
         # x: [B, C, n_frame]

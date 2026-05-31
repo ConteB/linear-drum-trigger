@@ -26,7 +26,6 @@ import json
 import math
 import sys
 import time
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -38,23 +37,21 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT / "src"))
 
-from neural.data import (  # noqa: E402
-    DEFAULT_LOOKAHEAD_FRAMES,
-    ENCODER_STRIDE,
-    GoldDataset,
-    GoldSample,
-    load_pool,
-)
-from neural.loss import LossConfig, TCNLoss  # noqa: E402
-from neural.metrics import (  # noqa: E402
-    evaluate_l3,
-    onset_report,
-    tune_threshold,
+from data_engineering.audio_augment import (  # noqa: E402
+    AudioAugmentError,
+    apply_audio_augmentation,
+    apply_channel_agnostic_aug,
 )
 from neural.channel_agnostic import (  # noqa: E402
     ChannelAgnosticConfig,
     ChannelAgnosticFrontend,
 )
+from neural.data import (  # noqa: E402
+    DEFAULT_LOOKAHEAD_FRAMES,
+    GoldDataset,
+    load_pool,
+)
+from neural.loss import LossConfig, TCNLoss  # noqa: E402
 from neural.model import (  # noqa: E402
     ComposedTCN,
     TCNConfig,
@@ -62,21 +59,17 @@ from neural.model import (  # noqa: E402
     count_parameters,
 )
 from neural.preprocessing import PreprocessingFrontend  # noqa: E402
-from data_engineering.audio_augment import (  # noqa: E402
-    AudioAugmentError,
-    apply_audio_augmentation,
-    apply_channel_agnostic_aug,
-)
 from neural.reporter import (  # noqa: E402
     GateVerdictRow,
     TldrRow,
     build_default_context,
     evaluate_sample_for_report,
-    verdict as verdict_label,
     write_training_report,
 )
+from neural.reporter import (
+    verdict as verdict_label,
+)
 from neural.train import _compute_sampler_weights  # noqa: E402
-
 
 CRASH_A_BUS_IDX = 6
 GATE_F_MEAN_VAL = 0.55
@@ -127,6 +120,11 @@ def main() -> int:
                              "and is the recommended workaround for the "
                              "mini-L3 on a 16 GB Mac.")
     # F0-T4d (Decision Lock CEO 2026-05-25) — preprocessing harness + efficiency.
+    parser.add_argument("--frontend", choices=("raw", "mel"), default="raw",
+                        help="F0-T20c — TCN front-end. raw: strided-conv encoder "
+                             "over the waveform (F0-T4a baseline). mel: log-mel "
+                             "spectrogram front-end (use with --preprocessing none "
+                             "and without --input-agnostic for a clean A/B).")
     parser.add_argument("--preprocessing", choices=("none", "p1", "p1p2"),
                         default="none",
                         help="Front-end preprocessing (F0-T4d): none (default, "
@@ -465,7 +463,12 @@ def main() -> int:
     print(f"[mini-L3] preprocessing = {args.preprocessing} → in_channels = {in_channels}",
           flush=True)
 
-    tcn = TCNModel(TCNConfig(channels=args.tcn_channels, in_channels=in_channels)).to(device)
+    tcn = TCNModel(TCNConfig(
+        channels=args.tcn_channels, in_channels=in_channels, frontend=args.frontend,
+    )).to(device)
+    if args.frontend == "mel":
+        print(f"[mini-L3] FRONT-END = MEL (log-mel n_fft=512 n_mels=64 hop=128) "
+              f"in_channels={in_channels}", flush=True)
     # Compose: ChAg → Preprocessing → TCN. ComposedTCN owns all three and
     # exposes the inner TCN .config so existing eval tooling keeps working.
     model = ComposedTCN(
@@ -727,7 +730,7 @@ def main() -> int:
     val_f_max = max(f_means) if f_means else float("nan")
     val_f_min = min(f_means) if f_means else float("nan")
     pass_gate = (not math.isnan(val_f_mean)) and val_f_mean >= GATE_F_MEAN_VAL
-    print(f"\n[mini-L3] ======== CROSS-KIT VERDICT (ShittyKit) ========")
+    print("\n[mini-L3] ======== CROSS-KIT VERDICT (ShittyKit) ========")
     print(f"[mini-L3] val F_mean = {val_f_mean:.3f}  (gate ≥ {GATE_F_MEAN_VAL})  "
           f"→ {'PASS ✅' if pass_gate else 'FAIL ❌'}")
     print(f"[mini-L3] val F range = [{val_f_min:.3f}, {val_f_max:.3f}]")

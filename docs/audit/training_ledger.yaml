@@ -2126,3 +2126,77 @@ runs:
   cost:
     azure_usd: 0.0
     local_compute_min: 236
+- run_id: mini-l3-F0T20-franken-c128-2026-05-31
+  date: 2026-05-31
+  git_commit: 9faa2e9+f0t20b-c128
+  status: FAIL
+  purpose: F0-T20b capacity A/B — franken-kit at C=128 (4x params) vs the C=64 franken
+    run (mini-l3-F0T20-franken-2026-05-30, prod 0.1599). Same dataset/config, ONLY
+    variable = --tcn-channels 128. Tests whether more capacity exploits the richer
+    franken timbral diversity.
+  dataset:
+    pool_root: data/gold/franken_train
+    n_train_samples: 496
+    n_val_samples: 248
+    baseline_only: false
+    notes: Identical franken dataset as the C=64 run (50% franken + 50% single-kit, x2
+      jitter variants, 4 DG kits, 248 ShittyKit val). Fair capacity A/B.
+  model:
+    arch: F0-T4a TCN + F0-T4e ChannelAgnosticFrontend, flat-28 9-channel heads
+    channels: 128
+    in_channels: 9
+    params: 1318172
+  preprocessing:
+    kind: p1p2
+  loss:
+    kind: afl
+    preset: B
+    fp_to_fn_ratio: 30.0
+    focal_gamma: 2.0
+  augmentation:
+    audio_aug: true
+    channel_agnostic_aug: true
+    channel_agnostic_master_seed: 20260526
+    franken_kit: true
+  training:
+    epochs: 150
+    epochs_run: 144
+    early_stopped: 144
+    batch_size: 8
+    lr: 0.001
+    device: mps
+    autocast: false
+    cosine_lr_warmup_epochs: 15
+    early_stop_patience: 20
+    grad_clip_max_norm: 0.5
+    skip_nonfinite_step: true
+    wall_time_s: 18668.7
+    best_train_loss: 2.1341
+  metrics:
+    val_F_mean_trainer_tuned: 0.230
+    val_F_max: 0.763
+    val_F_min: 0.006
+    val_F_production_calibrated: 0.1531
+    val_F_production_baseline_uncal: 0.1056
+    status_vs_gate: FAIL (0.1531 prod < 0.55)
+    status_vs_franken_c64_production: -4.3% (0.1531 vs 0.1599)
+    status_vs_baseline_F0T19_production: +5.2% (0.1531 vs 0.1455)
+  verdict:
+    pass_gate: false
+    status_vs_baseline: 'CAPACITY DOES NOT HELP production. C=128 trainer-tuned jumps
+      (0.165 -> 0.230) and F_max hits a new peak (0.763), BUT production-calibrated drops
+      slightly (0.1599 -> 0.1531): the extra capacity fits the train better (loss 2.23 ->
+      2.13) and inflates the optimistic per-sample-tuned metric, while the realistic fixed-
+      threshold production metric stays at the saturated ~0.15-0.16 floor. Confirms across
+      the whole mini-L3 history: the single-kit-val ShittyKit is a saturated diagnostic;
+      no lever (capacity / loss / augmentation / franken) breaks it past ~0.16 production.
+      C=64 franken remains the best config (smaller AND higher production).'
+    notes: 'Comparative verdict (3 points): single-kit floor 0.1455 / franken C=64 0.1599
+      (+9.9%, best) / franken C=128 0.1531 (+5.2%, capacity does not add). The real gate
+      is L4/E-GMD (~30 kits, far less OOD). $0 Azure.'
+  report_html: docs/gates/F0-T4c_MINI_L3/mini-l3-F0T20-franken-c128-2026-05-31/report.html
+  calibration: docs/gates/F0-T4c_MINI_L3/listening_test_mini-l3-F0T20-franken-c128-2026-05-31/calibration_sweep.json
+  checkpoint: artifacts/mini_l3_tcn_F0T20franken_c128.pt
+  cost:
+    azure_usd: 0.0
+    local_compute_min: 311

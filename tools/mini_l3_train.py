@@ -158,7 +158,7 @@ def main() -> int:
     # dal CEO 2026-05-25.
     parser.add_argument("--loss-preset", default="ctrl",
                         choices=("ctrl", "A", "B", "C", "D", "E", "F", "G", "H",
-                                 "ridnik"),
+                                 "ridnik", "bce"),
                         help="ctrl = status quo (AFL + per-bus + γ=2 + fp=3); "
                              "A = cap pos_weight 50 (fix minimal); "
                              "B = per-bus + fp_ratio=30 (compensa asimmetria); "
@@ -281,7 +281,14 @@ def main() -> int:
     # The status-quo (ctrl) uses the density-derived per-bus pos_weight. The
     # competing candidates A..D vary along orthogonal axes to discriminate
     # *which* part of the loss design causes the predict-everywhere collapse.
-    if args.loss_preset == "ctrl":
+    if args.loss_preset == "bce":
+        # F0-T21 candidate A1 — plain MODERATE weighted-BCE (the proven ADT loss):
+        # focal γ=0, symmetric (fp_ratio=1), pos_weight capped LOW (8). Tests whether
+        # the extreme density-derived pos_weight (50-1000) + focal is what makes the
+        # model under-confident / non-generalizing.
+        capped = tuple(min(float(w), 8.0) for w in pos_weight_tuple)
+        loss_cfg = LossConfig(pos_weight=capped, focal_gamma=0.0, fp_to_fn_ratio=1.0)
+    elif args.loss_preset == "ctrl":
         loss_cfg = LossConfig(pos_weight=pos_weight_tuple)
     elif args.loss_preset == "A":
         # A — cap pos_weight a 50 per ogni bus (uniforme, asimmetria max 17×).

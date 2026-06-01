@@ -319,6 +319,76 @@ def _str_to_uint8_tensor(s: str) -> torch.Tensor:
     return torch.tensor(list(padded), dtype=torch.uint8)
 
 
+class LazyGoldDataset(Dataset[dict[str, torch.Tensor]]):
+    """Disk-streaming variant of :class:`GoldDataset`.
+
+    Holds only the ``(triple_dir, key)`` list and loads each sample from disk
+    in ``__getitem__`` — so the training set can be far larger than RAM. The
+    in-memory :class:`GoldDataset` caps at ~600 samples on a 16 GB Mac (it
+    holds every sample's float32 audio); this one is bounded only by disk.
+    Crop semantics are identical to :class:`GoldDataset` (same look-ahead
+    shift). Use for the F0-T20 scaling-curve where train sets exceed RAM.
+    """
+
+    def __init__(
+        self,
+        keys: Sequence[tuple[Path, str]],
+        *,
+        crop_samples: int,
+        rng: np.random.Generator | None = None,
+        lookahead_frames: int = DEFAULT_LOOKAHEAD_FRAMES,
+    ) -> None:
+        if not keys:
+            raise GoldDataError("LazyGoldDataset requires at least one key")
+        if crop_samples <= 0 or crop_samples % ENCODER_STRIDE != 0:
+            raise GoldDataError(
+                f"crop_samples must be a positive multiple of {ENCODER_STRIDE}, "
+                f"got {crop_samples}"
+            )
+        if crop_samples < MIN_CROP_SAMPLES:
+            raise GoldDataError(
+                f"crop_samples={crop_samples} < MIN_CROP_SAMPLES={MIN_CROP_SAMPLES}"
+            )
+        if lookahead_frames < 0:
+            raise GoldDataError(
+                f"lookahead_frames must be >= 0, got {lookahead_frames}"
+            )
+        self.keys = list(keys)
+        self.crop_samples = crop_samples
+        self.crop_frames = crop_samples // ENCODER_STRIDE
+        self.lookahead_frames = lookahead_frames
+        self.rng = rng if rng is not None else np.random.default_rng(0)
+
+    def __len__(self) -> int:
+        return len(self.keys)
+
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
+        triple_dir, key = self.keys[index]
+        s = load_gold_sample(triple_dir, key)
+        # Same look-ahead crop as GoldDataset.__getitem__.
+        L = self.lookahead_frames  # noqa: N806
+        total_audio_frames = s.audio.shape[1] // ENCODER_STRIDE
+        max_target_start_frame = (
+            min(s.target.shape[0], total_audio_frames - L) - self.crop_frames
+        )
+        if max_target_start_frame < 0:
+            raise GoldDataError(
+                f"sample {s.key!r} too short for crop_frames={self.crop_frames} "
+                f"+ lookahead={L}"
+            )
+        start_frame = int(self.rng.integers(0, max_target_start_frame + 1))
+        end_frame = start_frame + self.crop_frames
+        start_sample = (start_frame + L) * ENCODER_STRIDE
+        end_sample = start_sample + self.crop_samples
+        audio = s.audio[:, start_sample:end_sample]
+        target = s.target[start_frame:end_frame]
+        return {
+            "audio": torch.from_numpy(audio).contiguous(),
+            "target": torch.from_numpy(target).contiguous(),
+            "key": _str_to_uint8_tensor(s.key),
+        }
+
+
 def load_pool(
     pool_root: Path | str = "data/gold/L2_pool",
     *,
@@ -355,6 +425,7 @@ __all__ = [
     "TARGET_COLS",
     "GoldDataError",
     "GoldDataset",
+    "LazyGoldDataset",
     "GoldSample",
     "discover_gold_keys",
     "load_gold_sample",

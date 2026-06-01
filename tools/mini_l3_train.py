@@ -31,7 +31,7 @@ from typing import Any
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, WeightedRandomSampler
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT / "src") not in sys.path:
@@ -49,6 +49,9 @@ from neural.channel_agnostic import (  # noqa: E402
 from neural.data import (  # noqa: E402
     DEFAULT_LOOKAHEAD_FRAMES,
     GoldDataset,
+    LazyGoldDataset,
+    discover_gold_keys,
+    load_gold_sample,
     load_pool,
 )
 from neural.loss import LossConfig, TCNLoss  # noqa: E402
@@ -114,6 +117,11 @@ def main() -> int:
                         help="Subsample train pool to N samples (deterministic, "
                              "via stride). 0 = use all (default). Useful when "
                              "macOS memory pressure pushes swap past 90 percent.")
+    parser.add_argument("--lazy", action="store_true",
+                        help="F0-T20 scaling-curve — stream the train pool from "
+                             "disk per-batch (LazyGoldDataset) instead of loading "
+                             "it all into RAM. Removes the ~600-sample RAM ceiling; "
+                             "uses a plain shuffle loader (no WeightedRandomSampler).")
     parser.add_argument("--baseline-only", action="store_true",
                         help="Restrict train pool to variant_idx=0 (baseline, "
                              "no jitter). Halves the loaded RAM (656 → ~328) "
@@ -227,14 +235,22 @@ def main() -> int:
     val_samples = load_pool(args.val_pool)
     print(f"[mini-L3] val pool: {len(val_samples)} samples", flush=True)
     print(f"[mini-L3] loading train pool ({args.train_pool})…", flush=True)
-    train_samples = load_pool(args.train_pool)
+    if args.lazy:
+        # F0-T20 — keys only; samples stream from disk in __getitem__.
+        train_samples = discover_gold_keys(args.train_pool)  # list[(dir, key)]
+        _key_of = lambda it: it[1]  # noqa: E731
+        print("[mini-L3] LAZY mode — streaming train pool from disk (RAM-bounded)",
+              flush=True)
+    else:
+        train_samples = load_pool(args.train_pool)
+        _key_of = lambda it: it.key  # noqa: E731
     print(f"[mini-L3] train pool: {len(train_samples)} samples (before subsample)",
           flush=True)
     # Optional subsample to reduce RAM footprint on small-memory macs.
     if args.baseline_only:
         # The mini-L3 barcode J segment is J00 = baseline, J01 = jittered v1.
         before = len(train_samples)
-        train_samples = [s for s in train_samples if "-J00-" in s.key]
+        train_samples = [s for s in train_samples if "-J00-" in _key_of(s)]
         print(f"[mini-L3] --baseline-only: pool reduced {before} → "
               f"{len(train_samples)}", flush=True)
     if args.max_train_samples and len(train_samples) > args.max_train_samples:
@@ -382,34 +398,51 @@ def main() -> int:
               f"β = {loss_cfg.tversky_beta}", flush=True)
     print(f"[mini-L3]   edge_skip_frames = {loss_cfg.edge_skip_frames}",
           flush=True)
-    train_ds = GoldDataset(
-        train_samples,
-        crop_samples=args.crop_samples,
-        rng=np.random.default_rng(args.seed),
-        lookahead_frames=args.lookahead_frames,
-    )
-
-    # B6a sampler ON for cross-kit training (rationale: 1500 samples is large
-    # enough that the rare-bus oversampling has a real signal, and ShittyKit
-    # is *only* in val so it cannot be starved by the sampler weights).
-    sampler_weights = _compute_sampler_weights(
-        train_samples, pos_weight=pos_weight_tuple,
-    )
-    assert sampler_weights is not None
-    print(f"[mini-L3] B6a sampler weights range "
-          f"[{min(sampler_weights):.1f}, {max(sampler_weights):.1f}]")
-    gen = torch.Generator()
-    gen.manual_seed(args.seed)
-    sampler = WeightedRandomSampler(
-        weights=sampler_weights,
-        num_samples=len(train_samples),
-        replacement=True,
-        generator=gen,
-    )
-    loader = DataLoader(
-        train_ds, batch_size=args.batch_size, sampler=sampler,
-        num_workers=0, drop_last=False,
-    )
+    if args.lazy:
+        # F0-T20 scaling-curve: stream from disk, plain shuffle (per-sample
+        # weights would require loading every target → defeats laziness).
+        train_ds: Dataset = LazyGoldDataset(
+            train_samples,
+            crop_samples=args.crop_samples,
+            rng=np.random.default_rng(args.seed),
+            lookahead_frames=args.lookahead_frames,
+        )
+        gen = torch.Generator()
+        gen.manual_seed(args.seed)
+        loader = DataLoader(
+            train_ds, batch_size=args.batch_size, shuffle=True,
+            num_workers=0, drop_last=False, generator=gen,
+        )
+        print("[mini-L3] LAZY loader — plain shuffle (WeightedRandomSampler OFF)",
+              flush=True)
+    else:
+        train_ds = GoldDataset(
+            train_samples,
+            crop_samples=args.crop_samples,
+            rng=np.random.default_rng(args.seed),
+            lookahead_frames=args.lookahead_frames,
+        )
+        # B6a sampler ON for cross-kit training (rationale: 1500 samples is large
+        # enough that the rare-bus oversampling has a real signal, and ShittyKit
+        # is *only* in val so it cannot be starved by the sampler weights).
+        sampler_weights = _compute_sampler_weights(
+            train_samples, pos_weight=pos_weight_tuple,
+        )
+        assert sampler_weights is not None
+        print(f"[mini-L3] B6a sampler weights range "
+              f"[{min(sampler_weights):.1f}, {max(sampler_weights):.1f}]")
+        gen = torch.Generator()
+        gen.manual_seed(args.seed)
+        sampler = WeightedRandomSampler(
+            weights=sampler_weights,
+            num_samples=len(train_samples),
+            replacement=True,
+            generator=gen,
+        )
+        loader = DataLoader(
+            train_ds, batch_size=args.batch_size, sampler=sampler,
+            num_workers=0, drop_last=False,
+        )
 
     # F0-T4e (Decision Lock CEO 2026-05-26) — input-agnostic frontend.
     # When enabled, sits BEFORE the F0-T4d preprocessing harness:
@@ -738,7 +771,9 @@ def main() -> int:
     # Also evaluate on a sample of train for the report (every 10th to keep it light).
     train_subset = train_samples[::max(1, len(train_samples) // 12)][:12]
     train_evals: list[dict[str, Any]] = []
-    for s in train_subset:
+    for item in train_subset:
+        # Lazy mode: train_samples holds (dir, key) tuples → load on the fly.
+        s = load_gold_sample(item[0], item[1]) if args.lazy else item
         ev = evaluate_sample_for_report(
             eval_model, s.audio, s.target,
             n_sample=args.crop_samples,

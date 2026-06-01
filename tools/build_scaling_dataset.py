@@ -29,7 +29,10 @@ from tools.mini_l3_runner import _resolve_kit_paths  # noqa: E402
 
 from data_engineering.gold.orchestrate import build_gold_sample  # noqa: E402
 from data_engineering.gold.recipe import parse_recipe  # noqa: E402
-from data_engineering.gold.target_builder import load_bus_mapping  # noqa: E402
+from data_engineering.gold.target_builder import (  # noqa: E402
+    last_onset_seconds,
+    load_bus_mapping,
+)
 from data_engineering.midi_augment.jitter import apply_midi_jitter  # noqa: E402
 
 MASTER_SEED = 20260601
@@ -38,12 +41,44 @@ MIN_FREE_GB = 6.0
 # samples. Grooves whose tail-standardized render is shorter are dropped at
 # render time (else they fail-loud at training). 196608 + 35·128 = 201088.
 MIN_SAMPLE_LEN = 135552 + 35 * 128  # 3.07s crop threshold
+# CAP groove length: GMD v1 has full-performance grooves (minutes) that render to
+# 80+ MB each and OOM OrbStack. The training crop is only 3.07 s, so cap source
+# MIDIs at MAX_MIDI_S → bounded sample size (~4 MB) and bounded render RAM.
+MAX_MIDI_S = 6.0
 TRAIN_DIR = _REPO / "data/gold/scaling_train"
 VAL_DIR = _REPO / "data/gold/scaling_val"
 
 
 def _free_gb() -> float:
     return shutil.disk_usage(str(_REPO)).free / (1 << 30)
+
+
+def _trim_midi_seconds(midi: mido.MidiFile, max_s: float) -> mido.MidiFile:
+    """Trim a MIDI to its first ``max_s`` seconds (tempo-aware), closing any
+    notes still open at the cut. Bounds render size + RAM for long grooves."""
+    merged = mido.merge_tracks(midi.tracks)
+    out = mido.MidiFile(ticks_per_beat=midi.ticks_per_beat)
+    track = mido.MidiTrack()
+    tempo = 500000  # default 120 BPM until a set_tempo says otherwise
+    abs_s = 0.0
+    open_notes: set[tuple[int, int]] = set()
+    for msg in merged:
+        dt_s = mido.tick2second(msg.time, midi.ticks_per_beat, tempo)
+        if abs_s + dt_s > max_s:
+            break
+        abs_s += dt_s
+        if msg.type == "set_tempo":
+            tempo = msg.tempo
+        track.append(msg.copy())
+        if msg.type == "note_on" and msg.velocity > 0:
+            open_notes.add((msg.channel, msg.note))
+        elif msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0):
+            open_notes.discard((msg.channel, msg.note))
+    for ch, note in open_notes:
+        track.append(mido.Message("note_off", note=note, channel=ch, velocity=0, time=0))
+    track.append(mido.MetaMessage("end_of_track", time=0))
+    out.tracks.append(track)
+    return out
 
 
 def _recipe_yaml(kit: str, kit_path: str, midi_file: str, rid: str, variant: int) -> str:
@@ -115,40 +150,54 @@ def main() -> int:
                     break
                 midi_rel = str(midi.relative_to(_REPO))
                 stem = midi.stem
-                kit, kpath = dg[i % len(dg)]  # rotate kits for timbral spread
-                for v in range(variants):
-                    if done >= target:
-                        break
-                    try:
-                        jit = apply_midi_jitter(
-                            mido.MidiFile(str(midi)), variant_idx=v,
-                            master_seed=MASTER_SEED, source_midi_id=midi_rel)
-                        jpath = tmp / f"{tag}_{i}_v{v}.mid"
-                        jit.save(str(jpath))
-                        rid = f"R-{tag}-{stem}-{kit}-V{v}"
-                        rec = parse_recipe(
-                            _recipe_yaml(kit, kpath, midi_rel, rid, v))
-                        res = build_gold_sample(
-                            rec, out_dir=out_root / kit, bus_mapping=bus_mapping,
-                            repo_root=_REPO, midi_path_override=jpath)
-                        if res.n_sample < MIN_SAMPLE_LEN:
-                            # write_gold_sample writes the triple FLAT into the kit
-                            # dir — delete only THIS sample's 3 files, never the dir.
-                            for ext in (".audio.f16", ".target.f16", ".dna.json"):
-                                (Path(res.out_dir) / f"{res.key}{ext}").unlink(
-                                    missing_ok=True)
-                            short += 1
-                            continue
-                        done += 1
-                    except Exception as exc:  # noqa: BLE001
-                        msg = str(exc)
-                        if "too short" in msg or "min_audio" in msg or "< min" in msg:
-                            short += 1
-                        else:
-                            fail += 1
-                            if fail <= 5:
-                                print(f"  ✗ {tag} {stem} v{v}: "
-                                      f"{type(exc).__name__}: {msg[:80]}", flush=True)
+                # Render each qualifying groove through ALL kits × variants — more
+                # audio examples per groove (timbral + jitter volume) so the scaling
+                # axis reaches a real range despite the ~25% long-groove qualify rate.
+                trimmed = _trim_midi_seconds(mido.MidiFile(str(midi)), MAX_MIDI_S)
+                # Pre-check length ONCE (no render): skip short grooves before
+                # wasting 4 kits × N variants of rendering on them.
+                probe = tmp / f"{tag}_{i}_probe.mid"
+                trimmed.save(str(probe))
+                try:
+                    last_onset = last_onset_seconds(probe, bus_mapping=bus_mapping)
+                except Exception:  # noqa: BLE001 — no mapped notes etc.
+                    short += 1
+                    continue
+                if (last_onset + 0.5) * 44100 < MIN_SAMPLE_LEN:
+                    short += 1
+                    continue
+                for kit, kpath in (dg if tag == "TR" else dg[:1]):
+                    for v in range(variants):
+                        if done >= target:
+                            break
+                        try:
+                            jit = apply_midi_jitter(
+                                trimmed, variant_idx=v,
+                                master_seed=MASTER_SEED, source_midi_id=midi_rel)
+                            jpath = tmp / f"{tag}_{i}_{kit}_v{v}.mid"
+                            jit.save(str(jpath))
+                            rid = f"R-{tag}-{stem}-{kit}-V{v}"
+                            rec = parse_recipe(
+                                _recipe_yaml(kit, kpath, midi_rel, rid, v))
+                            res = build_gold_sample(
+                                rec, out_dir=out_root / kit, bus_mapping=bus_mapping,
+                                repo_root=_REPO, midi_path_override=jpath)
+                            if res.n_sample < MIN_SAMPLE_LEN:
+                                for ext in (".audio.f16", ".target.f16", ".dna.json"):
+                                    (Path(res.out_dir) / f"{res.key}{ext}").unlink(
+                                        missing_ok=True)
+                                short += 1
+                                continue
+                            done += 1
+                        except Exception as exc:  # noqa: BLE001
+                            msg = str(exc)
+                            if "too short" in msg or "min_audio" in msg or "< min" in msg:
+                                short += 1
+                            else:
+                                fail += 1
+                                if fail <= 5:
+                                    print(f"  ✗ {tag} {stem} {kit} v{v}: "
+                                          f"{type(exc).__name__}: {msg[:80]}", flush=True)
                 if done % 100 == 0 and done > 0:
                     print(f"  {tag}: {done} done, {short} short, {fail} fail, "
                           f"free={_free_gb():.1f}GB", flush=True)

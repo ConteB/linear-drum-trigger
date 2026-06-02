@@ -24,7 +24,7 @@ import numpy as np
 #: Fixed render sample rate (F0-T2a §3.2).
 SAMPLE_RATE = 44100
 #: Target frame-rate, ratified by F0-T4a: 44100 / 128 (F0-T2a §3.4).
-R_TARGET_HZ = 344.53125
+R_TARGET_HZ = 86.1328125  # F0-T21 A2: 44100/512 (86Hz)
 #: Number of logical transcription channels (F0-T19 §7b — 9 type-classes;
 #: supersedes the 8-bus flat-25 layout whose "8" coincided with the mic count).
 N_CHANNELS = 9

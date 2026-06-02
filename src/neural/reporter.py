@@ -522,15 +522,19 @@ def evaluate_sample_for_report(
 
     # Lookahead shift: the model at frame t needs audio up to t+L (in frames).
     L = max(0, int(lookahead_frames))  # noqa: N806
+    # F0-T21 A2: stride is frame-rate-dependent (128@344Hz, 512@86Hz). Import the
+    # live constant rather than hard-coding 128.
+    from neural.data import ENCODER_STRIDE as _STRIDE  # noqa: N806
+
     # Trim n_sample down so the available audio is enough.
     if audio_np.shape[1] < n_sample:
-        n_sample = (audio_np.shape[1] // 128) * 128
-    n_frame_requested = n_sample // 128
-    total_af_frames = audio_np.shape[1] // 128
+        n_sample = (audio_np.shape[1] // _STRIDE) * _STRIDE
+    n_frame_requested = n_sample // _STRIDE
+    total_af_frames = audio_np.shape[1] // _STRIDE
     # Cap n_frame so the audio window [L .. L+n_frame) fits in the buffer.
     n_frame = max(0, min(n_frame_requested, target_np.shape[0], total_af_frames - L))
-    start_sample = L * 128
-    end_sample = start_sample + n_frame * 128
+    start_sample = L * _STRIDE
+    end_sample = start_sample + n_frame * _STRIDE
     with torch.no_grad():
         pred = (
             model(torch.from_numpy(audio_np[:, start_sample:end_sample]).unsqueeze(0).float())

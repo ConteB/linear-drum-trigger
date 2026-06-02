@@ -111,7 +111,7 @@ augmentation:
   mutilation: {{}}
   saboteur: null
 output:
-  target_frame_rate_hz: 344.53125
+  target_frame_rate_hz: 86.1328125
 """
 
 

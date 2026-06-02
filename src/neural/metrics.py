@@ -22,7 +22,7 @@ import numpy as np
 from neural.model import HIHAT_OPENING_COL, N_CHANNELS
 
 #: F0-T4a §2 — target frame-rate ≡ 44100 / 128.
-R_TARGET_HZ = 344.53125
+R_TARGET_HZ = 86.1328125  # F0-T21 A2: 44100/512 (86Hz)
 FRAME_PERIOD_MS = 1000.0 / R_TARGET_HZ  # ≈ 2.902 ms
 #: F0-T4a §7 — onset match window (full width).
 MATCH_WINDOW_MS = 20.0

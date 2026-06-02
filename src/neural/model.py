@@ -26,10 +26,10 @@ import torch
 from torch import nn
 
 #: F0-T4a §3 — strided-encoder factor (one per layer; product = 128).
-ENCODER_STRIDES: tuple[int, ...] = (4, 4, 4, 2)
+ENCODER_STRIDES: tuple[int, ...] = (4, 4, 4, 8)  # F0-T21 A2: ×512 = 86Hz
 ENCODER_KERNEL = 8
 #: F0-T4a §3 — trunk dilations per residual block.
-TRUNK_DILATIONS: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64, 128)
+TRUNK_DILATIONS: tuple[int, ...] = (1, 2, 4, 8, 16, 32, 64)  # F0-T21 A2: RF ~256f ≈ 3s @86Hz
 TRUNK_KERNEL = 3
 #: F0-T4a §4 — fixed 8-slot input width (zero-fill for unused slots). Input is
 #: still up to 8 audio channels (F0-T19 §0.2 "8 in / 9 out" is deliberate).

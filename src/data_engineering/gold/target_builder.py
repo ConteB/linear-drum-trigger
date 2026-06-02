@@ -52,7 +52,7 @@ HIHAT_PEDAL_CC = 4
 
 #: Onset Gaussian-smear standard deviation, in milliseconds (F0-T2a §3.5,
 #: DOSSIER §6.2 — the ±3 ms symmetric smear; also recorded in ``dna.json``).
-SMEAR_MS = 3.0
+SMEAR_MS: float = 11.6  # F0-T21 A2: ~1 frame @86Hz (was 3.0 @344Hz)
 #: Half-width of the smear window, in standard deviations: beyond 4 sigma the
 #: Gaussian is < 4e-4 and rounds to zero in float16 — no point writing it.
 _SMEAR_WINDOW_SIGMA = 4.0

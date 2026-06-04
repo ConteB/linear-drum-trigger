@@ -66,6 +66,16 @@ class TCNConfig:
     frontend: str = "raw"
     mel_n_fft: int = 512
     mel_n_mels: int = 64
+    # F0-T21 B — multi-resolution log-mel (the full ADT recipe: 3 windows).
+    # Empty → single-resolution (mel_n_fft). Non-empty → one MelSpectrogram per
+    # n_fft, all at hop=total_stride, stacked. e.g. (1024, 2048, 4096) ≈ 23/46/92 ms.
+    mel_n_ffts: tuple[int, ...] = ()
+    # F0-T21 candidate C (CEO 2026-06-02) — CRNN: a CAUSAL (unidirectional) GRU
+    # after the trunk for longer-range rhythmic context (the proven ADT
+    # component). Unidirectional → streamable (RTNeural supports GRU), unlike the
+    # literature's bidirectional GRU which the real-time constraint forbids.
+    crnn: bool = False
+    gru_hidden: int = 0  # 0 → use `channels`
 
     @property
     def total_stride(self) -> int:
@@ -186,19 +196,24 @@ class TCNModel(nn.Module):
         C = self.config.channels  # noqa: N806 — match the spec notation
         self.frontend = self.config.frontend
         if self.frontend == "mel":
-            # F0-T20c — log-mel front-end replaces projection+encoder.
+            # F0-T20c/T21 — log-mel front-end replaces projection+encoder.
             import torchaudio  # type: ignore[import-untyped]  # local import (mel A/B)
 
-            self.melspec = torchaudio.transforms.MelSpectrogram(
-                sample_rate=44100,
-                n_fft=self.config.mel_n_fft,
-                hop_length=self.config.total_stride,  # = 128 → frame rate
-                n_mels=self.config.mel_n_mels,
-                power=2.0,
-                center=True,
-            )
+            n_ffts = self.config.mel_n_ffts or (self.config.mel_n_fft,)
+            self.melspecs = nn.ModuleList([
+                torchaudio.transforms.MelSpectrogram(
+                    sample_rate=44100,
+                    n_fft=nf,
+                    hop_length=self.config.total_stride,  # → frame rate
+                    n_mels=self.config.mel_n_mels,
+                    power=2.0,
+                    center=True,
+                )
+                for nf in n_ffts
+            ])
             self.projection = nn.Conv1d(
-                self.config.in_channels * self.config.mel_n_mels, C, kernel_size=1
+                self.config.in_channels * self.config.mel_n_mels * len(n_ffts),
+                C, kernel_size=1
             )
             self.encoder = None
         else:
@@ -212,13 +227,21 @@ class TCNModel(nn.Module):
                 for d in self.config.trunk_dilations
             ]
         )
+        # F0-T21 C — optional causal GRU (CRNN). Unidirectional so it streams.
+        self.crnn = self.config.crnn
+        if self.crnn:
+            H = self.config.gru_hidden or C  # noqa: N806
+            self.gru = nn.GRU(C, H, num_layers=1, batch_first=True, bidirectional=False)
+            head_dim = H
+        else:
+            head_dim = C
         # Heads are exported as four Conv1d k=1; F0-T4a §8 open item lets us
         # fuse them later into one Conv1d C→28 if RTNeural prefers a single
         # graph.
-        self.head_onset = nn.Conv1d(C, N_CHANNELS, kernel_size=1)
-        self.head_velocity = nn.Conv1d(C, N_CHANNELS, kernel_size=1)
-        self.head_microtiming = nn.Conv1d(C, N_CHANNELS, kernel_size=1)
-        self.head_hihat = nn.Conv1d(C, 1, kernel_size=1)
+        self.head_onset = nn.Conv1d(head_dim, N_CHANNELS, kernel_size=1)
+        self.head_velocity = nn.Conv1d(head_dim, N_CHANNELS, kernel_size=1)
+        self.head_microtiming = nn.Conv1d(head_dim, N_CHANNELS, kernel_size=1)
+        self.head_hihat = nn.Conv1d(head_dim, 1, kernel_size=1)
 
     # NOTE: this is the "training-time" forward. The *streaming-time* forward
     # (one frame at a time, stateful) is implemented by RTNeural in C++; the
@@ -228,10 +251,13 @@ class TCNModel(nn.Module):
         if self.frontend == "mel":
             B, ch, n_sample = audio.shape  # noqa: N806
             T = n_sample // self.config.total_stride  # noqa: N806
-            mel = self.melspec(audio)  # [B, ch, n_mels, T_mel]
-            mel = torch.log1p(mel)
-            mel = mel[..., :T]  # crop to the exact target frame count
-            x = mel.reshape(B, ch * self.config.mel_n_mels, T)
+            # Multi-resolution: stack each n_fft's log-mel along the feature axis.
+            mels = []
+            for ms in self.melspecs:
+                m = torch.log1p(ms(audio))[..., :T]  # [B, ch, n_mels, T]
+                mels.append(m)
+            mel = torch.cat(mels, dim=2)  # [B, ch, len(n_ffts)*n_mels, T]
+            x = mel.reshape(B, mel.shape[1] * mel.shape[2], T)
             x = self.projection(x)  # [B, C, T]
         else:
             assert self.encoder is not None  # raw front-end always has the encoder
@@ -240,6 +266,10 @@ class TCNModel(nn.Module):
         for block in self.trunk:
             x = block(x)
         # x: [B, C, n_frame]
+        if self.crnn:
+            # [B, C, T] → [B, T, C] → causal GRU → [B, T, H] → [B, H, T]
+            x, _ = self.gru(x.transpose(1, 2))
+            x = x.transpose(1, 2).contiguous()
         onset = torch.sigmoid(self.head_onset(x))
         velocity = torch.sigmoid(self.head_velocity(x))
         microtiming = torch.tanh(self.head_microtiming(x))

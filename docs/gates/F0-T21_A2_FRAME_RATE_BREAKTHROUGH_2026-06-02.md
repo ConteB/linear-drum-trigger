@@ -49,6 +49,49 @@ imparare**, mascherando ogni altra leva. A 86Hz (densità+pos_weight moderati) l
 - Adozione: il branch `exp/f0t21-a2-86hz` va merge-ato con amendment a `F0-T4a` (frame
   rate/stride/trunk/smear) + DOSSIER §6 + re-gen del Gold a 86Hz per F2-T1.
 
+## B + C — front-end / decoder candidates @86Hz (2026-06-03)
+Stesso dataset (N=640 GMD-v1 single-kit), stessa loss bce, 300ep fp32 MPS, C=64.
+Unica variabile = il front-end / decoder.
+
+| candidato | val F | verdetto |
+| :-- | --: | :-- |
+| A2 raw (strided encoder) | 0.157 | baseline 86Hz |
+| **B log-mel singola** (n_fft 512) | **0.174** | **+11% — vince** |
+| B log-mel multi-res (1024/2048/4096 ≈ 23/46/92ms) | 0.166 | NIENTE lift vs singola (anzi −0.008) |
+| C CRNN (GRU causale post-trunk) | 0.086 | FAIL — la causalità annulla il beneficio RNN |
+
+**Conclusione candidati B/C:** la log-mel **singola** è il miglior front-end (allineato alla
+ricetta ADT). La multi-risoluzione — pur essendo la ricetta ADT *piena* — non aggiunge nulla a
+questa scala; il CRNN causale fallisce (un RNN unidirezionale senza look-back perde il vantaggio
+sequenziale, e il real-time vieta il bidirezionale). I tre front-end raw/multi-res/single
+(0.157/0.166/0.174) restano dentro la **banda di rumore ~0.16-0.17** già diagnosticata: il
+*frame rate* (A2) resta l'unica leva che ha mosso davvero il floor. **Tuning locale del
+front-end saturo.** Ricetta vincente: **86Hz + log-mel singola + weighted-BCE = 0.174**.
+
+## Scaling-curve @86Hz — conferma del gate (2026-06-03)
+Ricetta vincente (single log-mel + bce, C=64, 300ep), val ShittyKit, sottoinsiemi del
+pool 640 (4 kit DG GMD-v1) — **nessun nuovo render, zero rischio disco**:
+
+| N (train grooves) | val F |
+| --: | --: |
+| 160 | 0.158 |
+| 320 | **0.174** |
+| 640 | 0.174 |
+
+**Sale 160→320 (+0.016) poi si appiattisce.** Il conteggio dei grooves **satura presto**
+(~0.174 a N=320) su un pool a **bassa diversità di kit** (4 kit DG, 1 kit val). Lettura
+strategica: a 86Hz il modello generalizza e migliora con i dati, ma il lever che conta non
+è il *numero di grooves* bensì la **diversità timbrica/di kit**. Il piano Azure F2-T1
+(1.5 TB, ~roster completo + franken-kit aug = massima diversità) resta quindi giustificato,
+ma il razionale è **diversità**, non semplice scala di conteggio. Il floor locale ~0.17 è
+un artefatto del val a kit singolo estremamente OOD (ShittyKit) — il gate reale resta
+**L4 / E-GMD** (~30 kit, molto meno OOD).
+
+**Decisione aperta (CEO):** adottare la ricetta 86Hz + log-mel singola + weighted-BCE
+(merge `exp/f0t21-a2-86hz` + amendment F0-T4a frame-rate/stride/smear + re-gen Gold 86Hz
+per F2-T1) e procedere allo scale Azure puntando sulla diversità di kit — vs. ulteriori
+leve locali (tutte ormai in banda di rumore).
+
 ## File toccati (branch, da ratificare per il merge)
 `model.py` (strides/trunk), `data.py` (stride/RF/lookahead), `metrics.py`/`recipe.py`/
 `gold_writer.py` (R_TARGET 86.13), `target_builder.py` (smear 11.6ms), `reporter.py`

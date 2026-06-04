@@ -133,6 +133,10 @@ def main() -> int:
                              "over the waveform (F0-T4a baseline). mel: log-mel "
                              "spectrogram front-end (use with --preprocessing none "
                              "and without --input-agnostic for a clean A/B).")
+    parser.add_argument("--mel-multires", action="store_true",
+                        help="F0-T21 B — multi-res log-mel (n_fft 1024/2048/4096 ~23/46/92ms).")
+    parser.add_argument("--crnn", action="store_true",
+                        help="F0-T21 C — add a causal GRU after the trunk (CRNN, streamable).")
     parser.add_argument("--preprocessing", choices=("none", "p1", "p1p2"),
                         default="none",
                         help="Front-end preprocessing (F0-T4d): none (default, "
@@ -503,8 +507,10 @@ def main() -> int:
     print(f"[mini-L3] preprocessing = {args.preprocessing} → in_channels = {in_channels}",
           flush=True)
 
+    _mel_ffts = (1024, 2048, 4096) if args.mel_multires else ()
     tcn = TCNModel(TCNConfig(
         channels=args.tcn_channels, in_channels=in_channels, frontend=args.frontend,
+        crnn=args.crnn, mel_n_ffts=_mel_ffts,
     )).to(device)
     if args.frontend == "mel":
         print(f"[mini-L3] FRONT-END = MEL (log-mel n_fft=512 n_mels=64 hop=128) "
